@@ -16,10 +16,11 @@ import { useColors } from '@/hooks/useColors';
 import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/study';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
-import PetTeacher from '@/components/PetTeacher';
+import PetTeacher, { PetTeacherReaction } from '@/components/PetTeacher';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const WORD_BANK = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
 
 export default function PracticeScreen() {
   const { user } = useUser();
@@ -40,7 +41,8 @@ function PracticeSession({ userId }: { userId?: string }) {
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<'words' | 'reading'>('words');
-  const wordQuestions = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
+  const [wordOrder, setWordOrder] = useState(() => WORD_BANK.map((_, i) => i));
+  const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
   const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
   const question = mode === 'words'
     ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
@@ -91,6 +93,21 @@ function PracticeSession({ userId }: { userId?: string }) {
     router.push('/');
   };
 
+  const continuePractice = () => {
+    const nextOrder = WORD_BANK.map((_, i) => i);
+    for (let i = nextOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [nextOrder[i], nextOrder[j]] = [nextOrder[j], nextOrder[i]];
+    }
+    setWordOrder(nextOrder);
+    setIndex(0);
+    setChoice(null);
+    setCorrect(0);
+    setComplete(false);
+    setSaved(false);
+    setSaveError(false);
+  };
+
   if (complete) {
     return (
       <View style={styles.completionScreen}>
@@ -106,10 +123,16 @@ function PracticeSession({ userId }: { userId?: string }) {
         <Text style={styles.completionText}>أجبت عن {correct} من {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length} أسئلة بشكل صحيح</Text>
         <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>
         {saved ? (
+          <>
+          {mode === 'words' && <Pressable onPress={continuePractice} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="continue-vocabulary">
+            <Text style={styles.continueButtonText}>واصل التدريب بجولة جديدة</Text>
+            <Ionicons name="refresh" size={18} color={c.primary} />
+          </Pressable>}
           <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
             <Text style={styles.finishButtonText}>العودة للرئيسية</Text>
             <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
           </Pressable>
+          </>
         ) : null}
       </View>
     );
@@ -203,11 +226,12 @@ function PracticeSession({ userId }: { userId?: string }) {
 
       {choice ? (
         <View style={[styles.feedback, isCorrect ? styles.feedbackGood : styles.feedbackTry]}>
-          <Ionicons name={isCorrect ? 'sparkles' : 'heart-outline'} size={19} color={isCorrect ? '#28755f' : '#b66a4f'} />
+          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} />
           <View style={styles.feedbackCopy}>
             <Text style={[styles.feedbackTitle, { color: isCorrect ? '#28755f' : '#a85e45' }]}>{isCorrect ? 'إجابة رائعة!' : 'لا بأس، ستتعلّم من الخطأ.'}</Text>
             {!isCorrect && <Text style={styles.feedbackSub}>المعنى الصحيح: {question.meaning}</Text>}
           </View>
+          <Ionicons name={isCorrect ? 'sparkles' : 'heart-outline'} size={19} color={isCorrect ? '#28755f' : '#b66a4f'} />
         </View>
       ) : null}
 
@@ -265,7 +289,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     wrongOption: { borderColor: '#d9988d', backgroundColor: '#fff0eb' },
     correctText: { color: '#28755f' },
     wrongText: { color: '#ad5347' },
-    feedback: { minHeight: 54, borderRadius: 16, paddingHorizontal: 14, marginTop: 14, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    feedback: { minHeight: 78, borderRadius: 16, paddingHorizontal: 10, marginTop: 14, flexDirection: 'row', direction: 'ltr', alignItems: 'center', gap: 8 },
     feedbackGood: { backgroundColor: '#e7f1e7' },
     feedbackTry: { backgroundColor: '#fbebe2' },
     feedbackCopy: { flex: 1, alignItems: 'flex-end' },
@@ -284,5 +308,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     xpText: { color: '#976428', fontFamily: BOLD, fontSize: 14 },
     finishButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: c.primary, paddingVertical: 15, paddingHorizontal: 24, borderRadius: 17, marginTop: 28, minWidth: 210 },
     finishButtonText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },
+    continueButton: { backgroundColor: c.card, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 22, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: c.primary },
+    continueButtonText: { color: c.primary, fontFamily: BOLD, fontSize: 14 },
   });
 }

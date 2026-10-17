@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, Text, View } from 'react-native';
 import Svg, { Path, Ellipse, Circle, Rect } from 'react-native-svg';
 import { useColors } from '@/hooks/useColors';
 
@@ -11,6 +11,46 @@ const tips = [
 ];
 // Illustration pigments remain warm in both themes.
 const ink = { fur: '#efb879', inner: '#e29383', outline: '#493a30', paper: '#fff3da' };
+
+export function PetTeacherReaction({ mood }: { mood: 'happy' | 'sad' }) {
+  const jump = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (mood !== 'happy') { jump.stopAnimation(); jump.setValue(0); return; }
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(jump, { toValue: -8, duration: 180, useNativeDriver: true }),
+      Animated.timing(jump, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.delay(260),
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [mood, jump]);
+  return (
+    <Animated.View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      style={{ width: 64, height: 68, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: jump }] }}>
+      <Svg width={60} height={66} viewBox="0 0 100 110">
+        <Path d="M78 84 Q102 60 89 55" fill="none" stroke={ink.fur} strokeWidth="9" strokeLinecap="round" />
+        <Ellipse cx="49" cy="82" rx="27" ry="23" fill={ink.fur} />
+        <Path d="M18 48 L15 13 L39 27 Q51 22 65 27 L87 13 L83 49Z" fill={ink.fur} />
+        <Path d="M23 31 L22 22 L34 30 M70 31 L81 22 L79 35" fill={ink.inner} />
+        <Ellipse cx="50" cy="50" rx="35" ry="27" fill={ink.fur} />
+        {mood === 'happy' ? <>
+          <Path d="M29 47 Q36 39 43 47 M57 47 Q64 39 72 47" stroke={ink.outline} strokeWidth="3" fill="none" strokeLinecap="round" />
+          <Path d="M44 60 Q50 70 58 60Z" fill={ink.outline} />
+          <Ellipse cx="52" cy="67" rx="4" ry="3" fill={ink.inner} />
+          <Path d="M15 51L8 45 M85 51L92 45 M18 60L11 61 M82 60L89 61" stroke={ink.paper} strokeWidth="3" strokeLinecap="round" />
+        </> : <>
+          <Path d="M28 45 Q36 51 44 45 M56 45 Q64 51 72 45" stroke={ink.outline} strokeWidth="3" fill="none" strokeLinecap="round" />
+          <Path d="M44 68 Q50 59 58 68" stroke={ink.outline} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          <Path d="M29 56 Q36 59 41 56 M60 56 Q66 59 71 56" stroke={ink.inner} strokeWidth="3" fill="none" strokeLinecap="round" />
+        </>}
+        <Path d="M47 54L54 54L50 58Z" fill={ink.inner} />
+        <Rect x="28" y="78" width="44" height="23" rx="4" fill="#17665c" />
+        <Path d="M50 81V99 M33 84H45 M55 84H67" stroke={ink.paper} strokeWidth="2" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 export default function PetTeacher({ quiet = false }: { quiet?: boolean }) {
   const c = useColors();
   const [tip, setTip] = useState(0);

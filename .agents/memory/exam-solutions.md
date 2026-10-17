@@ -9,3 +9,7 @@ The user explicitly requested that we solve the uploaded questions ourselves rat
 Short training should remain directly accessible from the homepage and contain 22 questions with a 20-minute timer. Do not restore the “مسح الإجابة” option.
 **Why:** The user explicitly requested these interactions.
 **How to apply:** Preserve these requirements when revising exam navigation or question controls.
+
+Address this app's Arabic learner copy to the learner in masculine forms. Vocabulary practice can continue beyond its initial 20-word round; after selecting an answer, show Mashmash on the left with a happy bounce for correct answers and a gently disappointed, hopeful expression for incorrect ones.
+**Why:** The user explicitly requested masculine address and unrestricted vocabulary practice with supportive answer-specific cat reactions.
+**How to apply:** Keep the “another round” path available after completing the vocabulary lesson, and preserve the cat’s distinctly positive/encouraging emotional contrast in question feedback.
