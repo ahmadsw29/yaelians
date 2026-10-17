@@ -19,3 +19,4 @@
 
 export * from "./study";
 export * from "./account-deletions";
+export * from "./plan-access";

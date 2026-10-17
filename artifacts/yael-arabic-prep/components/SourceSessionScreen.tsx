@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useUser } from '@clerk/expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -30,6 +30,10 @@ export default function SourceSessionScreen() {
   const examId = one(params.exam);
   const mode = one(params.mode);
   const sectionRaw = one(params.section);
+  const activityKey = useMemo(
+    () => `timed-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
+    [examId, mode, sectionRaw],
+  );
   const exam = (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).find(e => e.id === examId);
   const section = sectionRaw !== undefined && /^\d+$/.test(sectionRaw) ? Number(sectionRaw) : null;
   let problem = '';
@@ -48,7 +52,7 @@ export default function SourceSessionScreen() {
       router.replace('/plans?reason=premium-exam');
       return;
     }
-    void claimActivity('timed-section', `${exam.id}:${section}`).then(allowed => {
+    void claimActivity('timed-section', activityKey).then(allowed => {
       if (!active) return;
       if (allowed) setAccess('allowed');
       else {
@@ -59,7 +63,7 @@ export default function SourceSessionScreen() {
       if (active) setAccess('blocked');
     });
     return () => { active = false; };
-  }, [accessReady, claimActivity, exam, isLoaded, isPremium, mode, plan, problem, router, section]);
+  }, [accessReady, activityKey, claimActivity, exam, isLoaded, isPremium, mode, plan, problem, router, section]);
 
   if (!isLoaded || !accessReady || access === 'checking') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   if (problem || !exam) return <InvalidScreen message={problem} />;

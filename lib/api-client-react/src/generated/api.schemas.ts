@@ -43,6 +43,71 @@ export interface StudyStats {
   lastPracticeDate: string | null;
 }
 
+/**
+ * @nullable
+ */
+export type StudyPlanAccessPlan = typeof StudyPlanAccessPlan[keyof typeof StudyPlanAccessPlan] | null;
+
+
+export const StudyPlanAccessPlan = {
+  free: 'free',
+} as const;
+
+export type StudyPlanAccessUsage = {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /** @minimum 0 */
+  vocabularyRounds: number;
+  /** @minimum 0 */
+  timedSections: number;
+  timedKeys: string[];
+};
+
+export interface StudyPlanAccess {
+  /** @nullable */
+  plan: StudyPlanAccessPlan;
+  usage: StudyPlanAccessUsage;
+}
+
+export type ChooseStudyPlanInputPlan = typeof ChooseStudyPlanInputPlan[keyof typeof ChooseStudyPlanInputPlan];
+
+
+export const ChooseStudyPlanInputPlan = {
+  free: 'free',
+} as const;
+
+export interface ChooseStudyPlanInput {
+  plan: ChooseStudyPlanInputPlan;
+}
+
+export type StudyActivityClaimInputActivity = typeof StudyActivityClaimInputActivity[keyof typeof StudyActivityClaimInputActivity];
+
+
+export const StudyActivityClaimInputActivity = {
+  vocabulary: 'vocabulary',
+  'timed-section': 'timed-section',
+} as const;
+
+export interface StudyActivityClaimInput {
+  activity: StudyActivityClaimInputActivity;
+  /**
+     * @minLength 16
+     * @maxLength 100
+     * @pattern ^[a-zA-Z0-9-]+$
+     */
+  key: string;
+}
+
+export interface StudyActivityClaimResult {
+  allowed: boolean;
+  access: StudyPlanAccess;
+}
+
+export interface StudyLessonResult {
+  stats: StudyStats;
+  progressCredited: boolean;
+}
+
 export interface StudyLessonInput {
   /**
      * @minLength 16
@@ -66,6 +131,13 @@ export interface StudyLessonInput {
      * @pattern ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$
      */
   completedAt?: string;
+  /**
+     * Server-issued vocabulary activity claim. Free-plan progress is credited only once for a matching claim.
+     * @minLength 16
+     * @maxLength 100
+     * @pattern ^[a-zA-Z0-9-]+$
+     */
+  activityKey?: string;
 }
 
 export interface StudyImportInput {

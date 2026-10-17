@@ -6,7 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './chooseStudyPlanInput';
+export * from './chooseStudyPlanInputPlan';
 export * from './healthStatus';
+export * from './studyActivityClaimInput';
+export * from './studyActivityClaimInputActivity';
+export * from './studyActivityClaimResult';
 export * from './studyImportInput';
 export * from './studyLessonInput';
+export * from './studyLessonResult';
+export * from './studyPlanAccess';
+export * from './studyPlanAccessPlan';
+export * from './studyPlanAccessUsage';
 export * from './studyStats';

@@ -29,4 +29,11 @@ export interface StudyLessonInput {
      * @pattern ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$
      */
   completedAt?: string;
+  /**
+     * Server-issued vocabulary activity claim. Free-plan progress is credited only once for a matching claim.
+     * @minLength 16
+     * @maxLength 100
+     * @pattern ^[a-zA-Z0-9-]+$
+     */
+  activityKey?: string;
 }

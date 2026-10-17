@@ -193,7 +193,10 @@ test('saved-lesson recovery notice and action are clearly exposed to accessibili
   expect(action.findAll(node => node.type === 'Text').map(node => node.children.join('')).join('')).toBe(actionLabel);
 
   await act(async () => { action.props.onPress(); });
-  await until(() => expect(state.recovery).toBeNull());
+  await until(() => {
+    expect(state.recovery).toBeNull();
+    expect(state.pending).toBe(0);
+  });
   expect([...disk.entries()].find(([key]) => key.startsWith(recoveryPrefix('accessible-recovery')))?.[1]).toBe(raw);
   expect(await cloud('accessible-recovery')).toMatchObject({ lessonsCompleted: 2, xp: 60 });
 });

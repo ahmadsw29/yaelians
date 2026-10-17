@@ -46,6 +46,79 @@ export const GetStudyStatsResponse = zod.object({
 })
 
 
+export const getStudyPlanAccessResponseUsageDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getStudyPlanAccessResponseUsageVocabularyRoundsMin = 0;
+
+export const getStudyPlanAccessResponseUsageTimedSectionsMin = 0;
+
+
+
+export const GetStudyPlanAccessResponse = zod.object({
+  "plan": zod.union([zod.literal('free'),zod.literal(null)]).nullable(),
+  "usage": zod.object({
+  "date": zod.string().regex(getStudyPlanAccessResponseUsageDateRegExp),
+  "vocabularyRounds": zod.number().int().min(getStudyPlanAccessResponseUsageVocabularyRoundsMin),
+  "timedSections": zod.number().int().min(getStudyPlanAccessResponseUsageTimedSectionsMin),
+  "timedKeys": zod.array(zod.string())
+})
+})
+
+
+export const ChooseStudyPlanBody = zod.object({
+  "plan": zod.enum(['free'])
+})
+
+export const chooseStudyPlanResponseUsageDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const chooseStudyPlanResponseUsageVocabularyRoundsMin = 0;
+
+export const chooseStudyPlanResponseUsageTimedSectionsMin = 0;
+
+
+
+export const ChooseStudyPlanResponse = zod.object({
+  "plan": zod.union([zod.literal('free'),zod.literal(null)]).nullable(),
+  "usage": zod.object({
+  "date": zod.string().regex(chooseStudyPlanResponseUsageDateRegExp),
+  "vocabularyRounds": zod.number().int().min(chooseStudyPlanResponseUsageVocabularyRoundsMin),
+  "timedSections": zod.number().int().min(chooseStudyPlanResponseUsageTimedSectionsMin),
+  "timedKeys": zod.array(zod.string())
+})
+})
+
+
+export const claimStudyActivityBodyKeyMin = 16;
+export const claimStudyActivityBodyKeyMax = 100;
+
+
+export const claimStudyActivityBodyKeyRegExp = new RegExp('^[a-zA-Z0-9-]+$');
+
+
+export const ClaimStudyActivityBody = zod.object({
+  "activity": zod.enum(['vocabulary', 'timed-section']),
+  "key": zod.string().min(claimStudyActivityBodyKeyMin).max(claimStudyActivityBodyKeyMax).regex(claimStudyActivityBodyKeyRegExp)
+})
+
+export const claimStudyActivityResponseAccessUsageDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const claimStudyActivityResponseAccessUsageVocabularyRoundsMin = 0;
+
+export const claimStudyActivityResponseAccessUsageTimedSectionsMin = 0;
+
+
+
+export const ClaimStudyActivityResponse = zod.object({
+  "allowed": zod.boolean(),
+  "access": zod.object({
+  "plan": zod.union([zod.literal('free'),zod.literal(null)]).nullable(),
+  "usage": zod.object({
+  "date": zod.string().regex(claimStudyActivityResponseAccessUsageDateRegExp),
+  "vocabularyRounds": zod.number().int().min(claimStudyActivityResponseAccessUsageVocabularyRoundsMin),
+  "timedSections": zod.number().int().min(claimStudyActivityResponseAccessUsageTimedSectionsMin),
+  "timedKeys": zod.array(zod.string())
+})
+})
+})
+
+
 export const saveStudyLessonBodyEventIdMin = 16;
 export const saveStudyLessonBodyEventIdMax = 100;
 
@@ -60,44 +133,53 @@ export const saveStudyLessonBodyCompletedAtMax = 24;
 
 
 export const saveStudyLessonBodyCompletedAtRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$');
+export const saveStudyLessonBodyActivityKeyMin = 16;
+export const saveStudyLessonBodyActivityKeyMax = 100;
+
+
+export const saveStudyLessonBodyActivityKeyRegExp = new RegExp('^[a-zA-Z0-9-]+$');
 
 
 export const SaveStudyLessonBody = zod.object({
   "eventId": zod.string().min(saveStudyLessonBodyEventIdMin).max(saveStudyLessonBodyEventIdMax).regex(saveStudyLessonBodyEventIdRegExp),
   "correct": zod.number().int().min(saveStudyLessonBodyCorrectMin).max(saveStudyLessonBodyCorrectMax),
   "total": zod.number().int().min(1).max(saveStudyLessonBodyTotalMax),
-  "completedAt": zod.string().max(saveStudyLessonBodyCompletedAtMax).regex(saveStudyLessonBodyCompletedAtRegExp).optional().describe('Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.')
+  "completedAt": zod.string().max(saveStudyLessonBodyCompletedAtMax).regex(saveStudyLessonBodyCompletedAtRegExp).optional().describe('Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.'),
+  "activityKey": zod.string().min(saveStudyLessonBodyActivityKeyMin).max(saveStudyLessonBodyActivityKeyMax).regex(saveStudyLessonBodyActivityKeyRegExp).optional().describe('Server-issued vocabulary activity claim. Free-plan progress is credited only once for a matching claim.')
 })
 
-export const saveStudyLessonResponseXpMin = 0;
-export const saveStudyLessonResponseXpMax = 1000000000;
+export const saveStudyLessonResponseStatsXpMin = 0;
+export const saveStudyLessonResponseStatsXpMax = 1000000000;
 
-export const saveStudyLessonResponseStreakMin = 0;
-export const saveStudyLessonResponseStreakMax = 1000000;
+export const saveStudyLessonResponseStatsStreakMin = 0;
+export const saveStudyLessonResponseStatsStreakMax = 1000000;
 
-export const saveStudyLessonResponseCorrectAnswersMin = 0;
-export const saveStudyLessonResponseCorrectAnswersMax = 100000000;
+export const saveStudyLessonResponseStatsCorrectAnswersMin = 0;
+export const saveStudyLessonResponseStatsCorrectAnswersMax = 100000000;
 
-export const saveStudyLessonResponseAnsweredQuestionsMin = 0;
-export const saveStudyLessonResponseAnsweredQuestionsMax = 100000000;
+export const saveStudyLessonResponseStatsAnsweredQuestionsMin = 0;
+export const saveStudyLessonResponseStatsAnsweredQuestionsMax = 100000000;
 
-export const saveStudyLessonResponseLessonsCompletedMin = 0;
-export const saveStudyLessonResponseLessonsCompletedMax = 10000000;
+export const saveStudyLessonResponseStatsLessonsCompletedMin = 0;
+export const saveStudyLessonResponseStatsLessonsCompletedMax = 10000000;
 
-export const saveStudyLessonResponseMasteredWordsMin = 0;
-export const saveStudyLessonResponseMasteredWordsMax = 100000000;
+export const saveStudyLessonResponseStatsMasteredWordsMin = 0;
+export const saveStudyLessonResponseStatsMasteredWordsMax = 100000000;
 
-export const saveStudyLessonResponseLastPracticeDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const saveStudyLessonResponseStatsLastPracticeDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const SaveStudyLessonResponse = zod.object({
-  "xp": zod.number().int().min(saveStudyLessonResponseXpMin).max(saveStudyLessonResponseXpMax),
-  "streak": zod.number().int().min(saveStudyLessonResponseStreakMin).max(saveStudyLessonResponseStreakMax),
-  "correctAnswers": zod.number().int().min(saveStudyLessonResponseCorrectAnswersMin).max(saveStudyLessonResponseCorrectAnswersMax),
-  "answeredQuestions": zod.number().int().min(saveStudyLessonResponseAnsweredQuestionsMin).max(saveStudyLessonResponseAnsweredQuestionsMax),
-  "lessonsCompleted": zod.number().int().min(saveStudyLessonResponseLessonsCompletedMin).max(saveStudyLessonResponseLessonsCompletedMax),
-  "masteredWords": zod.number().int().min(saveStudyLessonResponseMasteredWordsMin).max(saveStudyLessonResponseMasteredWordsMax),
-  "lastPracticeDate": zod.string().regex(saveStudyLessonResponseLastPracticeDateRegExp).nullable()
+  "stats": zod.object({
+  "xp": zod.number().int().min(saveStudyLessonResponseStatsXpMin).max(saveStudyLessonResponseStatsXpMax),
+  "streak": zod.number().int().min(saveStudyLessonResponseStatsStreakMin).max(saveStudyLessonResponseStatsStreakMax),
+  "correctAnswers": zod.number().int().min(saveStudyLessonResponseStatsCorrectAnswersMin).max(saveStudyLessonResponseStatsCorrectAnswersMax),
+  "answeredQuestions": zod.number().int().min(saveStudyLessonResponseStatsAnsweredQuestionsMin).max(saveStudyLessonResponseStatsAnsweredQuestionsMax),
+  "lessonsCompleted": zod.number().int().min(saveStudyLessonResponseStatsLessonsCompletedMin).max(saveStudyLessonResponseStatsLessonsCompletedMax),
+  "masteredWords": zod.number().int().min(saveStudyLessonResponseStatsMasteredWordsMin).max(saveStudyLessonResponseStatsMasteredWordsMax),
+  "lastPracticeDate": zod.string().regex(saveStudyLessonResponseStatsLastPracticeDateRegExp).nullable()
+}),
+  "progressCredited": zod.boolean()
 })
 
 

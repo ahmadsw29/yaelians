@@ -28,9 +28,9 @@ export async function startServer() {
       const { pool } = await import('@workspace/db');
       await pool.end();
     },
-    request(user: string | null, path = 'stats', data?: unknown) {
+    request(user: string | null, path = 'stats', data?: unknown, method = data === undefined ? 'GET' : 'POST') {
       return fetch(`${url}/study/${path}`, {
-        method: data === undefined ? 'GET' : 'POST',
+        method,
         headers: { 'Content-Type': 'application/json', ...(user ? { Authorization: `Bearer ${user}` } : {}) },
         ...(data === undefined ? {} : { body: JSON.stringify(data) }),
       });

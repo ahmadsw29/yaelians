@@ -1,4 +1,4 @@
-import { pgTable, text, jsonb, primaryKey, date } from "drizzle-orm/pg-core";
+import { pgTable, text, jsonb, primaryKey, date, boolean } from "drizzle-orm/pg-core";
 
 export const studyProgress = pgTable("study_progress", {
   userId: text("user_id").primaryKey(),
@@ -12,4 +12,5 @@ export const studyEvents = pgTable("study_events", {
   eventId: text("event_id").notNull(),
   payload: jsonb("payload").notNull(),
   practiceDate: date("practice_date", { mode: "string" }),
+  progressCredited: boolean("progress_credited").notNull().default(true),
 }, (t) => [primaryKey({ columns: [t.userId, t.eventId] })]);

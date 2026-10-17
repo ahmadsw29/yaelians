@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -16,9 +16,20 @@ export default function PlansScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { chooseFree } = usePlanAccess();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const selectFree = async () => {
-    await chooseFree();
-    router.replace('/');
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      await chooseFree();
+      router.replace('/');
+    } catch {
+      setError('تعذّر حفظ الخطة الآن. تحقق من اتصالك وحاول مجددًا؛ استخدامك السابق لم يتغير.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.page, { paddingTop: Math.max(insets.top, 24) + 12, paddingBottom: Math.max(insets.bottom, 20) + 24 }]}>
@@ -37,8 +48,9 @@ export default function PlansScreen() {
         <View style={[styles.badge, { backgroundColor: c.secondary }]}><Text style={[styles.badgeText, { color: c.primary }]}>ابدأ الآن</Text></View>
       </View>
       <View style={styles.benefitList}>{FREE_BENEFITS.map(item => <Benefit key={item} label={item} />)}</View>
-      <Pressable testID="choose-free-plan" accessibilityRole="button" onPress={() => void selectFree()} style={({ pressed }) => [styles.freeButton, { backgroundColor: c.secondary, opacity: pressed ? 0.75 : 1 }]}>
-        <Text style={[styles.freeButtonText, { color: c.foreground }]}>ابدأ بالخطة المجانية</Text><Ionicons name="arrow-back" size={19} color={c.foreground} />
+      {!!error && <Text accessibilityRole="alert" style={{ color: c.destructive, textAlign: 'right', lineHeight: 22 }}>{error}</Text>}
+      <Pressable testID="choose-free-plan" accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => void selectFree()} style={({ pressed }) => [styles.freeButton, { backgroundColor: c.secondary, opacity: pressed || saving ? 0.75 : 1 }]}>
+        <Text style={[styles.freeButtonText, { color: c.foreground }]}>{saving ? 'جارٍ حفظ الخطة…' : 'ابدأ بالخطة المجانية'}</Text><Ionicons name="arrow-back" size={19} color={c.foreground} />
       </Pressable>
     </View>
 

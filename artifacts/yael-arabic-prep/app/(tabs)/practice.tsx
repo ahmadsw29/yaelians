@@ -27,23 +27,25 @@ export default function PracticeScreen() {
   const { user } = useUser();
   const { ready, plan, isPremium, claimActivity } = usePlanAccess();
   const router = useRouter();
+  const activityKey = useRef<string | null>(null);
+  if (!activityKey.current) activityKey.current = `vocabulary-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
   const [access, setAccess] = useState<'checking' | 'allowed' | 'continue' | 'untracked' | 'blocked'>('checking');
 
   useEffect(() => {
     let active = true;
     if (!ready || !plan) return;
     if (isPremium) { setAccess('allowed'); return; }
-    void claimActivity('vocabulary').then(allowed => {
+    void claimActivity('vocabulary', activityKey.current!).then(allowed => {
       if (!active) return;
       if (allowed) setAccess('allowed');
       else setAccess('continue');
     }).catch(() => { if (active) setAccess('blocked'); });
     return () => { active = false; };
-  }, [claimActivity, isPremium, plan, ready, router]);
+  }, [activityKey, claimActivity, isPremium, plan, ready, router]);
 
   if (!ready || !plan || access === 'checking' || access === 'blocked') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>{access === 'blocked' ? 'تعذّر التحقق من خطتك. أعد المحاولة.' : 'جارٍ تجهيز التدريب…'}</Text></View>;
   if (access === 'continue' && !isPremium) return <FreePracticePrompt onContinue={() => setAccess('untracked')} />;
-  return <PracticeSession key={`${user?.id ?? 'guest'}:${access}`} userId={user?.id} isPremium={isPremium} trackThisRound={access === 'allowed'} />;
+  return <PracticeSession key={`${user?.id ?? 'guest'}:${access}`} userId={user?.id} isPremium={isPremium} trackThisRound={access === 'allowed'} activityKey={activityKey.current} />;
 }
 
 function FreePracticePrompt({ onContinue }: { onContinue: () => void }) {
@@ -68,7 +70,7 @@ function FreePracticePrompt({ onContinue }: { onContinue: () => void }) {
   </View>;
 }
 
-function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: string; isPremium: boolean; trackThisRound: boolean }) {
+function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { userId?: string; isPremium: boolean; trackThisRound: boolean; activityKey: string | null }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -128,7 +130,7 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
       }
       setSaveError(false);
       try {
-        await save(correct, activeQuestions.length);
+        await save(correct, activeQuestions.length, activityKey ?? undefined);
         setSaved(true);
       } catch {
         setSaveError(true);

@@ -14,7 +14,7 @@ type StudyContext = {
   stats: StudyStats; loading: boolean; message: string; pending: number;
   recovery: { validCount: number; invalidCount: number; problem: 'invalid-json' | 'not-array' | 'invalid-events' } | null;
   legacy: StudyStats | null; busy: boolean;
-  refresh: () => void; save: (correct: number, total?: number) => Promise<void>;
+  refresh: () => void; save: (correct: number, total?: number, activityKey?: string) => Promise<void>;
   recoverOutbox: () => void;
   migrate: () => void; keepCloud: () => void;
   pauseForDeletion: () => Promise<() => void>;
@@ -32,7 +32,7 @@ type OutboxRecovery = {
 function isStudyLessonInput(value: unknown): value is PendingStudyLesson {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const event = value as Record<string, unknown>;
-  const allowedKeys = new Set(['eventId', 'correct', 'total', 'completedAt']);
+  const allowedKeys = new Set(['eventId', 'correct', 'total', 'completedAt', 'activityKey']);
   if (Object.keys(event).some(key => !allowedKeys.has(key))) return false;
   if (typeof event.eventId !== 'string' || event.eventId.length < 16 || event.eventId.length > 100
     || !/^[a-zA-Z0-9-]+$/.test(event.eventId)) return false;
@@ -48,6 +48,9 @@ function isStudyLessonInput(value: unknown): value is PendingStudyLesson {
       return false;
     }
   }
+  if (event.activityKey !== undefined
+    && (typeof event.activityKey !== 'string' || event.activityKey.length < 16
+      || event.activityKey.length > 100 || !/^[a-zA-Z0-9-]+$/.test(event.activityKey))) return false;
   return true;
 }
 
@@ -131,10 +134,12 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   const flush = async () => {
     if (deleting.current || !userId || !ready.current || migrationNeeded.current || recoveryRef.current || !alive.current) return;
     setBusy(true);
+    let uncreditedLessons = 0;
     try {
       while (queue.current.length && alive.current) {
         const event = queue.current[0];
-        const stats = await lessonMutation.mutateAsync({ data: event });
+        const result = await lessonMutation.mutateAsync({ data: event });
+        if (!result.progressCredited) uncreditedLessons += 1;
         const remaining = queue.current.slice(1);
         // Persist removal only after server acknowledgment; event IDs make retries safe.
         await AsyncStorage.setItem(storageKey, JSON.stringify(remaining));
@@ -144,10 +149,12 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
           await client.cancelQueries({ queryKey: key, exact: true });
         }
         if (alive.current) {
-          client.setQueryData(key, stats);
+          client.setQueryData(key, result.stats);
         }
       }
-      if (alive.current) setMessage('');
+      if (alive.current) setMessage(uncreditedLessons
+        ? 'تمت مزامنة بعض الجولات دون إضافة تقدّم يومي؛ لم يتوفر لها تصريح الخطة.'
+        : '');
     } catch {
       if (alive.current) setMessage('تعذّرت المزامنة. الدروس محفوظة على هذا الجهاز لهذا الحساب وسنحاول مجددًا. يُحسب النشاط بتاريخ إكمال الدرس بتوقيت UTC خلال آخر 30 يومًا؛ الدروس الأقدم أو ذات وقت جهاز غير صحيح تُحسب يوم المزامنة.');
     } finally {
@@ -208,7 +215,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     return () => { clearInterval(timer); subscription.remove(); };
   });
 
-  const save = (correct: number, total = 5) => {
+  const save = (correct: number, total = 5, activityKey?: string) => {
     // Capture at completion, before waiting behind an in-flight sync operation.
     const completedAt = new Date().toISOString();
     return run(async () => {
@@ -221,7 +228,10 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
       if (alive.current) setGuest(stats);
       return;
     }
-    const event: PendingStudyLesson = { eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`, correct, total, completedAt };
+    const event: PendingStudyLesson = {
+      eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`,
+      correct, total, completedAt, ...(activityKey ? { activityKey } : {}),
+    };
     const next = [...queue.current, event];
     await AsyncStorage.setItem(storageKey, JSON.stringify(next));
     queue.current = next;

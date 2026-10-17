@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { clerkClient, getAuth } from "@clerk/express";
-import { db, studyProgress, accountDeletions } from "@workspace/db";
+import { db, studyProgress, accountDeletions, accountPlanAccess } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
@@ -28,6 +28,7 @@ export async function processAccountDeletions() {
             if (!(typeof error === "object" && error !== null && "status" in error && error.status === 404)) throw error;
           }
           await tx.delete(studyProgress).where(eq(studyProgress.userId, job.userId));
+          await tx.delete(accountPlanAccess).where(eq(accountPlanAccess.userId, job.userId));
           await tx.delete(accountDeletions).where(eq(accountDeletions.userId, job.userId));
         });
       } catch {

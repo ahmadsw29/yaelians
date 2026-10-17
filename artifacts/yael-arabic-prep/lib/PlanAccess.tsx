@@ -1,113 +1,73 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '@clerk/expo';
+import React, { createContext, useCallback, useContext, useMemo } from 'react';
+import { useAuth, useClerk } from '@clerk/expo';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  chooseStudyPlan, claimStudyActivity, getStudyPlanAccess, useGetStudyPlanAccess,
+  type StudyPlanAccess,
+} from '@workspace/api-client-react';
+import { getStudyAuthOptions } from './study-auth';
 
-export type SelectedPlan = 'free' | null;
+export type SelectedPlan = StudyPlanAccess['plan'];
 type Activity = 'vocabulary' | 'timed-section';
-type DailyUse = { date: string; vocabularyRounds: number; timedSections: number; timedKeys: string[] };
-type StoredAccess = { plan: SelectedPlan; usage: DailyUse };
+type DailyUse = StudyPlanAccess['usage'];
 type AccessContextValue = {
   ready: boolean;
   plan: SelectedPlan;
   isPremium: false;
   usage: DailyUse;
   chooseFree: () => Promise<void>;
-  claimActivity: (activity: Activity, key?: string) => Promise<boolean>;
+  claimActivity: (activity: Activity, key: string) => Promise<boolean>;
 };
 
-const emptyUsage = (): DailyUse => ({ date: localDate(), vocabularyRounds: 0, timedSections: 0, timedKeys: [] });
+const emptyUsage = (): DailyUse => ({
+  date: new Date().toISOString().slice(0, 10),
+  vocabularyRounds: 0,
+  timedSections: 0,
+  timedKeys: [],
+});
 const AccessContext = createContext<AccessContextValue | null>(null);
-const STORAGE_PREFIX = 'yael-plan-access-v1:';
-
-function localDate() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-
-function parseStored(value: string | null): StoredAccess {
-  const empty = { plan: null as SelectedPlan, usage: emptyUsage() };
-  if (!value) return empty;
-  try {
-    const parsed = JSON.parse(value) as Partial<StoredAccess>;
-    const usage = parsed.usage;
-    if (!usage || usage.date !== localDate()) return { ...empty, plan: parsed.plan === 'free' ? 'free' : null };
-    return {
-      plan: parsed.plan === 'free' ? 'free' : null,
-      usage: {
-        date: usage.date,
-        vocabularyRounds: Number.isInteger(usage.vocabularyRounds) && usage.vocabularyRounds >= 0 ? usage.vocabularyRounds : 0,
-        timedSections: Number.isInteger(usage.timedSections) && usage.timedSections >= 0 ? usage.timedSections : 0,
-        timedKeys: Array.isArray(usage.timedKeys) ? usage.timedKeys.filter((key): key is string => typeof key === 'string') : [],
-      },
-    };
-  } catch {
-    return empty;
-  }
-}
 
 export function PlanAccessProvider({ children }: { children: React.ReactNode }) {
   const { userId, isLoaded } = useAuth();
-  const [stored, setStored] = useState<StoredAccess>({ plan: null, usage: emptyUsage() });
-  const [ready, setReady] = useState(false);
-  const activeKey = userId ? `${STORAGE_PREFIX}${userId}` : null;
-  const serial = useRef<Promise<void>>(Promise.resolve());
-  const storedRef = useRef(stored);
-  storedRef.current = stored;
-
-  useEffect(() => {
-    let active = true;
-    setReady(false);
-    if (!isLoaded || !activeKey) {
-      setStored({ plan: null, usage: emptyUsage() });
-      setReady(isLoaded);
-      return () => { active = false; };
-    }
-    void AsyncStorage.getItem(activeKey).then(value => {
-      if (active) {
-        setStored(parseStored(value));
-        setReady(true);
-      }
-    }).catch(() => {
-      if (active) setReady(true);
-    });
-    return () => { active = false; };
-  }, [activeKey, isLoaded]);
-
-  const persist = useCallback((next: StoredAccess) => {
-    if (!activeKey) return Promise.reject(new Error('Sign in before saving a plan.'));
-    serial.current = serial.current.then(() => AsyncStorage.setItem(activeKey, JSON.stringify(next)));
-    setStored(next);
-    return serial.current;
-  }, [activeKey]);
+  const clerk = useClerk();
+  const client = useQueryClient();
+  const queryKey = ['plan-access', userId];
+  const authOptions = useCallback(() => getStudyAuthOptions(
+    () => clerk.session ?? null,
+    userId ?? null,
+    () => true,
+  ), [clerk, userId]);
+  const query = useGetStudyPlanAccess({
+    query: {
+      queryKey,
+      enabled: isLoaded && !!userId,
+      retry: false,
+      queryFn: async ({ signal }) => getStudyPlanAccess({ ...await authOptions(), signal }),
+    },
+  });
 
   const chooseFree = useCallback(async () => {
-    const currentStored = storedRef.current;
-    const current = currentStored.usage.date === localDate() ? currentStored.usage : emptyUsage();
-    await persist({ plan: 'free', usage: current });
-  }, [persist]);
+    if (!userId) throw new Error('Sign in before saving a plan.');
+    const response = await chooseStudyPlan({ plan: 'free' }, await authOptions());
+    client.setQueryData(queryKey, response);
+  }, [authOptions, client, userId]);
 
-  const claimActivity = useCallback(async (activity: Activity, key?: string) => {
-    const currentStored = storedRef.current;
-    if (!userId || currentStored.plan !== 'free') return false;
-    const current = currentStored.usage.date === localDate() ? currentStored.usage : emptyUsage();
-    if (activity === 'vocabulary') {
-      if (current.vocabularyRounds >= 1) return false;
-      await persist({ plan: currentStored.plan, usage: { ...current, vocabularyRounds: current.vocabularyRounds + 1 } });
-      return true;
-    }
-    const identity = key ?? 'timed-section';
-    if (current.timedKeys.includes(identity)) return true;
-    if (current.timedSections >= 1) return false;
-    await persist({
-      plan: currentStored.plan,
-      usage: { ...current, timedSections: current.timedSections + 1, timedKeys: [...current.timedKeys, identity] },
-    });
-    return true;
-  }, [persist, userId]);
+  const claimActivity = useCallback(async (activity: Activity, key: string) => {
+    if (!userId) return false;
+    const response = await claimStudyActivity({ activity, key }, await authOptions());
+    client.setQueryData(queryKey, response.access);
+    return response.allowed;
+  }, [authOptions, client, userId]);
 
+  const ready = isLoaded && (!userId || query.isSuccess || query.isError);
   const value = useMemo<AccessContextValue>(() => ({
-    ready, plan: stored.plan, isPremium: false, usage: stored.usage, chooseFree, claimActivity,
-  }), [ready, stored, chooseFree, claimActivity]);
+    ready,
+    plan: query.data?.plan ?? null,
+    isPremium: false,
+    usage: query.data?.usage ?? emptyUsage(),
+    chooseFree,
+    claimActivity,
+  }), [ready, query.data, chooseFree, claimActivity]);
 
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
 }

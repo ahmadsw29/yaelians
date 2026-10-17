@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { startServer } from './server';
-import { db, studyEvents, studyProgress } from '@workspace/db';
+import { db, studyEvents, studyProgress, planActivityClaims } from '@workspace/db';
 import { emptyStats } from '../../artifacts/api-server/src/lib/study';
 
 let api: Awaited<ReturnType<typeof startServer>>;
@@ -87,4 +87,55 @@ test('import racing a new lesson preserves the lesson whichever wins the lock', 
     lessonsCompleted: imported.status === 200 ? 2 : 1,
     xp: imported.status === 200 ? 70 : 30,
   });
+});
+
+test('free plan and daily limits persist account-wide and only a claimed vocabulary round earns progress', async () => {
+  const choose = await api.request('plan-sync', 'plan-access', { plan: 'free' }, 'PUT');
+  expect(choose.status).toBe(200);
+  expect(await (await api.request('plan-sync', 'plan-access')).json()).toMatchObject({
+    plan: 'free', usage: { vocabularyRounds: 0, timedSections: 0 },
+  });
+
+  const vocabKeys = Array.from({ length: 8 }, (_, i) => `vocabulary-claim-${i.toString().padStart(3, '0')}`);
+  const vocabClaims = await Promise.all(vocabKeys.map(key =>
+    api.request('plan-sync', 'plan-access/claims', { activity: 'vocabulary', key })));
+  const vocabResults = await Promise.all(vocabClaims.map(response => response.json() as Promise<{ allowed: boolean }>));
+  expect(vocabResults.filter(result => result.allowed)).toHaveLength(1);
+  const allowedVocabKey = vocabKeys[vocabResults.findIndex(result => result.allowed)];
+  expect((await (await api.request('plan-sync', 'plan-access')).json()).usage.vocabularyRounds).toBe(1);
+  expect((await api.request('plan-sync', 'plan-access/claims', { activity: 'vocabulary', key: allowedVocabKey })).status).toBe(200);
+
+  const timedKeys = ['timed-claim-section-one-0001', 'timed-claim-section-two-0002'];
+  const timedResults = await Promise.all(timedKeys.map(async key =>
+    (await api.request('plan-sync', 'plan-access/claims', { activity: 'timed-section', key })).json() as Promise<{ allowed: boolean }>));
+  expect(timedResults.filter(result => result.allowed)).toHaveLength(1);
+  const usage = await (await api.request('plan-sync', 'plan-access')).json();
+  expect(usage.usage).toMatchObject({ vocabularyRounds: 1, timedSections: 1 });
+  expect(usage.usage.timedKeys).toHaveLength(1);
+
+  const credited = {
+    ...lesson('plan-credit'),
+    activityKey: allowedVocabKey,
+  };
+  const first = await (await api.request('plan-sync', 'lessons', credited)).json();
+  expect(first.progressCredited).toBe(true);
+  expect(first.stats.lessonsCompleted).toBe(1);
+  expect((await (await api.request('plan-sync', 'lessons', credited)).json()).progressCredited).toBe(true);
+
+  const reusingClaim = {
+    ...lesson('plan-credit-reuse'),
+    activityKey: allowedVocabKey,
+  };
+  const reused = await (await api.request('plan-sync', 'lessons', reusingClaim)).json();
+  expect(reused.progressCredited).toBe(false);
+  expect(reused.stats.lessonsCompleted).toBe(1);
+
+  const bypass = await (await api.request('plan-sync', 'lessons', lesson('plan-credit-bypass'))).json();
+  expect(bypass.progressCredited).toBe(false);
+  expect(bypass.stats.lessonsCompleted).toBe(1);
+  expect((await api.request('plan-sync', 'plan-access', { plan: 'free' }, 'PUT')).status).toBe(200);
+  expect(await (await api.request('plan-sync', 'plan-access')).json()).toMatchObject({
+    plan: 'free', usage: { vocabularyRounds: 1, timedSections: 1 },
+  });
+  expect(await db.select().from(planActivityClaims).then(rows => rows.filter(row => row.userId === 'plan-sync'))).toHaveLength(2);
 });

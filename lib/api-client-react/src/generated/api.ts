@@ -20,9 +20,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ChooseStudyPlanInput,
   HealthStatus,
+  StudyActivityClaimInput,
+  StudyActivityClaimResult,
   StudyImportInput,
   StudyLessonInput,
+  StudyLessonResult,
+  StudyPlanAccess,
   StudyStats
 } from './api.schemas';
 
@@ -195,15 +200,86 @@ export function useGetStudyStats<TData = Awaited<ReturnType<typeof getStudyStats
 
 
 
-export const getSaveStudyLessonUrl = () => {
+export const getGetStudyPlanAccessUrl = () => {
 
 
 
 
-  return `/api/study/lessons`
+  return `/api/study/plan-access`
 }
 
-export const saveStudyLesson = async (studyLessonInput: StudyLessonInput, options?: Parameters<typeof customFetch>[1]): Promise<StudyStats> => {
+export const getStudyPlanAccess = async ( options?: Parameters<typeof customFetch>[1]): Promise<StudyPlanAccess> => {
+
+  return customFetch<StudyPlanAccess>(getGetStudyPlanAccessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudyPlanAccessQueryKey = () => {
+    return [
+    `/api/study/plan-access`
+    ] as const;
+    }
+
+
+export const getGetStudyPlanAccessQueryOptions = <TData = Awaited<ReturnType<typeof getStudyPlanAccess>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyPlanAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudyPlanAccessQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudyPlanAccess>>> = ({ signal }) => getStudyPlanAccess({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudyPlanAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudyPlanAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getStudyPlanAccess>>>
+export type GetStudyPlanAccessQueryError = ErrorType<void>
+
+
+
+export function useGetStudyPlanAccess<TData = Awaited<ReturnType<typeof getStudyPlanAccess>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyPlanAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudyPlanAccessQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChooseStudyPlanUrl = () => {
+
+
+
+
+  return `/api/study/plan-access`
+}
+
+export const chooseStudyPlan = async (chooseStudyPlanInput: ChooseStudyPlanInput, options?: Parameters<typeof customFetch>[1]): Promise<StudyPlanAccess> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -219,7 +295,171 @@ export const saveStudyLesson = async (studyLessonInput: StudyLessonInput, option
     }
     return headers;
   };
-return customFetch<StudyStats>(getSaveStudyLessonUrl(),
+return customFetch<StudyPlanAccess>(getChooseStudyPlanUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(chooseStudyPlanInput)
+  }
+);}
+
+
+
+
+
+export const getChooseStudyPlanMutationKey = () => ['chooseStudyPlan'] as const;
+
+export const getChooseStudyPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chooseStudyPlan>>, TError,ChooseStudyPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof chooseStudyPlan>>, TError,ChooseStudyPlanMutationVariables, TContext> => {
+
+const mutationKey = getChooseStudyPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chooseStudyPlan>>, ChooseStudyPlanMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  chooseStudyPlan(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChooseStudyPlanMutationResult = NonNullable<Awaited<ReturnType<typeof chooseStudyPlan>>>
+    export type ChooseStudyPlanMutationBody = BodyType<ChooseStudyPlanInput>
+    export type ChooseStudyPlanMutationError = ErrorType<void>
+    export type ChooseStudyPlanMutationVariables = {data: BodyType<ChooseStudyPlanInput>}
+
+    export const useChooseStudyPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chooseStudyPlan>>, TError,ChooseStudyPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof chooseStudyPlan>>,
+        TError,
+        ChooseStudyPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChooseStudyPlanMutationOptions(options));
+    }
+
+export const getClaimStudyActivityUrl = () => {
+
+
+
+
+  return `/api/study/plan-access/claims`
+}
+
+export const claimStudyActivity = async (studyActivityClaimInput: StudyActivityClaimInput, options?: Parameters<typeof customFetch>[1]): Promise<StudyActivityClaimResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudyActivityClaimResult>(getClaimStudyActivityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(studyActivityClaimInput)
+  }
+);}
+
+
+
+
+
+export const getClaimStudyActivityMutationKey = () => ['claimStudyActivity'] as const;
+
+export const getClaimStudyActivityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimStudyActivity>>, TError,ClaimStudyActivityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimStudyActivity>>, TError,ClaimStudyActivityMutationVariables, TContext> => {
+
+const mutationKey = getClaimStudyActivityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimStudyActivity>>, ClaimStudyActivityMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  claimStudyActivity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimStudyActivityMutationResult = NonNullable<Awaited<ReturnType<typeof claimStudyActivity>>>
+    export type ClaimStudyActivityMutationBody = BodyType<StudyActivityClaimInput>
+    export type ClaimStudyActivityMutationError = ErrorType<void>
+    export type ClaimStudyActivityMutationVariables = {data: BodyType<StudyActivityClaimInput>}
+
+    export const useClaimStudyActivity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimStudyActivity>>, TError,ClaimStudyActivityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimStudyActivity>>,
+        TError,
+        ClaimStudyActivityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getClaimStudyActivityMutationOptions(options));
+    }
+
+export const getSaveStudyLessonUrl = () => {
+
+
+
+
+  return `/api/study/lessons`
+}
+
+export const saveStudyLesson = async (studyLessonInput: StudyLessonInput, options?: Parameters<typeof customFetch>[1]): Promise<StudyLessonResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudyLessonResult>(getSaveStudyLessonUrl(),
   {
     ...options,
     method: 'POST',
