@@ -4,11 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:study": "bash study-tests/run.sh",
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@types/express": "^5.0.6",
     "@types/node": "catalog:",
-    "tsx": "catalog:"
+    "@types/react": "~19.2.18",
+    "@types/react-test-renderer": "^19.3.0",
+    "@workspace/api-client-react": "workspace:*",
+    "@workspace/db": "workspace:*",
+    "express": "^5.2.1",
+    "react": "19.2.3",
+    "react-test-renderer": "19.2.3",
+    "tsx": "catalog:",
+    "vitest": "^5.0.5"
   }
 }

@@ -1,0 +1,75 @@
+import { afterAll, beforeAll, expect, test } from 'vitest';
+import { startServer } from './server';
+import { db, studyEvents, studyProgress } from '@workspace/db';
+import { emptyStats } from '../../artifacts/api-server/src/lib/study';
+
+let api: Awaited<ReturnType<typeof startServer>>;
+beforeAll(async () => { api = await startServer(); });
+afterAll(async () => { await api?.close(); });
+const lesson = (eventId: string, correct = 3) => ({
+  eventId: `integration-${eventId}`, correct, total: 5, completedAt: new Date().toISOString(),
+});
+const legacy = { ...emptyStats, xp: 40, correctAnswers: 4, answeredQuestions: 5,
+  lessonsCompleted: 1, masteredWords: 4, streak: 1, lastPracticeDate: new Date().toISOString().slice(0, 10) };
+
+test('concurrent devices serialize distinct lessons without losing increments', async () => {
+  const responses = await Promise.all(Array.from({ length: 16 }, (_, i) =>
+    api.request('concurrent', 'lessons', lesson(`device-${i}`, i % 5))));
+  expect(responses.map(r => r.status)).toEqual(Array(16).fill(200));
+  expect(await (await api.request('concurrent')).json()).toMatchObject({
+    lessonsCompleted: 16, answeredQuestions: 80, correctAnswers: 30, xp: 300, streak: 1,
+  });
+});
+
+test('lost acknowledgment and simultaneous retries apply an event exactly once', async () => {
+  const event = lesson('lost-ack');
+  expect((await api.request('retry', 'lessons', event)).status).toBe(200); // discard reply
+  const responses = await Promise.all(Array.from({ length: 8 }, () => api.request('retry', 'lessons', event)));
+  expect(responses.every(r => r.status === 200)).toBe(true);
+  expect(await (await api.request('retry')).json()).toMatchObject({ lessonsCompleted: 1, xp: 30 });
+  expect((await api.request('retry', 'lessons', { ...event, correct: 4 })).status).toBe(409);
+  // Event IDs are scoped to accounts, not globally.
+  expect((await api.request('other-account', 'lessons', event)).status).toBe(200);
+  const events = await db.select().from(studyEvents);
+  expect(events.filter(e => e.userId === 'retry')).toHaveLength(1);
+  expect(events.find(e => e.userId === 'retry')?.practiceDate).toBe(event.completedAt.slice(0, 10));
+});
+
+test('guest reads/writes and forged owner fields cannot touch account progress', async () => {
+  const before = await db.select().from(studyProgress);
+  expect((await api.request(null)).status).toBe(401);
+  expect((await api.request(null, 'lessons', lesson('guest'))).status).toBe(401);
+  expect((await api.request(null, 'import', { eventId: 'guest-import', stats: legacy })).status).toBe(401);
+  expect((await api.request('attacker', 'lessons', { ...lesson('forged'), userId: 'retry' })).status).toBe(400);
+  expect(await db.select().from(studyProgress)).toEqual(before);
+});
+
+test('conflicting legacy imports have one winner and cannot replace newer lessons', async () => {
+  const imports = [
+    { eventId: 'legacy-import-v1', stats: legacy },
+    { eventId: 'legacy-import-v1', stats: { ...legacy, xp: 20, correctAnswers: 2, masteredWords: 2 } },
+  ];
+  const results = await Promise.all(imports.map(data => api.request('legacy-race', 'import', data)));
+  expect(results.map(r => r.status).sort()).toEqual([200, 409]);
+  const winner = imports[results.findIndex(r => r.status === 200)];
+  expect(await (await api.request('legacy-race')).json()).toEqual(winner.stats);
+  expect((await api.request('legacy-race', 'import', winner)).status).toBe(200);
+  await api.request('legacy-race', 'lessons', lesson('new-work'));
+  expect((await api.request('legacy-race', 'import', { ...winner, eventId: 'integration-another-import' })).status).toBe(409);
+  expect(await (await api.request('legacy-race')).json()).toMatchObject({
+    lessonsCompleted: 2, xp: winner.stats.xp + 30,
+  });
+});
+
+test('import racing a new lesson preserves the lesson whichever wins the lock', async () => {
+  const [imported, saved] = await Promise.all([
+    api.request('mixed-race', 'import', { eventId: 'legacy-import-v1', stats: legacy }),
+    api.request('mixed-race', 'lessons', lesson('new-lesson')),
+  ]);
+  expect(saved.status).toBe(200);
+  expect([200, 409]).toContain(imported.status);
+  expect(await (await api.request('mixed-race')).json()).toMatchObject({
+    lessonsCompleted: imported.status === 200 ? 2 : 1,
+    xp: imported.status === 200 ? 70 : 30,
+  });
+});

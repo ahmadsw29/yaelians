@@ -2,3 +2,4 @@
 - [Live Expo updates](live-expo.md) — Create dependencies before routing to new screens; keep auth initialization visible.
 - [Study progress migration](study-sync.md) — Legacy snapshots need explicit import; automatic merges risk double-counting or losing newer work.
 - [Uploaded exam solutions](exam-solutions.md) — User wants us to solve uploaded questions; distinguish generated solutions from official keys.
+- [Study sync testing](study-testing.md) — Keep concurrency tests on isolated real PostgreSQL; identity adapters do not test authentication.
