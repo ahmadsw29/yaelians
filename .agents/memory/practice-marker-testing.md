@@ -1,9 +1,9 @@
 ---
-name: Practice marker test boundary
-description: Why progress-marker regression tests exercise shared pure logic instead of rendering the Expo screen in Vitest.
+name: Expo native component test boundary
+description: Why native React Native screens and components exercise behavior through shared pure helpers instead of Vitest rendering.
 ---
-Keep progress percentage, answer-selection, and mode-reset behavior in pure helpers consumed by the practice screen, and test those helpers directly in the scripts Vitest suite.
+Keep screen state transitions and animation decisions in pure helpers consumed by React Native components, and test those helpers directly in the scripts Vitest suite.
 
-**Why:** Importing the Expo practice screen into this Vitest setup fails while parsing React Native's Flow-based entry (`Unexpected token 'typeof'`), so a renderer test is not currently a reliable path.
+**Why:** Importing the Expo practice screen or mascot component into this Vitest setup can fail while parsing React Native's Flow-based entry (`Unexpected token 'typeof'`), so renderer tests are not currently a reliable path.
 
-**How to apply:** When extending progress-marker coverage, assert the same exported geometry and state-transition helpers used by the screen. Revisit a full-screen renderer only after the Vitest environment can transform React Native dependencies.
+**How to apply:** Test the same exported transition helpers used by the UI. Revisit component rendering only after Vitest can transform the relevant React Native dependencies.

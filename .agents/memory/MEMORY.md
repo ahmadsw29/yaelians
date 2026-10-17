@@ -4,4 +4,4 @@
 - [Offline outbox recovery](offline-outbox-recovery.md) — Archive the exact damaged queue before replacing it; recover only individually validated lessons after an explicit choice.
 - [Uploaded exam solutions](exam-solutions.md) — User wants us to solve uploaded questions; distinguish generated solutions from official keys.
 - [Study sync testing](study-testing.md) — Keep concurrency tests on isolated real PostgreSQL; identity adapters do not test authentication.
-- [Practice marker test boundary](practice-marker-testing.md) — Exercise progress and answer behavior through pure helpers; Vitest cannot directly parse the Expo screen's React Native Flow entry.
+- [Expo native component test boundary](practice-marker-testing.md) — Exercise UI state transitions through pure helpers when Vitest cannot parse React Native Flow imports.
