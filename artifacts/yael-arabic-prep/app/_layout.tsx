@@ -13,7 +13,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
@@ -21,6 +21,7 @@ import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ThemeProvider } from '@/hooks/useColors';
 import { StudyProvider } from '@/lib/StudyProvider';
 import { AccountDeletionProvider } from '@/lib/AccountDeletion';
+import { PlanAccessProvider, usePlanAccess } from '@/lib/PlanAccess';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -44,12 +45,14 @@ function StartupMessage() {
 
 function ReadyNavigation() {
   const { isLoaded } = useAuth();
-  return isLoaded ? <StudyProvider><RootLayoutNav /></StudyProvider> : <StartupMessage />;
+  return isLoaded ? <StudyProvider><PlanAccessProvider><RootLayoutNav /></PlanAccessProvider></StudyProvider> : <StartupMessage />;
 }
 
 function RootLayoutNav() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const { addListener } = useClerk();
+  const segments = useSegments();
+  const { ready: planReady, plan } = usePlanAccess();
   const previousUser = React.useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -65,8 +68,27 @@ function RootLayoutNav() {
     previousUser.current = nextUser;
   }), [addListener]);
 
+  const firstSegment = segments[0];
+  if (isLoaded) {
+    if (!isSignedIn && firstSegment !== 'welcome' && firstSegment !== '(auth)') {
+      return <Redirect href="/welcome" />;
+    }
+    if (isSignedIn && planReady && !plan && firstSegment !== 'plans') {
+      return <Redirect href="/plans" />;
+    }
+    if (isSignedIn && planReady && plan && firstSegment === 'exam') {
+      return <Redirect href="/plans?reason=premium-exam" />;
+    }
+    if (isSignedIn && planReady && plan && (firstSegment === 'welcome' || firstSegment === '(auth)' || !firstSegment)) {
+      return <Redirect href="/(tabs)" />;
+    }
+  }
+
   return (
     <Stack screenOptions={{ headerBackTitle: 'رجوع' }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="welcome" options={{ headerShown: false }} />
+      <Stack.Screen name="plans" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="exam" options={{ headerShown: false }} />

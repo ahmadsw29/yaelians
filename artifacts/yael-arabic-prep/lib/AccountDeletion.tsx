@@ -94,19 +94,19 @@ export function AccountDeletionProvider({ children }: { children: React.ReactNod
       const factors = verification.supportedSecondFactors ?? [];
       const totp = factors.find(f => f.strategy === 'totp');
       const phone = factors.find(f => f.strategy === 'phone_code');
-      if (totp) { setFactor('totp'); setHint('أدخلي رمز تطبيق المصادقة.'); }
+      if (totp) { setFactor('totp'); setHint('أدخل رمز تطبيق المصادقة.'); }
       else if (phone) {
         await session.prepareSecondFactorVerification({ strategy: 'phone_code', phoneNumberId: phone.phoneNumberId });
         setFactor('phone_code'); setHint(`أُرسل رمز إلى ${phone.safeIdentifier}`);
       } else if (factors.some(f => f.strategy === 'backup_code')) {
-        setFactor('backup_code'); setHint('أدخلي رمز استرداد المصادقة.');
+        setFactor('backup_code'); setHint('أدخل رمز استرداد المصادقة.');
       } else throw new Error('طريقة التحقق المطلوبة غير مدعومة هنا. لم يُحذف الحساب. تواصلي مع دعم التطبيق.');
     } else {
       const factors = verification.supportedFirstFactors ?? [];
       const email = factors.find(f => f.strategy === 'email_code');
       const phone = factors.find(f => f.strategy === 'phone_code');
       if (factors.some(f => f.strategy === 'password')) {
-        setFactor('password'); setHint('أدخلي كلمة المرور للتحقق من هويتك.');
+        setFactor('password'); setHint('أدخل كلمة المرور للتحقق من هويتك.');
       } else if (email) {
         await session.prepareFirstFactorVerification({ strategy: 'email_code', emailAddressId: email.emailAddressId });
         setFactor('email_code'); setHint(`أُرسل رمز إلى ${email.safeIdentifier}`);

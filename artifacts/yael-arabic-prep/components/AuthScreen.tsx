@@ -85,7 +85,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       setError('حسابك يحتاج إلى خطوة أمان إضافية غير مدعومة هنا. تواصل مع دعم التطبيق لإكمالها.');
       return;
     }
-    router.replace('/(tabs)/profile');
+    router.replace('/');
   };
   const finishSignIn = async () => {
     if (signIn.status === 'complete') {
@@ -175,10 +175,10 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     if (step === 'reset-code') check(await signIn.resetPasswordEmailCode.sendCode());
     setNotice('أُرسل رمز جديد. تحقّق أيضًا من البريد غير المرغوب فيه.');
   });
-  if (isSignedIn && !error) return <Redirect href="/(tabs)/profile" />;
+  if (isSignedIn && !error) return <Redirect href="/" />;
 
   const codeStep = ['signup-code', 'trust-code', 'totp', 'reset-code'].includes(step);
-  const title = codeStep ? 'تحقّقي من هويتك' : step === 'new-password' ? 'كلمة مرور جديدة' : step === 'requirements' ? 'لنُكمل حسابك' : reset ? 'نسيتِ كلمة المرور؟' : signup ? 'خطوتك الأولى نحو النجاح' : 'أهلًا بعودتك';
+  const title = codeStep ? 'تحقّق من هويتك' : step === 'new-password' ? 'كلمة مرور جديدة' : step === 'requirements' ? 'لنُكمل حسابك' : reset ? 'نسيت كلمة المرور؟' : signup ? 'خطوتك الأولى نحو النجاح' : 'أهلًا بعودتك';
   const canSubmit = codeStep ? code.trim().length >= 6 : step === 'new-password' ? !!password : step === 'requirements' ? true : !!email.trim() && (reset || (!!password && (!signup || !!name.trim())));
   return (
     <KeyboardAwareScrollViewCompat bottomOffset={40} style={{ flex: 1, backgroundColor: colors.background }}
@@ -216,7 +216,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       {step === 'form' && !reset && <>
         <Text style={[styles.or, { color: colors.mutedForeground }]}>أو</Text>
         <AuthButton testID="auth-google" secondary title="المتابعة مع Google" onPress={google} disabled={loading} />
-        {!signup && <AuthButton testID="auth-forgot-password" secondary title="نسيتِ كلمة المرور؟" onPress={() => router.push('/(auth)/forgot-password')} disabled={loading} />}
+        {!signup && <AuthButton testID="auth-forgot-password" secondary title="نسيت كلمة المرور؟" onPress={() => router.push('/(auth)/forgot-password')} disabled={loading} />}
         <Pressable accessibilityRole="button" testID="auth-switch-mode" disabled={loading} onPress={() => router.replace(signup ? '/(auth)/sign-in' : '/(auth)/sign-up')}>
           <Text style={[styles.link, { color: colors.primary }]}>{signup ? 'لديك حساب؟ سجّل الدخول' : 'جديد هنا؟ أنشئ حسابًا'}</Text>
         </Pressable>

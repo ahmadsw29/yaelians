@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/expo';
 import {
   Platform,
@@ -17,6 +17,7 @@ import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/s
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import PetTeacher, { PetTeacherReaction } from '@/components/PetTeacher';
+import { usePlanAccess } from '@/lib/PlanAccess';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -24,10 +25,30 @@ const WORD_BANK = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
 
 export default function PracticeScreen() {
   const { user } = useUser();
-  return <PracticeSession key={user?.id ?? 'guest'} userId={user?.id} />;
+  const { ready, plan, isPremium, claimActivity } = usePlanAccess();
+  const router = useRouter();
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+
+  useEffect(() => {
+    let active = true;
+    if (!ready || !plan) return;
+    if (isPremium) { setAccess('allowed'); return; }
+    void claimActivity('vocabulary').then(allowed => {
+      if (!active) return;
+      if (allowed) setAccess('allowed');
+      else {
+        setAccess('blocked');
+        router.replace('/plans?reason=daily-vocabulary-limit');
+      }
+    }).catch(() => { if (active) setAccess('blocked'); });
+    return () => { active = false; };
+  }, [claimActivity, isPremium, plan, ready, router]);
+
+  if (!ready || !plan || access !== 'allowed') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>{access === 'blocked' ? 'افتح الخطط لمتابعة التعلّم.' : 'جارٍ تجهيز التدريب…'}</Text></View>;
+  return <PracticeSession key={user?.id ?? 'guest'} userId={user?.id} isPremium={isPremium} />;
 }
 
-function PracticeSession({ userId }: { userId?: string }) {
+function PracticeSession({ userId, isPremium }: { userId?: string; isPremium: boolean }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -124,10 +145,11 @@ function PracticeSession({ userId }: { userId?: string }) {
         <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>
         {saved ? (
           <>
-          {mode === 'words' && <Pressable onPress={continuePractice} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="continue-vocabulary">
+          {mode === 'words' && isPremium && <Pressable onPress={continuePractice} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="continue-vocabulary">
             <Text style={styles.continueButtonText}>واصل التدريب بجولة جديدة</Text>
             <Ionicons name="refresh" size={18} color={c.primary} />
           </Pressable>}
+          {mode === 'words' && !isPremium && <Text style={{ color: c.mutedForeground, textAlign: 'center', lineHeight: 22, paddingHorizontal: 12 }}>أنهيت جولتك المجانية اليوم. عُد غدًا لجولة جديدة، أو اطّلع على الخطة الكاملة.</Text>}
           <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
             <Text style={styles.finishButtonText}>العودة للرئيسية</Text>
             <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
@@ -141,7 +163,7 @@ function PracticeSession({ userId }: { userId?: string }) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <StudySyncStatus />
-      <Pressable testID="open-exam" accessibilityRole="button" onPress={() => router.push('/exam')} style={{ padding: 16, borderRadius: 18, backgroundColor: c.primary, marginBottom: 15 }}>
+      <Pressable testID="open-exam" accessibilityRole="button" onPress={() => router.push(isPremium ? '/exam' : '/plans?reason=premium-exam')} style={{ padding: 16, borderRadius: 18, backgroundColor: c.primary, marginBottom: 15 }}>
         <Text style={{ color: c.primaryForeground, fontWeight: '700', textAlign: 'right', fontSize: 16 }}>محاكاة YAEL كاملة</Text>
         <Text style={{ color: c.primaryForeground, textAlign: 'right', marginTop: 5 }}>٦٦ سؤالًا + كتابة · ٧٥ دقيقة</Text>
       </Pressable>
@@ -160,9 +182,9 @@ function PracticeSession({ userId }: { userId?: string }) {
       </View>
 
       <View style={styles.modeSwitch}>
-        <Pressable onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
+        {isPremium && <Pressable onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
           <Text style={[styles.modeText, mode === 'reading' && styles.modeTextActive]}>فهم المقروء</Text>
-        </Pressable>
+        </Pressable>}
         <Pressable onPress={() => changeMode('words')} style={[styles.modeButton, mode === 'words' && styles.modeButtonActive]}>
           <Text style={[styles.modeText, mode === 'words' && styles.modeTextActive]}>مفردات</Text>
         </Pressable>

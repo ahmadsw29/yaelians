@@ -25,7 +25,7 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }}
         />
-        <NativeTabs.Trigger.Label>تدرّبي</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>تدرّب</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="progress">
         <NativeTabs.Trigger.Icon
@@ -95,7 +95,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="practice"
         options={{
-          title: 'تدرّبي',
+          title: 'تدرّب',
           tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} />,
         }}
       />

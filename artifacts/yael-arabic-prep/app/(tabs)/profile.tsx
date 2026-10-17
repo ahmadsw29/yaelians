@@ -11,6 +11,7 @@ import { AuthButton, AuthField, authError } from '@/components/AuthScreen';
 import { getProfileNames } from '@/lib/profile';
 import { useAccountDeletion } from '@/lib/AccountDeletion';
 import { useStudy } from '@/lib/StudyProvider';
+import { usePlanAccess } from '@/lib/PlanAccess';
 
 function ThemeSettings() {
   const colors = useColors();
@@ -37,6 +38,7 @@ function ThemeSettings() {
 function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>['user']> }) {
   const openDeletion = useAccountDeletion();
   const { pauseForDeletion } = useStudy();
+  const { plan, usage } = usePlanAccess();
   const colors = useColors();
   const { signOut } = useClerk();
   const profileNames = getProfileNames(user);
@@ -106,6 +108,15 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
     {!!error && <Text accessibilityRole="alert" style={[styles.feedback, { color: colors.destructive }]}>{error}</Text>}
     {!!message && <Text accessibilityLiveRegion="polite" style={[styles.feedback, { color: colors.primary }]}>{message}</Text>}
     {busy && <ActivityIndicator color={colors.primary} />}
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>خطتك</Text>
+      <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+        {plan === 'free'
+          ? `مجانية · المفردات اليوم: ${usage.vocabularyRounds}/1 · جلسات الوقت اليوم: ${usage.timedSections}/1`
+          : 'اختر خطة للبدء بالدراسة.'}
+      </Text>
+      <AuthButton testID="profile-manage-plan" title="عرض الخطط" secondary onPress={() => router.push('/plans')} />
+    </View>
     <AuthButton testID="profile-save" title={saving ? 'جارٍ الحفظ…' : 'حفظ التغييرات'} onPress={() => void save()} disabled={busy || !firstName.trim()} />
     <ThemeSettings />
     <AuthButton testID="profile-logout" title={loggingOut ? 'جارٍ تسجيل الخروج…' : 'تسجيل الخروج'} onPress={() => void logout()} disabled={busy} secondary />
@@ -131,7 +142,7 @@ export default function Profile() {
       <View style={[styles.hero, { backgroundColor: colors.secondary }]}>
         <CartoonAvatar size={126} />
         <Text style={[styles.heroName, { color: colors.foreground }]}>مساحتك الخاصة للتعلّم</Text>
-        <Text style={[styles.description, { color: colors.secondaryForeground }]}>سجّل الدخول لحفظ ملفك، واختر شخصية كرتونية تعبّر عنك. يمكنك استكشاف الرئيسية دون حساب.</Text>
+        <Text style={[styles.description, { color: colors.secondaryForeground }]}>سجّل الدخول لحفظ ملفك، واختر شخصية كرتونية تعبّر عنك.</Text>
       </View>
       <AuthButton testID="profile-sign-in" title="تسجيل الدخول" onPress={() => router.push('/(auth)/sign-in')} />
       <AuthButton testID="profile-sign-up" secondary title="إنشاء حساب جديد" onPress={() => router.push('/(auth)/sign-up')} />

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import PetTeacher from '@/components/PetTeacher';
 import { useColors } from '@/hooks/useColors';
+import { usePlanAccess } from '@/lib/PlanAccess';
 import { IMPORTED_EXAMS } from '@/lib/solved-exams';
 import type { ImportedExam } from '@/lib/solved-exams';
 import {
@@ -22,7 +23,9 @@ function one(v: string | string[] | undefined) { return Array.isArray(v) ? v[0] 
 
 export default function SourceSessionScreen() {
   const { user, isLoaded } = useUser();
+  const { ready: accessReady, plan, isPremium, claimActivity } = usePlanAccess();
   const c = useColors();
+  const router = useRouter();
   const params = useLocalSearchParams<{ exam?: string; mode?: string; section?: string }>();
   const examId = one(params.exam);
   const mode = one(params.mode);
@@ -35,8 +38,32 @@ export default function SourceSessionScreen() {
   else if (mode === 'training' && (section === null || section >= exam.sections.length)) problem = 'رقم القسم غير صالح لهذا النموذج.';
   else if (exam.sections.length === 0 || exam.sections.some(s => s.length === 0)) problem = 'محتوى هذا النموذج غير مكتمل.';
 
-  if (!isLoaded) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+  useEffect(() => {
+    let active = true;
+    if (!isLoaded || !accessReady || problem || !exam || !plan) return;
+    if (isPremium) { setAccess('allowed'); return; }
+    if (exam.id !== 'b17' || mode !== 'training') {
+      setAccess('blocked');
+      router.replace('/plans?reason=premium-exam');
+      return;
+    }
+    void claimActivity('timed-section', `${exam.id}:${section}`).then(allowed => {
+      if (!active) return;
+      if (allowed) setAccess('allowed');
+      else {
+        setAccess('blocked');
+        router.replace('/plans?reason=daily-timed-limit');
+      }
+    }).catch(() => {
+      if (active) setAccess('blocked');
+    });
+    return () => { active = false; };
+  }, [accessReady, claimActivity, exam, isLoaded, isPremium, mode, plan, problem, router, section]);
+
+  if (!isLoaded || !accessReady || access === 'checking') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   if (problem || !exam) return <InvalidScreen message={problem} />;
+  if (!plan || access !== 'allowed') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   const m = mode as SourceMode;
   const sec = m === 'training' ? section : null;
   return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}`} userId={user?.id} exam={exam} mode={m} section={sec} />;

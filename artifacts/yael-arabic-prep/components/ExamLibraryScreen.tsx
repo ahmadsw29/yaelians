@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PetTeacher from '@/components/PetTeacher';
 import { useColors } from '@/hooks/useColors';
 import { IMPORTED_EXAMS } from '@/lib/solved-exams';
+import { usePlanAccess } from '@/lib/PlanAccess';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -14,9 +15,10 @@ export default function ExamLibraryScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isPremium } = usePlanAccess();
   const s = makeStyles(c);
   const [open, setOpen] = useState<string | null>(null);
-  const exams = Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : [];
+  const exams = (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).filter(exam => isPremium || exam.id === 'b17');
 
   return (
     <View style={s.screen}>
@@ -28,7 +30,7 @@ export default function ExamLibraryScreen() {
         <Text style={[s.title, { flex: 1 }]}>مكتبة نماذج التدريب</Text>
       </View>
       <ScrollView contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
-        <Text style={s.eyebrow}>{exams.length} نموذجًا مرفوعًا • ورقي</Text>
+        <Text style={s.eyebrow}>{isPremium ? exams.length : 'نموذج مجاني واحد'} • نماذج تدريب</Text>
         <Text style={s.hero}>اختر نموذجًا،{'\n'}وابدأ بإيقاعك.</Text>
         <View style={s.notice}>
           <Text style={s.label}>نماذجك، بطريقتين للتدرّب</Text>
