@@ -115,6 +115,25 @@ export const QUESTIONS: Question[] = [
   },
 ];
 
+// Useful vocabulary collected from the learner's uploaded YAEL booklets.
+export const YAEL_VOCABULARY_QUESTIONS: Question[] = [
+  { word: 'להודות', transliteration: 'lehodot', meaning: 'أن يعترف', prompt: 'ماذا تعني الكلمة؟', options: ['أن يعتذر', 'أن يعترف', 'أن يتأخر', 'أن يشرح'], correctAnswer: 'أن يعترف', sentence: 'הוא לא העז להודות בטעות.' },
+  { word: 'ללוות', transliteration: 'lilvot', meaning: 'أن يستعير / يقترض', prompt: 'اختر المعنى الصحيح:', options: ['أن يبيع', 'أن يوفّر', 'أن يستعير / يقترض', 'أن يشتري'], correctAnswer: 'أن يستعير / يقترض', sentence: 'רוכשי דירות רבים נאלצים ללוות כסף מהבנק.' },
+  { word: 'נאלץ', transliteration: 'neelats', meaning: 'اضطرّ', prompt: 'ما معنى الكلمة؟', options: ['اختار', 'اضطرّ', 'استطاع', 'توقّع'], correctAnswer: 'اضطرّ', sentence: 'מרבית רוכשי הדירות נאלצים ללוות כסף.' },
+  { word: 'להימנע', transliteration: 'lehimana', meaning: 'أن يتجنّب', prompt: 'ما المعنى الأقرب؟', options: ['أن يواجه', 'أن يجرّب', 'أن يتجنّب', 'أن يطلب'], correctAnswer: 'أن يتجنّب', sentence: 'מכבי האש ביקשו להימנע מהדלקת מדורות.' },
+  { word: 'למנוע', transliteration: 'limnoa', meaning: 'أن يمنع', prompt: 'اختر الترجمة الصحيحة:', options: ['أن يمنع', 'أن يطوّر', 'أن يصف', 'أن يعلن'], correctAnswer: 'أن يمنع', sentence: 'כדי למנוע שרפות, התושבים התבקשו להיזהר.' },
+  { word: 'להשקיע', transliteration: 'lehashkia', meaning: 'أن يستثمر', prompt: 'ماذا تعني الكلمة؟', options: ['أن يخسر', 'أن يستثمر', 'أن يقترض', 'أن يحسب'], correctAnswer: 'أن يستثمر', sentence: 'חשוב להשקיע ביצירת תנאי עבודה בטוחים.' },
+  { word: 'רווח', transliteration: 'revach', meaning: 'ربح', prompt: 'ما معنى الكلمة؟', options: ['دين', 'خسارة', 'ربح', 'ثمن'], correctAnswer: 'ربح', sentence: 'בעלי מפעלים רוצים להגדיל את רווחיהם.' },
+  { word: 'פיקוח', transliteration: 'pikuach', meaning: 'رقابة / إشراف', prompt: 'اختر المعنى الصحيح:', options: ['تعاون', 'رقابة / إشراف', 'منافسة', 'تجارة'], correctAnswer: 'رقابة / إشراف', sentence: 'פיקוח ממשלתי יכול להגן על העובדים.' },
+  { word: 'להגביל', transliteration: 'lehagbil', meaning: 'أن يقيّد / يحدّ', prompt: 'ما المعنى الأقرب؟', options: ['أن يوسّع', 'أن يقيّد / يحدّ', 'أن يسمح', 'أن يحرّر'], correctAnswer: 'أن يقيّد / يحدّ', sentence: 'הממשלה יכולה להגביל את כמות הגזים המזהמים.' },
+  { word: 'סכנה', transliteration: 'sakana', meaning: 'خطر', prompt: 'ماذا تعني الكلمة؟', options: ['عناية', 'خطر', 'نجاح', 'اقتراح'], correctAnswer: 'خطر', sentence: 'בימים חמים במיוחד סכנת השרפות גדלה.' },
+  { word: 'לבטל', transliteration: 'levatel', meaning: 'أن يلغي', prompt: 'اختر الترجمة الصحيحة:', options: ['أن يؤكّد', 'أن يلغي', 'أن يضيف', 'أن يتابع'], correctAnswer: 'أن يلغي', sentence: 'התושבים דרשו לבטל את התקנות.' },
+  { word: 'פגיעה', transliteration: 'pgia', meaning: 'ضرر / أذى', prompt: 'ما معنى الكلمة؟', options: ['ضرر / أذى', 'فائدة', 'تغيير', 'موافقة'], correctAnswer: 'ضرر / أذى', sentence: 'פיקוח יכול לצמצם את הפגיעה באיכות הסביבה.' },
+  { word: 'מורכב', transliteration: 'murkav', meaning: 'معقّد', prompt: 'ما المعنى الأقرب؟', options: ['ناجح', 'بسيط', 'معقّد', 'مؤقّت'], correctAnswer: 'معقّد', sentence: 'תהליך הייצור של המוצרים מורכב.' },
+  { word: 'הפרדה', transliteration: 'hafrada', meaning: 'فصل / تمييز', prompt: 'ماذا تعني الكلمة؟', options: ['مساواة', 'فصل / تمييز', 'موافقة', 'مصالحة'], correctAnswer: 'فصل / تمييز', sentence: 'פארקס נאבקה בהפרדה הגזעית.' },
+  { word: 'חרם', transliteration: 'cherem', meaning: 'مقاطعة', prompt: 'اختر المعنى الصحيح:', options: ['مظاهرة', 'مقابلة', 'مقاطعة', 'احتفال'], correctAnswer: 'مقاطعة', sentence: 'התושבים הכריזו חרם על חברות האוטובוסים.' },
+];
+
 export type ReadingQuestion = {
   passage: string;
   prompt: string;

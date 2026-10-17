@@ -71,7 +71,7 @@ export default function HomeScreen() {
             <Text style={styles.lessonTagText}>درس اليوم · ٥ دقائق</Text>
           </View>
           <Text style={styles.heroTitle}>كلمات تفتح{"\n"}لك المعنى</Text>
-          <Text style={styles.heroSub}>تدرّبي على مفردات تظهر كثيرًا في امتحان YAEL</Text>
+        <Text style={styles.heroSub}>تدرّب على ٢٠ مفردة من نماذج YAEL · أكثر من ٥ دقائق</Text>
           <View style={styles.startButton}>
             <Text style={styles.startButtonText}>يلا نبدأ</Text>
             <Ionicons name="arrow-back" size={18} color="#fffdf8" />
@@ -92,11 +92,11 @@ export default function HomeScreen() {
         <Text style={styles.sectionCaption}>كل تدريب يقرّبك من هدفك</Text>
       </View>
       <View style={styles.pathCard}>
-        <PathItem icon="text-box-check-outline" label="مفردات" detail="اختاري المعنى الصحيح" color="#dff0e8" iconColor="#17665c" />
+        <PathItem icon="text-box-check-outline" label="مفردات" detail="اختر المعنى الصحيح" color="#dff0e8" iconColor="#17665c" />
         <View style={styles.pathConnector} />
-        <PathItem icon="book-open-variant" label="فهم المقروء" detail="اقرئي واكتشفي الفكرة" color="#fae8d9" iconColor="#c86f48" />
+        <PathItem icon="book-open-variant" label="فهم المقروء" detail="اقرأ واكتشف الفكرة" color="#fae8d9" iconColor="#c86f48" />
         <View style={styles.pathConnector} />
-        <PathItem icon="trophy-outline" label="علامة أعلى" detail="تدرّبي بثقة وهدوء" color="#ece6f6" iconColor="#7860a5" />
+        <PathItem icon="trophy-outline" label="علامة أعلى" detail="تدرّب بثقة وهدوء" color="#ece6f6" iconColor="#7860a5" />
       </View>
 
       <View style={styles.sectionHeading}>
@@ -108,17 +108,17 @@ export default function HomeScreen() {
       <View style={styles.statsRow}>
         <StatCard icon="star" value={loading ? '—' : `${stats.xp}`} label="نقطة خبرة" color="#d78a34" />
         <StatCard icon="checkmark-circle" value={loading ? '—' : `${accuracy}%`} label="إجابات صحيحة" color="#418879" />
-        <StatCard icon="book" value={loading ? '—' : `${stats.masteredWords}`} label="كلمة تعلّمتِها" color="#a46fbd" />
+        <StatCard icon="book" value={loading ? '—' : `${stats.masteredWords}`} label="كلمة تعلّمتها" color="#a46fbd" />
       </View>
 
       <View style={styles.tipCard}>
         <View style={styles.tipIcon}><Ionicons name="bulb-outline" size={20} color="#a65c42" /></View>
         <View style={styles.tipCopy}>
           <Text style={styles.tipTitle}>نصيحة اليوم</Text>
-          <Text style={styles.tipBody}>انظري إلى الكلمات المحيطة بالكلمة الجديدة — غالبًا ستساعدك على فهم معناها.</Text>
+          <Text style={styles.tipBody}>انظر إلى الكلمات المحيطة بالكلمة الجديدة — غالبًا ستساعدك على فهم معناها.</Text>
         </View>
       </View>
-      <Text style={styles.footer}>تعلّمي على مهلك. أنتِ قادرة.</Text>
+      <Text style={styles.footer}>تعلّم على مهلك، وأنت قادر على التقدّم.</Text>
     </ScrollView>
   );
 }

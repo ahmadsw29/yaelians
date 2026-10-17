@@ -29,7 +29,7 @@ export default function ProgressScreen() {
       <View style={styles.heading}>
         <Text style={styles.kicker}>كل خطوة محسوبة</Text>
         <Text style={styles.title}>تقدّمك</Text>
-        <Text style={styles.subtitle}>شوفي كيف عم تكبري بالعبرية يومًا بعد يوم.</Text>
+        <Text style={styles.subtitle}>تابع تقدّمك في العبرية يومًا بعد يوم.</Text>
       </View>
 
       <View style={styles.summary}>
@@ -41,13 +41,13 @@ export default function ProgressScreen() {
           </View>
         </View>
         <View style={styles.progressLine}><View style={[styles.progressLineFill, { width: `${Math.min((stats.xp % 100) || (stats.xp ? 100 : 5), 100)}%` }]} /></View>
-        <Text style={styles.nextGoal}>{stats.xp ? `بعد ${100 - (stats.xp % 100 || 0)} نقطة تفتحي مستوى جديد` : 'ابدئي أول درس واجمعي نقاطك'}</Text>
+        <Text style={styles.nextGoal}>{stats.xp ? `بعد ${100 - (stats.xp % 100 || 0)} نقطة تفتح مستوى جديد` : 'ابدأ أول درس واجمع نقاطك'}</Text>
       </View>
 
       <View style={styles.statGrid}>
         <Metric icon="flame" value={`${stats.streak}`} unit="أيام" label="سلسلة التعلّم" tint="#fce8d7" color="#c86f48" />
         <Metric icon="checkmark-circle" value={`${accuracy}%`} unit="" label="دقّة الإجابات" tint="#e0eee3" color="#438273" />
-        <Metric icon="book" value={`${stats.masteredWords}`} unit="" label="كلمات تعلّمتِها" tint="#ebe4f4" color="#8261a0" />
+        <Metric icon="book" value={`${stats.masteredWords}`} unit="" label="كلمات تعلّمتها" tint="#ebe4f4" color="#8261a0" />
         <Metric icon="albums" value={`${stats.lessonsCompleted}`} unit="" label="دروس مكتملة" tint="#e2ebf5" color="#5d7e9b" />
       </View>
 
@@ -75,7 +75,7 @@ export default function ProgressScreen() {
       </View>
 
       <View style={styles.encourage}>
-        <Text style={styles.encourageTitle}>{stats.lessonsCompleted ? 'كمّلي، أنتِ على الطريق!' : 'ابدئي رحلتك اليوم'}</Text>
+        <Text style={styles.encourageTitle}>{stats.lessonsCompleted ? 'واصل، أنت على الطريق!' : 'ابدأ رحلتك اليوم'}</Text>
         <Text style={styles.encourageText}>{stats.lessonsCompleted ? 'التقدّم الحقيقي يجي من خطوات صغيرة ومستمرّة.' : 'أول درس قصير هو بداية ثقتك بامتحان YAEL.'}</Text>
       </View>
     </ScrollView>

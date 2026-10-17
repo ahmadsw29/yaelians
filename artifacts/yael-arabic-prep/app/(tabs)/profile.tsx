@@ -52,7 +52,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
     if (busy) return;
     setSaving(true); setMessage(''); setError('');
     try {
-      if (!firstName.trim()) throw new Error('أدخلي اسمك أولًا.');
+      if (!firstName.trim()) throw new Error('أدخل اسمك أولًا.');
       await user.update({
         unsafeMetadata: {
           ...user.unsafeMetadata,
@@ -84,7 +84,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
     </View>
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>شخصيتك، بطريقتك</Text>
-      <Text style={[styles.caption, { color: colors.mutedForeground }]}>اختاري تفاصيل شخصيتك الكرتونية الخاصة بالتطبيق.</Text>
+      <Text style={[styles.caption, { color: colors.mutedForeground }]}>اختر تفاصيل شخصيتك الكرتونية الخاصة بالتطبيق.</Text>
       {(Object.keys(labels) as (keyof AvatarConfig)[]).map(key => <View key={key} style={styles.optionGroup}>
         <Text style={[styles.optionLabel, { color: colors.foreground }]}>{labels[key]}</Text>
         <View style={styles.swatches}>
@@ -131,7 +131,7 @@ export default function Profile() {
       <View style={[styles.hero, { backgroundColor: colors.secondary }]}>
         <CartoonAvatar size={126} />
         <Text style={[styles.heroName, { color: colors.foreground }]}>مساحتك الخاصة للتعلّم</Text>
-        <Text style={[styles.description, { color: colors.secondaryForeground }]}>سجّلي الدخول لحفظ ملفك، واختاري شخصية كرتونية تعبّر عنك. يمكنكِ استكشاف الرئيسية دون حساب.</Text>
+        <Text style={[styles.description, { color: colors.secondaryForeground }]}>سجّل الدخول لحفظ ملفك، واختر شخصية كرتونية تعبّر عنك. يمكنك استكشاف الرئيسية دون حساب.</Text>
       </View>
       <AuthButton testID="profile-sign-in" title="تسجيل الدخول" onPress={() => router.push('/(auth)/sign-in')} />
       <AuthButton testID="profile-sign-up" secondary title="إنشاء حساب جديد" onPress={() => router.push('/(auth)/sign-up')} />

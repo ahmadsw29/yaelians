@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-import { QUESTIONS, READING_QUESTIONS } from '@/lib/study';
+import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/study';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import PetTeacher from '@/components/PetTeacher';
@@ -40,8 +40,10 @@ function PracticeSession({ userId }: { userId?: string }) {
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<'words' | 'reading'>('words');
+  const wordQuestions = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
+  const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
   const question = mode === 'words'
-    ? { ...QUESTIONS[index % QUESTIONS.length], passage: '' }
+    ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
     : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
   const isCorrect = choice === question.correctAnswer;
 
@@ -66,13 +68,13 @@ function PracticeSession({ userId }: { userId?: string }) {
   };
 
   const next = async () => {
-    if (index === 4) {
+    if (index === activeQuestions.length - 1) {
       if (saving.current || saved) return;
       saving.current = true;
       setComplete(true);
       setSaveError(false);
       try {
-        await save(correct);
+        await save(correct, activeQuestions.length);
         setSaved(true);
       } catch {
         setSaveError(true);
@@ -99,9 +101,9 @@ function PracticeSession({ userId }: { userId?: string }) {
         <View style={styles.completionIcon}>
           <Ionicons name="trophy" size={38} color="#bd7637" />
         </View>
-        <Text style={styles.completionEyebrow}>أحسنتِ! خلصتِ تدريب اليوم</Text>
+        <Text style={styles.completionEyebrow}>أحسنت! أنهيت تدريب اليوم</Text>
         <Text style={styles.completionTitle}>خطوة جديدة نحو{"\n"}هدفك</Text>
-        <Text style={styles.completionText}>أجبتِ عن {correct} من 5 أسئلة بشكل صحيح</Text>
+        <Text style={styles.completionText}>أجبت عن {correct} من {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length} أسئلة بشكل صحيح</Text>
         <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>
         {saved ? (
           <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
@@ -126,13 +128,12 @@ function PracticeSession({ userId }: { userId?: string }) {
           <Ionicons name="arrow-forward" size={21} color={c.foreground} />
         </Pressable>
         <View style={styles.headerCopy}>
-          <Text style={styles.headerLabel}>{mode === 'words' ? 'تدريب المفردات' : 'فهم المقروء'}</Text>
-          <Text style={styles.headerSub}>خذي وقتك، أنتِ تتعلّمين</Text>
+          <Text style={styles.headerLabel}>{mode === 'words' ? 'تدريب المفردات · ٢٠ كلمة' : 'فهم المقروء'}</Text>
         </View>
       </View>
       <View style={styles.progressRow}>
-        <Text style={styles.progressCount}>{index + 1} / ٥</Text>
-        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${((index + 1) / 5) * 100}%` }]} /></View>
+        <Text style={styles.progressCount}>{index + 1} / {activeQuestions.length}</Text>
+        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${((index + 1) / activeQuestions.length) * 100}%` }]} /></View>
       </View>
 
       <View style={styles.modeSwitch}>
@@ -158,11 +159,11 @@ function PracticeSession({ userId }: { userId?: string }) {
         </View>
       ) : (
         <View style={styles.readingCard}>
-          <View style={styles.wordTag}><Text style={styles.wordTagText}>اقرئي القطعة على مهلك</Text></View>
+          <View style={styles.wordTag}><Text style={styles.wordTagText}>اقرأ القطعة على مهلك</Text></View>
           <Text style={styles.readingHebrew} selectable>{question.passage}</Text>
           <View style={styles.readingHint}>
             <Ionicons name="eye-outline" size={16} color="#729187" />
-            <Text style={styles.readingHintText}>ابحثي عن الفكرة الأساسية</Text>
+            <Text style={styles.readingHintText}>ابحث عن الفكرة الأساسية</Text>
           </View>
         </View>
       )}
@@ -204,7 +205,7 @@ function PracticeSession({ userId }: { userId?: string }) {
         <View style={[styles.feedback, isCorrect ? styles.feedbackGood : styles.feedbackTry]}>
           <Ionicons name={isCorrect ? 'sparkles' : 'heart-outline'} size={19} color={isCorrect ? '#28755f' : '#b66a4f'} />
           <View style={styles.feedbackCopy}>
-            <Text style={[styles.feedbackTitle, { color: isCorrect ? '#28755f' : '#a85e45' }]}>{isCorrect ? 'إجابة رائعة!' : 'ولا يهمّك، بتتعلّمي!'}</Text>
+            <Text style={[styles.feedbackTitle, { color: isCorrect ? '#28755f' : '#a85e45' }]}>{isCorrect ? 'إجابة رائعة!' : 'لا بأس، ستتعلّم من الخطأ.'}</Text>
             {!isCorrect && <Text style={styles.feedbackSub}>المعنى الصحيح: {question.meaning}</Text>}
           </View>
         </View>
@@ -217,7 +218,7 @@ function PracticeSession({ userId }: { userId?: string }) {
         onPress={next}
         style={({ pressed }) => [styles.nextButton, !choice && styles.nextDisabled, pressed && choice && styles.pressed]}
       >
-        <Text style={styles.nextText}>{index === 4 ? 'إنهاء التدريب' : 'السؤال التالي'}</Text>
+        <Text style={styles.nextText}>{index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}</Text>
         <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
       </Pressable>
     </ScrollView>
@@ -232,7 +233,6 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     backButton: { width: 42, height: 42, borderRadius: 15, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.border },
     headerCopy: { flex: 1, alignItems: 'flex-end' },
     headerLabel: { color: c.foreground, fontFamily: BOLD, fontSize: 18 },
-    headerSub: { color: c.mutedForeground, fontFamily: FONT, fontSize: 12, marginTop: 3 },
     progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 18 },
     progressCount: { color: c.primary, fontSize: 12, fontFamily: BOLD },
     progressTrack: { flex: 1, height: 7, borderRadius: 4, backgroundColor: '#e6e7db', overflow: 'hidden' },

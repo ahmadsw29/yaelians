@@ -16,9 +16,9 @@ WebBrowser.maybeCompleteAuthSession();
 export function authError(error: unknown): string {
   if (error && typeof error === 'object') {
     const data = error as { errors?: { longMessage?: string; message?: string }[]; longMessage?: string; message?: string };
-    return data.errors?.[0]?.longMessage || data.errors?.[0]?.message || data.longMessage || data.message || 'تعذّر إتمام الطلب. حاولي مرة أخرى.';
+    return data.errors?.[0]?.longMessage || data.errors?.[0]?.message || data.longMessage || data.message || 'تعذّر إتمام الطلب. حاول مرة أخرى.';
   }
-  return 'تعذّر الاتصال. تحققي من الإنترنت وحاولي مرة أخرى.';
+  return 'تعذّر الاتصال. تحقّق من الإنترنت وحاول مرة أخرى.';
 }
 
 export function AuthField({ label, ...props }: TextInputProps & { label: string }) {
@@ -82,7 +82,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
   };
   const navigate = ({ session }: { session: { currentTask?: unknown } | null }) => {
     if (session?.currentTask) {
-      setError('حسابك يحتاج إلى خطوة أمان إضافية غير مدعومة هنا. تواصلي مع دعم التطبيق لإكمالها.');
+      setError('حسابك يحتاج إلى خطوة أمان إضافية غير مدعومة هنا. تواصل مع دعم التطبيق لإكمالها.');
       return;
     }
     router.replace('/(tabs)/profile');
@@ -96,12 +96,12 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       } else if (signIn.supportedSecondFactors.some(factor => factor.strategy === 'totp')) {
         setStep('totp');
       } else {
-        setError('حسابك يتطلب تحققًا أمنيًا غير مدعوم هنا. تواصلي مع دعم التطبيق؛ لم يتم تجاوز التحقق.');
+      setError('حسابك يتطلب تحققًا أمنيًا غير مدعوم هنا. تواصل مع دعم التطبيق؛ لم يتم تجاوز التحقق.');
       }
     } else if (signIn.status === 'needs_new_password') {
       setStep('new-password'); setPassword('');
     } else {
-      setError('لم يكتمل تسجيل الدخول. راجعي بياناتك وحاولي مجددًا.');
+      setError('لم يكتمل تسجيل الدخول. راجع بياناتك وحاول مجددًا.');
     }
   };
   const finishSignUp = async () => {
@@ -112,7 +112,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     } else if (signUp.unverifiedFields.includes('email_address')) {
       check(await signUp.verifications.sendEmailCode()); setStep('signup-code');
     } else {
-      setError('لم يكتمل إنشاء الحساب. تواصلي مع دعم التطبيق لإكمال متطلبات الحساب.');
+      setError('لم يكتمل إنشاء الحساب. تواصل مع دعم التطبيق لإكمال متطلبات الحساب.');
     }
   };
   const submit = () => run(async () => {
@@ -130,7 +130,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     } else if (step === 'requirements') {
       const supported = ['first_name', 'last_name', 'username', 'legal_accepted'];
       if (signUp.missingFields.some(field => !supported.includes(field))) {
-        throw new Error('يتطلب الحساب حقولًا إضافية غير مدعومة هنا. تواصلي مع دعم التطبيق.');
+        throw new Error('يتطلب الحساب حقولًا إضافية غير مدعومة هنا. تواصل مع دعم التطبيق.');
       }
       check(await signUp.update({ ...extraFields, ...(signUp.missingFields.includes('legal_accepted') ? { legalAccepted } : {}) }));
       await finishSignUp();
@@ -166,14 +166,14 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     } else if (response.signIn?.status === 'needs_second_factor' || response.signIn?.status === 'needs_client_trust') {
       await finishSignIn();
     } else if (response.authSessionResult?.type !== 'cancel' && response.authSessionResult?.type !== 'dismiss') {
-      setError('لم يكتمل الدخول عبر Google. حاولي مجددًا أو استخدمي البريد الإلكتروني.');
+      setError('لم يكتمل الدخول عبر Google. حاول مجددًا أو استخدم البريد الإلكتروني.');
     }
   });
   const resend = () => run(async () => {
     if (step === 'signup-code') check(await signUp.verifications.sendEmailCode());
     if (step === 'trust-code') check(await signIn.mfa.sendEmailCode());
     if (step === 'reset-code') check(await signIn.resetPasswordEmailCode.sendCode());
-    setNotice('أُرسل رمز جديد. تحققي أيضًا من البريد غير المرغوب فيه.');
+    setNotice('أُرسل رمز جديد. تحقّق أيضًا من البريد غير المرغوب فيه.');
   });
   if (isSignedIn && !error) return <Redirect href="/(tabs)/profile" />;
 
@@ -190,7 +190,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       <View style={styles.hero}><CartoonAvatar size={88} />
         <Text style={[styles.brand, { color: colors.primary }]}>يَاعيل · رحلتك تبدأ هنا</Text>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{codeStep ? (step === 'totp' ? 'أدخلي الرمز من تطبيق المصادقة.' : 'أدخلي الرمز المرسل إلى بريدك الإلكتروني.') : 'حسابك الخاص، تقدّمك، وشخصيتك الكرتونية.'}</Text>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{codeStep ? (step === 'totp' ? 'أدخل الرمز من تطبيق المصادقة.' : 'أدخل الرمز المرسل إلى بريدك الإلكتروني.') : 'حسابك الخاص، تقدّمك، وشخصيتك الكرتونية.'}</Text>
       </View>
       {step === 'form' && <>
         {signup && <AuthField testID="signup-name" label="اسمك" value={name} onChangeText={setName} autoCapitalize="words" textAlign="right" autoComplete="given-name" />}
@@ -218,7 +218,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
         <AuthButton testID="auth-google" secondary title="المتابعة مع Google" onPress={google} disabled={loading} />
         {!signup && <AuthButton testID="auth-forgot-password" secondary title="نسيتِ كلمة المرور؟" onPress={() => router.push('/(auth)/forgot-password')} disabled={loading} />}
         <Pressable accessibilityRole="button" testID="auth-switch-mode" disabled={loading} onPress={() => router.replace(signup ? '/(auth)/sign-in' : '/(auth)/sign-up')}>
-          <Text style={[styles.link, { color: colors.primary }]}>{signup ? 'لديكِ حساب؟ سجّلي الدخول' : 'جديدة هنا؟ أنشئي حسابًا'}</Text>
+          <Text style={[styles.link, { color: colors.primary }]}>{signup ? 'لديك حساب؟ سجّل الدخول' : 'جديد هنا؟ أنشئ حسابًا'}</Text>
         </Pressable>
       </>}
       {step !== 'form' && <AuthButton testID="auth-start-over" secondary title="البدء من جديد" disabled={loading} onPress={() => void run(async () => {
