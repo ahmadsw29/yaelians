@@ -1,0 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  font-family: Inter, sans-serif;
+  --yael-bg: #f7f4ed;
+  --yael-fg: #17332f;
+  --yael-card: #fffdf8;
+  --yael-primary: #17665c;
+  --yael-primary-fg: #ffffff;
+  --yael-secondary: #e8eee7;
+  --yael-secondary-fg: #244b43;
+  --yael-muted: #74817a;
+  --yael-border: #e8e3d8;
+  --yael-accent: #fae4d7;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
