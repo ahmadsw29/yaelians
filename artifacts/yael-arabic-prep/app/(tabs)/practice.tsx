@@ -79,6 +79,7 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
   const [correct, setCorrect] = useState(0);
+  const [celebrationKey, setCelebrationKey] = useState(0);
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<'words' | 'reading'>('words');
@@ -86,6 +87,8 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
   const [wordOrder, setWordOrder] = useState(() => WORD_BANK.map((_, i) => i));
   const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
   const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
+  const progressPercent = ((index + 1) / activeQuestions.length) * 100;
+  const mascotPosition = Math.max(6, Math.min(94, progressPercent));
   const question = mode === 'words'
     ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
     : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
@@ -96,6 +99,7 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
     setIndex(0);
     setChoice(null);
     setCorrect(0);
+    setCelebrationKey(0);
     setComplete(false);
     setSaved(false);
   };
@@ -105,6 +109,7 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
     setChoice(answer);
     if (answer === question.correctAnswer) {
       setCorrect((value) => value + 1);
+      setCelebrationKey((value) => value + 1);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -151,6 +156,7 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
     setIndex(0);
     setChoice(null);
     setCorrect(0);
+    setCelebrationKey(0);
     setComplete(false);
     setSaved(false);
     setSaveError(false);
@@ -199,7 +205,20 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
       </View>
       <View style={styles.progressRow}>
         <Text style={styles.progressCount}>{index + 1} / {activeQuestions.length}</Text>
-        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${((index + 1) / activeQuestions.length) * 100}%` }]} /></View>
+        <View
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={`التقدّم: السؤال ${index + 1} من ${activeQuestions.length}`}
+          accessibilityValue={{ min: 1, max: activeQuestions.length, now: index + 1 }}
+          style={styles.progressLine}
+        >
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+          </View>
+          <View style={[styles.progressMascot, { left: `${mascotPosition}%` }]}>
+            <PetTeacherReaction mood="happy" size={40} jumpKey={celebrationKey} testID="progress-mascot" />
+          </View>
+        </View>
       </View>
 
       <View style={styles.modeSwitch}>
@@ -262,7 +281,7 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
               {answerState !== 'default' && <View style={styles.answerReaction}>
                 {answerState === 'correct' && <Ionicons name="checkmark-circle" size={20} color="#28755f" />}
                 {answerState === 'wrong' && <Ionicons name="close-circle" size={20} color="#bb584b" />}
-                {selected && <PetTeacherReaction mood={answerState === 'correct' ? 'happy' : 'sad'} size={42} />}
+                {selected && <PetTeacherReaction mood={answerState === 'correct' ? 'happy' : 'sad'} size={42} jumpKey={answerState === 'correct' ? celebrationKey : 0} />}
               </View>}
               {answerState === 'default' && <View style={styles.optionDot}><Text style={styles.optionLetter}>{['أ', 'ب', 'ج', 'د'][optionIndex]}</Text></View>}
             </Pressable>
@@ -294,8 +313,10 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     headerLabel: { color: c.foreground, fontFamily: BOLD, fontSize: 18 },
     progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 18 },
     progressCount: { color: c.primary, fontSize: 12, fontFamily: BOLD },
-    progressTrack: { flex: 1, height: 7, borderRadius: 4, backgroundColor: '#e6e7db', overflow: 'hidden' },
+    progressLine: { flex: 1, height: 46, position: 'relative', justifyContent: 'center', overflow: 'visible' },
+    progressTrack: { position: 'absolute', left: 0, right: 0, bottom: 10, height: 7, borderRadius: 4, backgroundColor: '#e6e7db' },
     progressFill: { height: '100%', backgroundColor: '#e88c67', borderRadius: 4 },
+    progressMascot: { position: 'absolute', top: 0, width: 40, height: 40, transform: [{ translateX: -20 }] },
     modeSwitch: { flexDirection: 'row-reverse', backgroundColor: '#eeece4', borderRadius: 14, padding: 4, marginBottom: 14 },
     modeButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 11 },
     modeButtonActive: { backgroundColor: c.card },
