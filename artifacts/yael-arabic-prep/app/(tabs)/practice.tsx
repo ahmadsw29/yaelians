@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { QUESTIONS, READING_QUESTIONS, recordLesson } from '@/lib/study';
+import PetTeacher from '@/components/PetTeacher';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -96,6 +97,11 @@ function PracticeSession({ userId }: { userId?: string }) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Pressable testID="open-exam" accessibilityRole="button" onPress={() => router.push('/exam')} style={{ padding: 16, borderRadius: 18, backgroundColor: c.primary, marginBottom: 15 }}>
+        <Text style={{ color: c.primaryForeground, fontWeight: '700', textAlign: 'right', fontSize: 16 }}>محاكاة YAEL كاملة</Text>
+        <Text style={{ color: c.primaryForeground, textAlign: 'right', marginTop: 5 }}>٦٦ سؤالًا + كتابة · ٧٥ دقيقة</Text>
+      </Pressable>
+      <PetTeacher />
       <View style={styles.header}>
         <Pressable onPress={() => router.push('/')} accessibilityRole="button" style={styles.backButton}>
           <Ionicons name="arrow-forward" size={21} color={c.foreground} />

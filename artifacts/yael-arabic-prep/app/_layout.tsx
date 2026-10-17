@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
+import colors from '@/constants/colors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -13,7 +15,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { ClerkProvider, ClerkLoaded, useAuth, useClerk } from '@clerk/expo';
+import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ThemeProvider } from '@/hooks/useColors';
@@ -27,6 +29,21 @@ const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function StartupMessage() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, gap: 16, backgroundColor: colors.light.background }}>
+      <ActivityIndicator size="large" color={colors.light.primary} />
+      <Text style={{ color: colors.light.foreground, fontSize: 20, textAlign: 'center' }}>جارٍ تجهيز رحلتك مع كلمة…</Text>
+      <Text style={{ color: colors.light.mutedForeground, textAlign: 'center', lineHeight: 24 }}>قد يستغرق الاتصال الآمن بضع ثوانٍ. تأكّد من اتصالك بالإنترنت.</Text>
+    </View>
+  );
+}
+
+function ReadyNavigation() {
+  const { isLoaded } = useAuth();
+  return isLoaded ? <RootLayoutNav /> : <StartupMessage />;
+}
 
 function RootLayoutNav() {
   const { getToken } = useAuth();
@@ -50,6 +67,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: 'رجوع' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="exam" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -68,7 +86,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsLoaded && !fontError) return <StartupMessage />;
 
   return (
     <SafeAreaProvider>
@@ -78,9 +96,7 @@ export default function RootLayout() {
             <ErrorBoundary>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
-                  <ClerkLoaded>
-                    <RootLayoutNav />
-                  </ClerkLoaded>
+                  <ReadyNavigation />
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </ErrorBoundary>

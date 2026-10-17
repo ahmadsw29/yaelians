@@ -1,1 +1,2 @@
 - [Account and avatar decisions](accounts.md) — Custom cartoon avatars; tenant name-field restriction and verification caveat.
+- [Live Expo updates](live-expo.md) — Create dependencies before routing to new screens; keep auth initialization visible.

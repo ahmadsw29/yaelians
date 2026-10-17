@@ -5,11 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f7f4ed"
-    },
     "scheme": "yael-arabic-prep",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -20,6 +15,12 @@
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
+      ["expo-splash-screen", {
+        "image": "./assets/images/icon.png",
+        "imageWidth": 180,
+        "resizeMode": "contain",
+        "backgroundColor": "#f7f4ed"
+      }],
       "expo-router",
       "@clerk/expo",
       "expo-secure-store",
