@@ -19,6 +19,7 @@ import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ThemeProvider } from '@/hooks/useColors';
+import { StudyProvider } from '@/lib/StudyProvider';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -42,7 +43,7 @@ function StartupMessage() {
 
 function ReadyNavigation() {
   const { isLoaded } = useAuth();
-  return isLoaded ? <RootLayoutNav /> : <StartupMessage />;
+  return isLoaded ? <StudyProvider><RootLayoutNav /></StudyProvider> : <StartupMessage />;
 }
 
 function RootLayoutNav() {

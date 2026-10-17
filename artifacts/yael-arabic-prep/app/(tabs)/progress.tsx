@@ -1,11 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useUser } from '@clerk/expo';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-import { DEFAULT_STATS, readStudyStats, StudyStats } from '@/lib/study';
+import { useStudy } from '@/lib/StudyProvider';
+import { StudySyncStatus } from '@/components/StudySyncStatus';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -14,14 +15,8 @@ export default function ProgressScreen() {
   const { user } = useUser();
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const [stats, setStats] = useState<StudyStats>(DEFAULT_STATS);
-
-  useFocusEffect(useCallback(() => {
-    let active = true;
-    setStats(DEFAULT_STATS);
-    readStudyStats(user?.id).then((value) => { if (active) setStats(value); });
-    return () => { active = false; };
-  }, [user?.id]));
+  const { stats, refresh } = useStudy();
+  useFocusEffect(useCallback(() => { refresh(); }, [user?.id]));
 
   const accuracy = stats.answeredQuestions
     ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
@@ -30,6 +25,7 @@ export default function ProgressScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <StudySyncStatus />
       <View style={styles.heading}>
         <Text style={styles.kicker}>كل خطوة محسوبة</Text>
         <Text style={styles.title}>تقدّمك</Text>

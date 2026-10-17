@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useUser } from '@clerk/expo';
 import {
   Platform,
@@ -13,7 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-import { QUESTIONS, READING_QUESTIONS, recordLesson } from '@/lib/study';
+import { QUESTIONS, READING_QUESTIONS } from '@/lib/study';
+import { useStudy } from '@/lib/StudyProvider';
+import { StudySyncStatus } from '@/components/StudySyncStatus';
 import PetTeacher from '@/components/PetTeacher';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
@@ -25,6 +27,9 @@ export default function PracticeScreen() {
 }
 
 function PracticeSession({ userId }: { userId?: string }) {
+  const { save, loading } = useStudy();
+  const saving = useRef(false);
+  const [saveError, setSaveError] = useState(false);
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -62,9 +67,18 @@ function PracticeSession({ userId }: { userId?: string }) {
 
   const next = async () => {
     if (index === 4) {
+      if (saving.current || saved) return;
+      saving.current = true;
       setComplete(true);
-      await recordLesson(correct, 5, userId);
-      setSaved(true);
+      setSaveError(false);
+      try {
+        await save(correct);
+        setSaved(true);
+      } catch {
+        setSaveError(true);
+      } finally {
+        saving.current = false;
+      }
       return;
     }
     setIndex((value) => value + 1);
@@ -78,12 +92,16 @@ function PracticeSession({ userId }: { userId?: string }) {
   if (complete) {
     return (
       <View style={styles.completionScreen}>
+        <StudySyncStatus />
+        {saveError && <Pressable onPress={next} accessibilityRole="button">
+          <Text style={{ color: c.foreground }}>لم يُحفظ الدرس. اضغط لإعادة المحاولة قبل المغادرة.</Text>
+        </Pressable>}
         <View style={styles.completionIcon}>
           <Ionicons name="trophy" size={38} color="#bd7637" />
         </View>
         <Text style={styles.completionEyebrow}>أحسنتِ! خلصتِ تدريب اليوم</Text>
         <Text style={styles.completionTitle}>خطوة جديدة نحو{"\n"}هدفك</Text>
-        <Text style={styles.completionText}>أجبتِ عن {correct} من ٥ أسئلة بشكل صحيح</Text>
+        <Text style={styles.completionText}>أجبتِ عن {correct} من 5 أسئلة بشكل صحيح</Text>
         <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>
         {saved ? (
           <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
@@ -97,6 +115,7 @@ function PracticeSession({ userId }: { userId?: string }) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <StudySyncStatus />
       <Pressable testID="open-exam" accessibilityRole="button" onPress={() => router.push('/exam')} style={{ padding: 16, borderRadius: 18, backgroundColor: c.primary, marginBottom: 15 }}>
         <Text style={{ color: c.primaryForeground, fontWeight: '700', textAlign: 'right', fontSize: 16 }}>محاكاة YAEL كاملة</Text>
         <Text style={{ color: c.primaryForeground, textAlign: 'right', marginTop: 5 }}>٦٦ سؤالًا + كتابة · ٧٥ دقيقة</Text>
@@ -194,7 +213,7 @@ function PracticeSession({ userId }: { userId?: string }) {
       <Pressable
         accessibilityRole="button"
         testID="next-question"
-        disabled={!choice}
+        disabled={!choice || loading}
         onPress={next}
         style={({ pressed }) => [styles.nextButton, !choice && styles.nextDisabled, pressed && choice && styles.pressed]}
       >

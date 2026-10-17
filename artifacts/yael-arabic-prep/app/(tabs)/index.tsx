@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useUser } from '@clerk/expo';
 import {
   ActivityIndicator,
@@ -13,7 +13,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
-import { DEFAULT_STATS, readStudyStats, StudyStats } from '@/lib/study';
+import { useStudy } from '@/lib/StudyProvider';
+import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { getProfileNames } from '@/lib/profile';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
@@ -25,20 +26,8 @@ export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [stats, setStats] = useState<StudyStats>(DEFAULT_STATS);
-  const [loading, setLoading] = useState(true);
-
-  useFocusEffect(useCallback(() => {
-    let active = true;
-    setStats(DEFAULT_STATS);
-    readStudyStats(user?.id).then((value) => {
-      if (active) {
-        setStats(value);
-        setLoading(false);
-      }
-    });
-    return () => { active = false; };
-  }, [user?.id]));
+  const { stats, loading, refresh } = useStudy();
+  useFocusEffect(useCallback(() => { refresh(); }, [user?.id]));
 
   const styles = makeStyles(colors, insets.top);
   const accuracy = stats.answeredQuestions
@@ -51,6 +40,7 @@ export default function HomeScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      <StudySyncStatus />
       <View style={styles.topLine}>
         <View style={styles.brandMark}>
           <MaterialCommunityIcons name="book-open-page-variant" size={19} color={colors.primary} />
