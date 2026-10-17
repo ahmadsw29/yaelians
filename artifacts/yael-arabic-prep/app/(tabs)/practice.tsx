@@ -90,7 +90,6 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
   const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
   const progressPercent = ((index + 1) / activeQuestions.length) * 100;
-  const mascotPosition = Math.max(6, Math.min(94, progressPercent));
   const question = mode === 'words'
     ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
     : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
@@ -214,11 +213,13 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
           accessibilityValue={{ min: 1, max: activeQuestions.length, now: index + 1 }}
           style={styles.progressLine}
         >
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-          </View>
-          <View style={[styles.progressMascot, { left: `${mascotPosition}%` }]}>
-            <PetTeacherReaction mood="happy" size={40} jumpKey={celebrationKey} testID="progress-mascot" />
+          <View style={styles.progressRange}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            </View>
+            <View style={[styles.progressMascot, { left: `${progressPercent}%` }]}>
+              <PetTeacherReaction mood="happy" size={40} jumpKey={celebrationKey} testID="progress-mascot" />
+            </View>
           </View>
         </View>
       </View>
@@ -283,7 +284,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
               {answerState !== 'default' && <View style={styles.answerReaction}>
                 {answerState === 'correct' && <Ionicons name="checkmark-circle" size={20} color="#28755f" />}
                 {answerState === 'wrong' && <Ionicons name="close-circle" size={20} color="#bb584b" />}
-                {selected && <PetTeacherReaction mood={answerState === 'correct' ? 'happy' : 'sad'} size={42} jumpKey={answerState === 'correct' ? celebrationKey : 0} />}
+                {selected && <PetTeacherReaction mood={answerState === 'correct' ? 'happy' : 'sad'} size={42} />}
               </View>}
               {answerState === 'default' && <View style={styles.optionDot}><Text style={styles.optionLetter}>{['أ', 'ب', 'ج', 'د'][optionIndex]}</Text></View>}
             </Pressable>
@@ -316,6 +317,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 18 },
     progressCount: { color: c.primary, fontSize: 12, fontFamily: BOLD },
     progressLine: { flex: 1, height: 46, position: 'relative', justifyContent: 'center', overflow: 'visible' },
+    progressRange: { position: 'absolute', left: 20, right: 20, top: 0, bottom: 0 },
     progressTrack: { position: 'absolute', left: 0, right: 0, bottom: 10, height: 7, borderRadius: 4, backgroundColor: '#e6e7db' },
     progressFill: { height: '100%', backgroundColor: '#e88c67', borderRadius: 4 },
     progressMascot: { position: 'absolute', top: 0, width: 40, height: 40, transform: [{ translateX: -20 }] },
