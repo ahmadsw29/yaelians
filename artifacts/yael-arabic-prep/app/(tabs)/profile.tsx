@@ -11,7 +11,9 @@ import { AuthButton, AuthField, authError } from '@/components/AuthScreen';
 import { getProfileNames } from '@/lib/profile';
 import { useAccountDeletion } from '@/lib/AccountDeletion';
 import { useStudy } from '@/lib/StudyProvider';
+import { getStudyStatsDisplay } from '@/lib/study-stats-display';
 import { usePlanAccess } from '@/lib/PlanAccess';
+import { StudySyncStatus } from '@/components/StudySyncStatus';
 
 function ThemeSettings() {
   const colors = useColors();
@@ -37,7 +39,7 @@ function ThemeSettings() {
 
 function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>['user']> }) {
   const openDeletion = useAccountDeletion();
-  const { pauseForDeletion, stats, loading: statsLoading, refresh } = useStudy();
+  const { pauseForDeletion, stats, loading: statsLoading, statsUnavailable, refresh } = useStudy();
   const { plan, usage } = usePlanAccess();
   const colors = useColors();
   const { signOut } = useClerk();
@@ -52,9 +54,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
   const [error, setError] = useState<string>('');
   const busy = saving || loggingOut;
   useFocusEffect(useCallback(() => { refresh(); }, [user.id]));
-  const accuracy = stats.answeredQuestions
-    ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
-    : null;
+  const displayedStats = getStudyStatsDisplay(stats, statsLoading || statsUnavailable);
   const save = async () => {
     if (busy) return;
     setSaving(true); setMessage(''); setError('');
@@ -79,6 +79,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
   };
   const labels: Record<keyof AvatarConfig, string> = { skin: 'لون البشرة', hair: 'لون الشعر', clothes: 'لون الملابس', background: 'الخلفية', hairStyle: 'تسريحة الشعر' };
   return <>
+    <StudySyncStatus />
     <View style={[styles.heroCompact, { backgroundColor: colors.secondary }]}>
       <CartoonAvatar config={avatar} size={76} />
       <View style={styles.heroCopy}>
@@ -86,7 +87,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
         <Text style={[styles.caption, { color: colors.mutedForeground }]}>{user.primaryEmailAddress?.emailAddress}</Text>
         <View style={[styles.xpPill, { backgroundColor: colors.card }]}>
           <Ionicons name="sparkles" size={15} color={colors.primary} />
-          <Text style={[styles.xpText, { color: colors.foreground }]}>{statsLoading ? '—' : stats.xp} نقطة خبرة</Text>
+          <Text style={[styles.xpText, { color: colors.foreground }]}>{displayedStats.xp} نقطة خبرة</Text>
         </View>
       </View>
     </View>
@@ -101,10 +102,10 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
         </Pressable>
       </View>
       <View style={styles.statsGrid}>
-        <AccountMetric icon="flame" value={statsLoading ? '—' : `${stats.streak}`} unit="أيام" label="سلسلة التعلّم" colors={colors} />
-        <AccountMetric icon="checkmark-circle" value={statsLoading ? '—' : accuracy === null ? '—' : `${accuracy}%`} unit="" label="دقّة الإجابات" colors={colors} />
-        <AccountMetric icon="book" value={statsLoading ? '—' : `${stats.masteredWords}`} unit="" label="كلمات أتقنتها" colors={colors} />
-        <AccountMetric icon="albums" value={statsLoading ? '—' : `${stats.lessonsCompleted}`} unit="" label="دروس مكتملة" colors={colors} />
+        <AccountMetric icon="flame" value={displayedStats.streak} unit="أيام" label="سلسلة التعلّم" colors={colors} />
+        <AccountMetric icon="checkmark-circle" value={displayedStats.accuracy} unit="" label="دقّة الإجابات" colors={colors} />
+        <AccountMetric icon="book" value={displayedStats.masteredWords} unit="" label="كلمات أتقنتها" colors={colors} />
+        <AccountMetric icon="albums" value={displayedStats.lessonsCompleted} unit="" label="دروس مكتملة" colors={colors} />
       </View>
     </View>
 

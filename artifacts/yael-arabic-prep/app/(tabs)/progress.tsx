@@ -6,6 +6,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useStudy } from '@/lib/StudyProvider';
+import { getStudyStatsDisplay } from '@/lib/study-stats-display';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
@@ -15,12 +16,11 @@ export default function ProgressScreen() {
   const { user } = useUser();
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { stats, refresh } = useStudy();
+  const { stats, loading, statsUnavailable, refresh } = useStudy();
   useFocusEffect(useCallback(() => { refresh(); }, [user?.id]));
 
-  const accuracy = stats.answeredQuestions
-    ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
-    : 0;
+  const hiddenStats = loading || statsUnavailable;
+  const displayedStats = getStudyStatsDisplay(stats, hiddenStats);
   const styles = makeStyles(c, insets.top);
 
   return (
@@ -37,18 +37,18 @@ export default function ProgressScreen() {
           <View style={styles.summaryIcon}><Ionicons name="sparkles" size={19} color="#f2bd75" /></View>
           <View style={styles.summaryCopy}>
             <Text style={styles.summaryLabel}>رصيدك من الخبرة</Text>
-            <Text style={styles.summaryValue}>{stats.xp} <Text style={styles.xpSmall}>نقطة</Text></Text>
+            <Text style={styles.summaryValue}>{displayedStats.xp} <Text style={styles.xpSmall}>نقطة</Text></Text>
           </View>
         </View>
-        <View style={styles.progressLine}><View style={[styles.progressLineFill, { width: `${Math.min((stats.xp % 100) || (stats.xp ? 100 : 5), 100)}%` }]} /></View>
-        <Text style={styles.nextGoal}>{stats.xp ? `بعد ${100 - (stats.xp % 100 || 0)} نقطة تفتح مستوى جديد` : 'ابدأ أول درس واجمع نقاطك'}</Text>
+        <View style={styles.progressLine}><View style={[styles.progressLineFill, { width: hiddenStats ? '0%' : `${Math.min((stats.xp % 100) || (stats.xp ? 100 : 5), 100)}%` }]} /></View>
+        <Text style={styles.nextGoal}>{hiddenStats ? 'تعذّر تحميل التقدّم. أعد المحاولة للتحقق من الأرقام.' : stats.xp ? `بعد ${100 - (stats.xp % 100 || 0)} نقطة تفتح مستوى جديد` : 'ابدأ أول درس واجمع نقاطك'}</Text>
       </View>
 
       <View style={styles.statGrid}>
-        <Metric icon="flame" value={`${stats.streak}`} unit="أيام" label="سلسلة التعلّم" tint="#fce8d7" color="#c86f48" />
-        <Metric icon="checkmark-circle" value={`${accuracy}%`} unit="" label="دقّة الإجابات" tint="#e0eee3" color="#438273" />
-        <Metric icon="book" value={`${stats.masteredWords}`} unit="" label="كلمات تعلّمتها" tint="#ebe4f4" color="#8261a0" />
-        <Metric icon="albums" value={`${stats.lessonsCompleted}`} unit="" label="دروس مكتملة" tint="#e2ebf5" color="#5d7e9b" />
+        <Metric icon="flame" value={displayedStats.streak} unit="أيام" label="سلسلة التعلّم" tint="#fce8d7" color="#c86f48" />
+        <Metric icon="checkmark-circle" value={displayedStats.accuracy} unit="" label="دقّة الإجابات" tint="#e0eee3" color="#438273" />
+        <Metric icon="book" value={displayedStats.masteredWords} unit="" label="كلمات تعلّمتها" tint="#ebe4f4" color="#8261a0" />
+        <Metric icon="albums" value={displayedStats.lessonsCompleted} unit="" label="دروس مكتملة" tint="#e2ebf5" color="#5d7e9b" />
       </View>
 
       <Text style={styles.sectionTitle}>عاداتك الجميلة</Text>
@@ -57,7 +57,7 @@ export default function ProgressScreen() {
         <View style={styles.weekDays}>
           {['أ', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'].map((day, i) => {
             const today = new Date().getDay();
-            const practicedToday = stats.lastPracticeDate === new Date().toISOString().slice(0, 10);
+            const practicedToday = !hiddenStats && stats.lastPracticeDate === new Date().toISOString().slice(0, 10);
             const active = i === today && practicedToday;
             return (
             <View key={`${day}-${i}`} style={styles.dayColumn}>
@@ -75,8 +75,8 @@ export default function ProgressScreen() {
       </View>
 
       <View style={styles.encourage}>
-        <Text style={styles.encourageTitle}>{stats.lessonsCompleted ? 'واصل، أنت على الطريق!' : 'ابدأ رحلتك اليوم'}</Text>
-        <Text style={styles.encourageText}>{stats.lessonsCompleted ? 'التقدّم الحقيقي يجي من خطوات صغيرة ومستمرّة.' : 'أول درس قصير هو بداية ثقتك بامتحان YAEL.'}</Text>
+        <Text style={styles.encourageTitle}>{hiddenStats ? 'إحصاءاتك غير متاحة الآن' : stats.lessonsCompleted ? 'واصل، أنت على الطريق!' : 'ابدأ رحلتك اليوم'}</Text>
+        <Text style={styles.encourageText}>{hiddenStats ? 'أعد المحاولة لعرض آخر تقدّم محفوظ.' : stats.lessonsCompleted ? 'التقدّم الحقيقي يجي من خطوات صغيرة ومستمرّة.' : 'أول درس قصير هو بداية ثقتك بامتحان YAEL.'}</Text>
       </View>
     </ScrollView>
   );

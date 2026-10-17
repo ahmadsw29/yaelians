@@ -7,6 +7,11 @@ import { StudyProvider, useStudy } from '../../artifacts/yael-arabic-prep/lib/St
 import { StudySyncStatus } from '../../artifacts/yael-arabic-prep/components/StudySyncStatus';
 import { finishLocalDeletion } from '../../artifacts/yael-arabic-prep/lib/deletionStorage';
 import { DEFAULT_STATS } from '../../artifacts/yael-arabic-prep/lib/study';
+import { getStudyStatsDisplay } from '../../artifacts/yael-arabic-prep/lib/study-stats-display';
+import {
+  advance, isDone, loadSourceSession, newSourceSession, saveSourceSession, storageKey,
+} from '../../artifacts/yael-arabic-prep/lib/source-session';
+import type { ImportedExam } from '../../artifacts/yael-arabic-prep/lib/imported-exams';
 import { auth, clerk, signIn } from './auth';
 import storage, { disk } from './storage';
 import { startServer } from './server';
@@ -116,6 +121,67 @@ test('pending lessons survive provider/process-state restart and drain exactly o
   expect(posts.map(p => p.body)).toEqual(durable);
   expect(savedQueue('restart')).toEqual([]);
   expect(await cloud('restart')).toMatchObject({ lessonsCompleted: 2, xp: 70, answeredQuestions: 10 });
+});
+
+test('signed-in vocabulary lesson stats refresh consistently and stale values are hidden until retry succeeds', async () => {
+  await mount('account-progress-refresh');
+  await act(async () => {
+    await state.save(4, 5, 'vocabulary-activity-00001');
+  });
+  await until(() => {
+    expect(state.pending).toBe(0);
+    expect(state.stats).toMatchObject({
+      lessonsCompleted: 1, answeredQuestions: 5, correctAnswers: 4,
+      masteredWords: 4, xp: 40,
+    });
+  });
+
+  const summaryFromAccount = getStudyStatsDisplay(state.stats);
+  const summaryFromProgress = getStudyStatsDisplay(state.stats);
+  expect(summaryFromAccount).toEqual(summaryFromProgress);
+  expect(summaryFromAccount).toMatchObject({
+    xp: '40', streak: '1', accuracy: '80%', masteredWords: '4', lessonsCompleted: '1',
+  });
+
+  const exam: ImportedExam = {
+    id: 'timed-stat-separation',
+    title: 'اختبار تجريبي',
+    sourceFilename: 'test.pdf',
+    essayPrompt: '',
+    sections: [[{
+      id: 'question-1', number: 1, type: 'completion', prompt: 'سؤال تجريبي',
+      options: ['أ', 'ب'], sourcePage: 1, answer: 0,
+    }]],
+  };
+  const timedStorageKey = storageKey('account-progress-refresh', exam.id, 'training', 0);
+  const timedAttempt = advance({
+    ...newSourceSession(exam, 'training', 0),
+    answers: [[0]],
+  }, Date.now());
+  expect(isDone(timedAttempt)).toBe(true);
+  await saveSourceSession(timedStorageKey, timedAttempt);
+  expect(JSON.parse((await loadSourceSession(timedStorageKey))!).stage).toBe(1);
+  expect(state.stats).toMatchObject({ xp: 40, lessonsCompleted: 1, masteredWords: 4 });
+  expect(getStudyStatsDisplay(state.stats)).toEqual(summaryFromAccount);
+
+  offline = true;
+  await act(async () => { state.refresh(); });
+  await until(() => expect(state.statsUnavailable).toBe(true));
+  expect(getStudyStatsDisplay(state.stats, state.loading || state.statsUnavailable))
+    .toEqual({ xp: '—', streak: '—', accuracy: '—', masteredWords: '—', lessonsCompleted: '—' });
+  expect(state.message).toContain('تعذّر تحميل التقدّم السحابي');
+
+  offline = false;
+  await act(async () => { state.refresh(); });
+  await until(() => {
+    expect(state.loading).toBe(false);
+    expect(state.statsUnavailable).toBe(false);
+  });
+  expect(getStudyStatsDisplay(state.stats)).toEqual(summaryFromAccount);
+  expect(await cloud('account-progress-refresh')).toMatchObject({
+    lessonsCompleted: 1, answeredQuestions: 5, correctAnswers: 4,
+    masteredWords: 4, xp: 40,
+  });
 });
 
 test('malformed outbox JSON is preserved until the user archives it and chooses to continue', async () => {

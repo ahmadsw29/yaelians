@@ -11,7 +11,7 @@ import { DEFAULT_STATS, readStudyStats, recordLesson, type StudyStats } from './
 import { getStudyAuthOptions } from './study-auth';
 
 type StudyContext = {
-  stats: StudyStats; loading: boolean; message: string; pending: number;
+  stats: StudyStats; loading: boolean; statsUnavailable: boolean; message: string; pending: number;
   recovery: { validCount: number; invalidCount: number; problem: 'invalid-json' | 'not-array' | 'invalid-events' } | null;
   legacy: StudyStats | null; busy: boolean;
   refresh: () => void; save: (correct: number, total?: number, activityKey?: string) => Promise<void>;
@@ -294,7 +294,8 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   };
   return <Context.Provider value={{
     stats: userId ? query.data ?? DEFAULT_STATS : guest,
-    loading: !initialized || (!!userId && query.isLoading),
+    loading: !initialized || (!!userId && query.isFetching),
+    statsUnavailable: !!userId && query.isError,
     message: message || (query.isError ? 'تعذّر تحميل التقدّم السحابي. الأرقام قد لا تكون محدّثة. حاول مجددًا.' : ''),
     pending, legacy, busy, refresh, save, recovery, recoverOutbox,
     migrate: () => decide(true), keepCloud: () => decide(false),
