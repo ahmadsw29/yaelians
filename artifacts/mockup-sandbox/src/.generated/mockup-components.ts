@@ -2,5 +2,7 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/yael-progress-cat/Current.tsx": () => import("../components/mockups/yael-progress-cat/Current.tsx"),
-  "./components/mockups/yael-progress-cat/Kitten.tsx": () => import("../components/mockups/yael-progress-cat/Kitten.tsx")
+  "./components/mockups/yael-progress-cat/Kitten.tsx": () => import("../components/mockups/yael-progress-cat/Kitten.tsx"),
+  "./components/mockups/yael-account/Current.tsx": () => import("../components/mockups/yael-account/Current.tsx"),
+  "./components/mockups/yael-account/Refreshed.tsx": () => import("../components/mockups/yael-account/Refreshed.tsx")
 };

@@ -1,0 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  font-family: Inter, sans-serif;
+  color: #17332f;
+  background: #f7f4ed;
+  --yael-bg: #f7f4ed;
+  --yael-fg: #17332f;
+  --yael-card: #fffdf8;
+  --yael-primary: #17665c;
+  --yael-primary-fg: #ffffff;
+  --yael-secondary: #e8eee7;
+  --yael-secondary-fg: #244b43;
+  --yael-muted: #74817a;
+  --yael-border: #e8e3d8;
+  --yael-accent: #fae4d7;
+  --yael-danger: #c84d43;
+}
+
+.yael-account-dark {
+  --yael-bg: #111d1b;
+  --yael-fg: #edf5ef;
+  --yael-card: #1b2b27;
+  --yael-primary: #85cbbb;
+  --yael-primary-fg: #102923;
+  --yael-secondary: #253c34;
+  --yael-secondary-fg: #c6ddd0;
+  --yael-muted: #a9b9b0;
+  --yael-border: #34483e;
+  --yael-accent: #513b30;
+  --yael-danger: #e9877e;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
