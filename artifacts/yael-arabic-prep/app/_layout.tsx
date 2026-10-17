@@ -79,7 +79,7 @@ function RootLayoutNav() {
     if (isSignedIn && planReady && plan && firstSegment === 'exam') {
       return <Redirect href="/plans?reason=premium-exam" />;
     }
-    if (isSignedIn && planReady && plan && (firstSegment === 'welcome' || firstSegment === '(auth)' || !firstSegment)) {
+    if (isSignedIn && planReady && plan && (firstSegment === 'welcome' || firstSegment === '(auth)')) {
       return <Redirect href="/(tabs)" />;
     }
   }

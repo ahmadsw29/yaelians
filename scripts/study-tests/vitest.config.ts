@@ -23,6 +23,7 @@ export default defineConfig({
           'study-tests/outbox.test.tsx',
           'study-tests/progress-marker.test.ts',
           'study-tests/pet-teacher-motion.test.ts',
+          'study-tests/practice-celebrations.test.ts',
         ],
     fileParallelism: false,
     testTimeout: 10000,

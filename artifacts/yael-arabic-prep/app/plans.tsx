@@ -24,7 +24,7 @@ export default function PlansScreen() {
     setError('');
     try {
       await chooseFree();
-      router.replace('/');
+      router.replace('/(tabs)');
     } catch {
       setError('تعذّر حفظ الخطة الآن. تحقق من اتصالك وحاول مجددًا؛ استخدامك السابق لم يتغير.');
     } finally {

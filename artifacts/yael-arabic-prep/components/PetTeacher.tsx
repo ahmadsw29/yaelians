@@ -1,47 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, Text, View } from 'react-native';
-import Svg, { Path, Ellipse, Circle } from 'react-native-svg';
+import { AccessibilityInfo, Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
+import Svg, { Path, Ellipse, Rect, Text as SvgText } from 'react-native-svg';
 import { useColors } from '@/hooks/useColors';
 import { PROGRESS_MAX_HOP } from '@/lib/progress-marker';
 import { listenForReduceMotionChanges, updatePetTeacherMotion } from '@/lib/pet-teacher-motion';
 
 const tips = [
-  'أنا مِشمِش، رفيقك في التعلّم. خطوة صغيرة كل مرة!',
+  'أنا رامي، مدرّبك. نصل إلى هدفك خطوة بخطوة.',
   'اقرأ الجملة كاملة قبل اختيار الإجابة.',
   'الخطأ فرصة للتعلّم، وليس سببًا للتوقّف.',
   'ابحث عن دليل في النص، ولا تعتمد على التخمين وحده.',
 ];
-const kittenInk = { fur: '#f4b66f', inner: '#e98f91', outline: '#9d6848', face: '#493a30', cream: '#fff0d9', scarf: '#4c9a88' };
+// Fixed illustration pigments, independent of the app's light/dark surfaces.
+const tutorInk = { skin: '#c78b67', shadow: '#b87955', hair: '#263431', jacket: '#344e49', shirt: '#f6e6c8', gold: '#e7a15e', mouth: '#704337' };
 
-function MashmashArt({ mood, size }: { mood: 'happy' | 'sad'; size: number }) {
+export function YoungTutorArt({ mood = 'happy', size, full = false }: { mood?: 'happy' | 'sad'; size: number; full?: boolean }) {
   const happy = mood === 'happy';
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Path d="M72 71 Q94 76 91 57 Q90 49 82 50" fill="none" stroke={kittenInk.fur} strokeWidth="8" strokeLinecap="round" />
-      <Path d="M29 72 Q28 60 33 57 L67 57 Q72 62 71 76 L68 91 Q61 96 54 91 L49 89 Q43 96 34 91Z" fill={kittenInk.fur} stroke={kittenInk.outline} strokeWidth="2.5" strokeLinejoin="round" />
-      <Ellipse cx="50" cy="80" rx="14" ry="13" fill={kittenInk.cream} />
-      <Path d="M25 42 L22 12 Q22 7 27 11 L45 27 Q51 25 56 27 L74 11 Q79 7 78 13 L75 44" fill={kittenInk.fur} stroke={kittenInk.outline} strokeWidth="2.5" strokeLinejoin="round" />
-      <Path d="M29 31 L27 18 L40 29 M61 29 L74 18 L72 33" fill={kittenInk.inner} />
-      <Ellipse cx="50" cy="49" rx="35" ry="31" fill={kittenInk.fur} stroke={kittenInk.outline} strokeWidth="2.5" />
-      <Path d="M44 25 Q50 31 56 25 M47 23L50 27L53 23" fill="none" stroke="#da9958" strokeWidth="2.4" strokeLinecap="round" />
-      <Ellipse cx="37" cy="51" rx="8.5" ry="10.5" fill={kittenInk.cream} />
-      <Ellipse cx="63" cy="51" rx="8.5" ry="10.5" fill={kittenInk.cream} />
-      <Ellipse cx="38" cy={happy ? 53 : 55} rx="4.8" ry="6.7" fill={kittenInk.face} />
-      <Ellipse cx="62" cy={happy ? 53 : 55} rx="4.8" ry="6.7" fill={kittenInk.face} />
-      <Circle cx="39.5" cy={happy ? 50 : 52} r="2" fill="#fff" />
-      <Circle cx="63.5" cy={happy ? 50 : 52} r="2" fill="#fff" />
-      {!happy && <Path d="M29 43 Q37 40 44 46 M56 46 Q63 40 71 43" fill="none" stroke={kittenInk.outline} strokeWidth="2.2" strokeLinecap="round" />}
-      <Ellipse cx="27" cy="63" rx="6" ry="3.2" fill={kittenInk.inner} opacity=".7" />
-      <Ellipse cx="73" cy="63" rx="6" ry="3.2" fill={kittenInk.inner} opacity=".7" />
-      <Path d="M47 61 Q50 58 53 61 L50 64Z" fill={kittenInk.inner} />
-      {happy
-        ? <Path d="M50 64 Q47 69 44 66 M50 64 Q53 69 56 66" fill="none" stroke={kittenInk.face} strokeWidth="2.2" strokeLinecap="round" />
-        : <Path d="M45 68 Q50 63 55 68" fill="none" stroke={kittenInk.face} strokeWidth="2.2" strokeLinecap="round" />}
-      <Path d="M18 61 L9 59 M19 66 L10 68 M82 61 L91 59 M81 66 L90 68" fill="none" stroke={kittenInk.outline} strokeWidth="1.8" strokeLinecap="round" />
-      <Path d="M31 76 Q50 86 69 76 L65 84 Q50 91 35 84Z" fill={kittenInk.scarf} stroke="#377669" strokeWidth="1.5" />
-      <Path d="M61 83 L70 87 L63 92Z" fill="#ed8c75" />
-      <Ellipse cx="38" cy="90" rx="8" ry="4" fill={kittenInk.fur} stroke={kittenInk.outline} strokeWidth="1.5" />
-      <Ellipse cx="63" cy="90" rx="8" ry="4" fill={kittenInk.fur} stroke={kittenInk.outline} strokeWidth="1.5" />
+    <Svg width={size} height={size} viewBox={full ? '0 0 190 218' : '51 23 99 139'}>
+      <Ellipse cx="99" cy="202" rx="66" ry="9" fill={tutorInk.hair} opacity=".12" />
+      <Path d="M40 210c4-46 24-67 58-67s57 21 60 67H40Z" fill={tutorInk.gold} />
+      <Path d="M54 211c3-35 15-57 45-62l12 18 13-18c19 6 30 25 34 62H54Z" fill={tutorInk.jacket} />
+      <Path d="m84 149 15 20 14-20 9 9-13 24H91l-15-24 8-9Z" fill={tutorInk.shirt} />
+      <Path d="M77 105h43v43c-6 11-14 16-22 16-9 0-16-6-21-16v-43Z" fill={tutorInk.shadow} />
+      <Path d="M67 77c0-27 13-43 33-43 23 0 37 16 37 44v19c0 29-17 46-37 46-19 0-33-18-33-46V77Z" fill={tutorInk.skin} />
+      <Path d="M66 86c-7-29 8-55 32-58 17-3 36 5 42 25 6 18-1 34-2 40-4-7-7-15-7-25-14 7-35 9-57 5-1 11-2 20-5 27-3-3-3-8-3-14Z" fill={tutorInk.hair} />
+      <Path d="M74 73c7-12 18-19 34-21 11-1 21 2 28 8-3-18-17-28-35-27-20 1-31 16-27 40Z" fill={tutorInk.hair} />
+      <Path d={happy ? 'M78 91c4-3 10-3 14 0m20 0c4-3 10-3 14 0' : 'M78 92l14-3m20 0 14 3'} fill="none" stroke={tutorInk.mouth} strokeWidth="3" strokeLinecap="round" />
+      <Path d={happy ? 'M83 99c2 2 6 2 8 0m21 0c2 2 6 2 8 0' : 'M83 100h7m23 0h7'} fill="none" stroke={tutorInk.hair} strokeWidth="2.5" strokeLinecap="round" />
+      <Path d="M102 98c-1 8-4 13-2 15 2 2 5 2 8 0" fill="none" stroke={tutorInk.shadow} strokeWidth="2" strokeLinecap="round" />
+      <Path d={happy ? 'M91 126c6 6 16 6 22 0' : 'M93 129q9-4 18 0'} fill="none" stroke={tutorInk.mouth} strokeWidth="2.7" strokeLinecap="round" />
+      {full && <>
+        <Path d="M128 161c14-6 25-16 29-30" fill="none" stroke={tutorInk.skin} strokeWidth="10" strokeLinecap="round" />
+        <Path d="M155 131c3-8 9-10 15-6l3 4-5 11-10 1" fill={tutorInk.skin} />
+        <Rect x="126" y="86" width="48" height="39" rx="8" fill={tutorInk.shirt} stroke={tutorInk.gold} strokeWidth="1.5" transform="rotate(7 126 86)" />
+        <SvgText x="150" y="106" textAnchor="middle" fontSize="11" fontWeight="700" fill={tutorInk.jacket}>יעל</SvgText>
+        <Path d="M139 113h24" stroke={tutorInk.gold} strokeWidth="2.5" strokeLinecap="round" />
+      </>}
     </Svg>
   );
 }
@@ -68,12 +63,12 @@ export function PetTeacherReaction({
     if (!updatePetTeacherMotion(mood, jumpKey, reduceMotion, previousJumpKey, jump, squash)) return;
     const animation = Animated.sequence([
       Animated.parallel([
-        Animated.timing(jump, { toValue: -PROGRESS_MAX_HOP, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(squash, { toValue: 1.12, duration: 130, useNativeDriver: true }),
+        Animated.timing(jump, { toValue: -PROGRESS_MAX_HOP, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(squash, { toValue: 1.12, duration: 130, useNativeDriver: Platform.OS !== 'web' }),
       ]),
       Animated.parallel([
-        Animated.timing(jump, { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-        Animated.spring(squash, { toValue: 1, damping: 6, stiffness: 220, useNativeDriver: true }),
+        Animated.timing(jump, { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.spring(squash, { toValue: 1, damping: 6, stiffness: 220, useNativeDriver: Platform.OS !== 'web' }),
       ]),
     ]);
     animation.start();
@@ -83,28 +78,28 @@ export function PetTeacherReaction({
     <Animated.View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       testID={testID}
       style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: jump }, { scale: squash }] }}>
-      <MashmashArt mood={mood} size={size} />
+      <YoungTutorArt mood={mood} size={size} />
     </Animated.View>
   );
 }
 
-export default function PetTeacher({ quiet = false }: { quiet?: boolean }) {
+export default function StudyTutor({ quiet = false }: { quiet?: boolean }) {
   const c = useColors();
   const [tip, setTip] = useState(0);
   const [hidden, setHidden] = useState(false);
   if (hidden) return (
-    <Pressable accessibilityRole="button" accessibilityLabel="إظهار المعلم مشمش" onPress={() => setHidden(false)} style={{ padding: 10 }}>
-      <Text style={{ color: c.primary, textAlign: 'right' }}>إظهار مشمش</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="إظهار المدرّب رامي" onPress={() => setHidden(false)} style={{ padding: 10 }}>
+      <Text style={{ color: c.primary, textAlign: 'right' }}>إظهار رامي</Text>
     </Pressable>
   );
   return (
     <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, padding: 10, borderRadius: 18, backgroundColor: c.secondary, marginVertical: 10 }}>
-      <Pressable testID="pet-teacher" accessibilityRole="button" accessibilityLabel={quiet ? 'المعلم مشمش في وضع هادئ' : 'نصيحة جديدة من مشمش'} onPress={() => { if (!quiet) setTip((tip + 1) % tips.length); }}>
-        <MashmashArt mood="happy" size={68} />
+      <Pressable testID="pet-teacher" accessibilityRole="button" accessibilityLabel={quiet ? 'المدرّب رامي في وضع هادئ' : 'نصيحة جديدة من رامي'} onPress={() => { if (!quiet) setTip((tip + 1) % tips.length); }}>
+        <YoungTutorArt size={68} />
       </Pressable>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: c.secondaryForeground, fontSize: 12, lineHeight: 21, textAlign: 'right' }}>{quiet ? 'مشمش يرافقك بهدوء. ركّز، أنت قادر!' : tips[tip]}</Text>
-        <Pressable onPress={() => setHidden(true)} accessibilityRole="button" accessibilityLabel="إخفاء المعلم مشمش" style={{ alignSelf: 'flex-end', paddingVertical: 5 }}>
+        <Text style={{ color: c.secondaryForeground, fontSize: 12, lineHeight: 21, textAlign: 'right' }}>{quiet ? 'رامي معك. خذ وقتك في قراءة السؤال، ثم اختر بثقة.' : tips[tip]}</Text>
+        <Pressable onPress={() => setHidden(true)} accessibilityRole="button" accessibilityLabel="إخفاء المدرّب رامي" style={{ alignSelf: 'flex-end', paddingVertical: 5 }}>
           <Text style={{ color: c.mutedForeground, fontSize: 11 }}>إخفاء</Text>
         </Pressable>
       </View>

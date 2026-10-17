@@ -22,9 +22,10 @@ describe('practice celebration rotation', () => {
   });
 
   it('keeps the returned recent history capped at the no-repeat window', () => {
-    const first = choosePracticeCelebration([], () => 0);
-    const second = choosePracticeCelebration(first.recent, () => 0);
-    expect(second.recent).toHaveLength(RECENT_CELEBRATION_WINDOW);
-    expect(second.recent.slice(0, 2)).toEqual([second.variant, first.variant]);
+    const history = [...PRACTICE_CELEBRATION_VARIANTS];
+    const next = choosePracticeCelebration(history, () => 0);
+    expect(next.recent).toHaveLength(RECENT_CELEBRATION_WINDOW);
+    expect(next.recent[0]).toBe(next.variant);
+    expect(new Set(next.recent).size).toBe(next.recent.length);
   });
 });

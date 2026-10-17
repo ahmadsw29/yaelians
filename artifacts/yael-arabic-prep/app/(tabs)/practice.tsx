@@ -17,6 +17,8 @@ import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/s
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { PetTeacherReaction } from '@/components/PetTeacher';
+import PracticeCelebration from '@/components/PracticeCelebration';
+import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import {
   PROGRESS_COUNT_MAX_WIDTH,
@@ -97,6 +99,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const [celebrationKey, setCelebrationKey] = useState(0);
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [mode, setMode] = useState<'words' | 'reading'>('words');
   const [trackProgress, setTrackProgress] = useState(trackThisRound);
   const [wordOrder, setWordOrder] = useState(() => WORD_BANK.map((_, i) => i));
@@ -136,6 +139,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     if (index === activeQuestions.length - 1) {
       if (saving.current || saved) return;
       saving.current = true;
+      if (!complete) setCompletionCelebration(nextPracticeCelebration());
       setComplete(true);
       if (!trackProgress) {
         setSaved(true);
@@ -175,19 +179,18 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     setCelebrationKey(0);
     setComplete(false);
     setSaved(false);
+    setCompletionCelebration(null);
     setSaveError(false);
   };
 
   if (complete) {
     return (
-      <View style={styles.completionScreen}>
+      <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.completionScreen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 112 }]}>
         <StudySyncStatus />
         {saveError && <Pressable onPress={next} accessibilityRole="button">
           <Text style={{ color: c.foreground }}>لم يُحفظ الدرس. اضغط لإعادة المحاولة قبل المغادرة.</Text>
         </Pressable>}
-        <View style={styles.completionIcon}>
-          <Ionicons name="trophy" size={38} color="#bd7637" />
-        </View>
+        {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
         <Text style={styles.completionEyebrow}>{trackProgress ? 'أحسنت! أنهيت جولتك المحفوظة اليوم' : 'تدريب إضافي بلا حفظ للتقدّم'}</Text>
         <Text style={styles.completionTitle}>خطوة جديدة نحو{"\n"}هدفك</Text>
         <Text style={styles.completionText}>أجبت عن {correct} من {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length} أسئلة بشكل صحيح</Text>
@@ -204,7 +207,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
           </Pressable>
           </>
         ) : null}
-      </View>
+      </ScrollView>
     );
   }
 
@@ -368,8 +371,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     nextDisabled: { opacity: 0.4 },
     nextText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },
     pressed: { opacity: 0.83, transform: [{ scale: 0.99 }] },
-    completionScreen: { flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, paddingTop: Platform.OS === 'web' ? 67 : 0 },
-    completionIcon: { width: 84, height: 84, borderRadius: 29, backgroundColor: '#fae9db', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+    completionScreen: { flexGrow: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
     completionEyebrow: { color: c.primary, fontFamily: BOLD, fontSize: 14 },
     completionTitle: { color: c.foreground, fontFamily: BOLD, fontSize: 29, lineHeight: 39, textAlign: 'center', marginTop: 9 },
     completionText: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, marginTop: 12 },

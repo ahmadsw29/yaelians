@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import PetTeacher from '@/components/PetTeacher';
+import PracticeCelebration from '@/components/PracticeCelebration';
+import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import { IMPORTED_EXAMS } from '@/lib/solved-exams';
@@ -118,6 +120,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
   const mounted = useRef(true);
   const revision = useRef(0);
   const [session, setSession] = useState<SourceSession | null>(null);
+  const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -138,6 +141,11 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
   }
   function commit(next: SourceSession | null) {
     const old = current.current?.stage;
+    if (current.current && !isDone(current.current) && next && isDone(next)) {
+      setCompletionCelebration(nextPracticeCelebration());
+    } else if (!next) {
+      setCompletionCelebration(null);
+    }
     current.current = next;
     setSession(next);
     if (old !== next?.stage) { setConfirmation(null); setNow(Date.now()); }
@@ -147,6 +155,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
   useEffect(() => {
     mounted.current = true;
     let active = true;
+    setCompletionCelebration(null);
     setLoading(true); setLoadError(false);
     void (async () => {
       try {
@@ -335,6 +344,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
             </> : null}
           </> : <>
             <Text style={s.eyebrow}>انتهت الجلسة • {exam.title}</Text>
+            {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
             <Text style={s.hero}>أنهيت التدريب.{'\n'}وقت المراجعة.</Text>
             <View style={s.card}>
               <Text style={s.title}>نتيجتك التدريبية</Text>

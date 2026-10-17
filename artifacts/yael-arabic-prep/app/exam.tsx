@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import PetTeacher from '@/components/PetTeacher';
+import PracticeCelebration from '@/components/PracticeCelebration';
+import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
 import { EXAM_SECTIONS, ESSAY_PROMPT } from '@/lib/exam-content';
 
@@ -99,6 +101,7 @@ function ExamSession({ userId }: { userId?: string }) {
   const mounted = useRef(true);
   const writeRevision = useRef(0);
   const [session, setSession] = useState<Session | null>(null);
+  const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -127,6 +130,11 @@ function ExamSession({ userId }: { userId?: string }) {
 
   function commit(next: Session | null) {
     const oldStage = current.current?.stage;
+    if (next?.stage === 4 && oldStage !== undefined && oldStage < 4) {
+      setCompletionCelebration(nextPracticeCelebration());
+    } else if (!next) {
+      setCompletionCelebration(null);
+    }
     current.current = next;
     setSession(next);
     if (oldStage !== next?.stage) {
@@ -139,6 +147,7 @@ function ExamSession({ userId }: { userId?: string }) {
   useEffect(() => {
     mounted.current = true;
     let active = true;
+    setCompletionCelebration(null);
     setLoading(true);
     setLoadError(false);
     void (async () => {
@@ -339,6 +348,7 @@ function ExamSession({ userId }: { userId?: string }) {
             </>}
           </> : <>
             <Text style={styles.eyebrow}>اكتملت المحاكاة</Text>
+            {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
             <Text style={styles.hero}>خطوة أوضح{'\n'}نحو استعدادك.</Text>
             <View style={styles.card}>
               <Text style={styles.caption}>نتيجة الاختيار من متعدد في هذا التدريب</Text>

@@ -16,3 +16,15 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; }
+.ya-current-screen { min-height: 100dvh; background: var(--yael-bg); color: var(--yael-fg); padding: 28px 22px; }
+.ya-current-kicker { font-size: 11px; color: var(--yael-muted); }
+.ya-current-heading h1 { font-size: 28px; margin: 9px 0; }
+.ya-current-heading p { font-size: 13px; line-height: 1.7; color: var(--yael-muted); }
+.ya-current-card { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; background: var(--yael-secondary); border-radius: 18px; padding: 10px; margin: 22px 0; }
+.ya-current-cat { width: 76px; flex: 0 0 auto; }
+.ya-current-copy { flex: 1; font-size: 12px; line-height: 1.75; }
+.ya-current-eyebrow { display: flex; align-items: center; gap: 5px; color: var(--yael-primary); font-size: 10px; }
+.ya-current-action, .ya-current-show { display: flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; padding: 10px; color: var(--yael-primary); background: var(--yael-card); font: inherit; font-size: 11px; cursor: pointer; }
+.ya-current-action { margin-right: 86px; }
+.ya-current-note { margin-top: 34px; color: var(--yael-muted); font-size: 12px; line-height: 1.8; }
+.ya-current-note span { display: flex; align-items: center; gap: 6px; color: var(--yael-primary); }
