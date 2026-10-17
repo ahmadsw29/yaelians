@@ -54,7 +54,7 @@ export const getStudyPlanAccessResponseUsageTimedSectionsMin = 0;
 
 
 export const GetStudyPlanAccessResponse = zod.object({
-  "plan": zod.union([zod.literal('free'),zod.literal(null)]).nullable(),
+  "plan": zod.union([zod.literal('free'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "usage": zod.object({
   "date": zod.string().regex(getStudyPlanAccessResponseUsageDateRegExp),
   "vocabularyRounds": zod.number().int().min(getStudyPlanAccessResponseUsageVocabularyRoundsMin),
@@ -76,7 +76,7 @@ export const chooseStudyPlanResponseUsageTimedSectionsMin = 0;
 
 
 export const ChooseStudyPlanResponse = zod.object({
-  "plan": zod.union([zod.literal('free'),zod.literal(null)]).nullable(),
+  "plan": zod.union([zod.literal('free'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "usage": zod.object({
   "date": zod.string().regex(chooseStudyPlanResponseUsageDateRegExp),
   "vocabularyRounds": zod.number().int().min(chooseStudyPlanResponseUsageVocabularyRoundsMin),
@@ -108,7 +108,7 @@ export const claimStudyActivityResponseAccessUsageTimedSectionsMin = 0;
 export const ClaimStudyActivityResponse = zod.object({
   "allowed": zod.boolean(),
   "access": zod.object({
-  "plan": zod.union([zod.literal('free'),zod.literal(null)]).nullable(),
+  "plan": zod.union([zod.literal('free'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "usage": zod.object({
   "date": zod.string().regex(claimStudyActivityResponseAccessUsageDateRegExp),
   "vocabularyRounds": zod.number().int().min(claimStudyActivityResponseAccessUsageVocabularyRoundsMin),

@@ -20,3 +20,15 @@ Keep answer feedback near the next/back controls visual: a character and a check
 **Why:** The user previously asked to remove the “إجابة رائعة” and other encouragement messages and leave the character beside the correctness symbol.
 
 **How to apply:** Do not reintroduce congratulatory or consoling lines when restyling practice navigation.
+
+Use the same Arabic typeface in practice questions, answers, and navigation as on the home page.
+
+**Why:** The user disliked the practice-screen Arabic and explicitly requested the home-page font.
+
+**How to apply:** Keep Arabic typography shared instead of giving question bubbles and buttons separate font choices.
+
+Vocabulary practice should show progress, the vocabulary category, the word and example, all four answers, and Next together without scrolling at normal text size. Keep Next near the bottom navigation, not far above it.
+
+**Why:** The user explicitly corrected an oversized bottom gap and said he wants everything visible on one page without scrolling.
+
+**How to apply:** Use a compact question layout and a persistent header; do not solve footer overlap by reserving excessive empty space. Preserve access to content when text is enlarged.

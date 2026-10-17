@@ -40,7 +40,7 @@ function ThemeSettings() {
 function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>['user']> }) {
   const openDeletion = useAccountDeletion();
   const { pauseForDeletion, stats, loading: statsLoading, statsUnavailable, refresh } = useStudy();
-  const { plan, usage } = usePlanAccess();
+  const { plan, usage, isPremium } = usePlanAccess();
   const colors = useColors();
   const { signOut } = useClerk();
   const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
@@ -113,23 +113,23 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
       <View style={styles.planHeader}>
         <View style={styles.planTitleCopy}>
           <Text style={[styles.planEyebrow, { color: colors.mutedForeground }]}>خطتك الحالية</Text>
-          <Text style={[styles.planName, { color: colors.foreground }]}>{plan === 'free' ? 'الخطة المجانية' : 'اختر خطتك'}</Text>
+          <Text style={[styles.planName, { color: colors.foreground }]}>{isPremium ? 'الخطة الكاملة' : plan === 'free' ? 'الخطة المجانية' : 'اختر خطتك'}</Text>
         </View>
         <View style={[styles.planBadge, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.planBadgeText, { color: colors.secondaryForeground }]}>{plan === 'free' ? 'مجانية' : 'الخطط'}</Text>
+          <Text style={[styles.planBadgeText, { color: colors.secondaryForeground }]}>{isPremium ? 'بريميوم' : plan === 'free' ? 'مجانية' : 'الخطط'}</Text>
         </View>
       </View>
       <Text
-        accessibilityLabel={plan === 'free'
+        accessibilityLabel={isPremium ? 'جميع الدورات والجلسات والنماذج متاحة لك بلا حدود.' : plan === 'free'
           ? `استخدام اليوم: ${usage.vocabularyRounds} من جولة المفردات المجانية الواحدة، و${usage.timedSections} من جلسة الامتحان المحددة بوقت المتاحة اليوم.`
           : 'اختر خطة تناسب طريقة دراستك.'}
         style={[styles.caption, { color: colors.mutedForeground }]}
       >
-        {plan === 'free'
+        {isPremium ? 'جميع الدورات والجلسات والنماذج متاحة لك بلا حدود.' : plan === 'free'
           ? `اليوم: مفردات ${usage.vocabularyRounds}/1 · جلسات موقّتة ${usage.timedSections}/1`
           : 'اختر خطة تناسب طريقة دراستك.'}
       </Text>
-      <Pressable testID="profile-upgrade-plan" accessibilityRole="link"
+      {!isPremium && <><Pressable testID="profile-upgrade-plan" accessibilityRole="link"
         accessibilityLabel="استكشف الخطة الكاملة، 50 شيكلًا شهريًا"
         accessibilityHint="يفتح تفاصيل الخطط. الشراء عبر المتجر غير متاح حاليًا."
         hitSlop={8} onPress={() => router.push('/plans')}
@@ -145,6 +145,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
         style={[styles.setupNote, { color: colors.mutedForeground }]}>
         جميع الدورات والجلسات والنماذج؛ الشراء عبر المتجر غير متاح بعد.
       </Text>
+      </>}
     </View>
 
     <Pressable testID="profile-edit-toggle" accessibilityRole="button"

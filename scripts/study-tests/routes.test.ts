@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { startServer } from './server';
-import { db, studyEvents, studyProgress, planActivityClaims } from '@workspace/db';
+import { db, studyEvents, studyProgress, planActivityClaims, accountPlanAccess } from '@workspace/db';
 import { emptyStats } from '../../artifacts/api-server/src/lib/study';
 
 let api: Awaited<ReturnType<typeof startServer>>;
@@ -11,6 +11,30 @@ const lesson = (eventId: string, correct = 3) => ({
 });
 const legacy = { ...emptyStats, xp: 40, correctAnswers: 4, answeredQuestions: 5,
   lessonsCompleted: 1, masteredWords: 4, streak: 1, lastPracticeDate: new Date().toISOString().slice(0, 10) };
+
+test('server-granted premium has unlimited claims and cannot be self-assigned or overwritten', async () => {
+  await db.insert(accountPlanAccess).values({ userId: 'premium-owner', plan: 'premium' });
+  expect(await (await api.request('premium-owner', 'plan-access')).json()).toMatchObject({ plan: 'premium' });
+  for (const activity of ['vocabulary', 'timed-section']) {
+    for (let i = 0; i < 3; i++) {
+      const response = await api.request('premium-owner', 'plan-access/claims', { activity, key: `premium-${activity}-${i}` });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ allowed: true, access: { plan: 'premium' } });
+    }
+  }
+  expect(await (await api.request('premium-owner', 'plan-access', { plan: 'free' }, 'PUT')).json())
+    .toMatchObject({ plan: 'premium' });
+  expect(await (await api.request('premium-owner', 'lessons', lesson('premium-unlimited-round'))).json())
+    .toMatchObject({ progressCredited: true, stats: { lessonsCompleted: 1, xp: 30 } });
+  expect((await api.request('unprivileged', 'plan-access', { plan: 'premium' }, 'PUT')).status).toBe(400);
+  expect((await api.request(null, 'plan-access')).status).toBe(401);
+  expect(await (await api.request('unprivileged', 'plan-access')).json()).toMatchObject({ plan: null });
+  expect((await api.request('unprivileged', 'plan-access', { plan: 'free' }, 'PUT')).status).toBe(200);
+  expect(await (await api.request('unprivileged', 'plan-access/claims', { activity: 'vocabulary', key: 'free-first-round-0001' })).json())
+    .toMatchObject({ allowed: true, access: { plan: 'free' } });
+  expect(await (await api.request('unprivileged', 'plan-access/claims', { activity: 'vocabulary', key: 'free-second-round-0002' })).json())
+    .toMatchObject({ allowed: false, access: { plan: 'free' } });
+});
 
 test('concurrent devices serialize distinct lessons without losing increments', async () => {
   const responses = await Promise.all(Array.from({ length: 16 }, (_, i) =>

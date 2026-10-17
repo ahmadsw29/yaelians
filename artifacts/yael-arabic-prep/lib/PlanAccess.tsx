@@ -13,7 +13,7 @@ type DailyUse = StudyPlanAccess['usage'];
 type AccessContextValue = {
   ready: boolean;
   plan: SelectedPlan;
-  isPremium: false;
+  isPremium: boolean;
   usage: DailyUse;
   chooseFree: () => Promise<void>;
   claimActivity: (activity: Activity, key: string) => Promise<boolean>;
@@ -63,7 +63,7 @@ export function PlanAccessProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo<AccessContextValue>(() => ({
     ready,
     plan: query.data?.plan ?? null,
-    isPremium: false,
+    isPremium: query.data?.plan === 'premium',
     usage: query.data?.usage ?? emptyUsage(),
     chooseFree,
     claimActivity,

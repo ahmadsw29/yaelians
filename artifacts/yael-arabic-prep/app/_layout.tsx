@@ -78,7 +78,7 @@ function RootLayoutNav() {
       redirectTo = '/welcome';
     } else if (isSignedIn && planReady && !plan && firstSegment !== 'plans') {
       redirectTo = '/plans';
-    } else if (isSignedIn && planReady && plan && firstSegment === 'exam') {
+    } else if (isSignedIn && planReady && plan === 'free' && firstSegment === 'exam') {
       redirectTo = '/plans?reason=premium-exam';
     } else if (isSignedIn && planReady && plan && (firstSegment === 'welcome' || firstSegment === '(auth)')) {
       redirectTo = '/(tabs)';

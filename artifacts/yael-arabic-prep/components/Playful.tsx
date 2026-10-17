@@ -3,14 +3,17 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { play } from '@/constants/colors';
-import { Creature, CREATURE_NAMES, type CreatureKind } from '@/components/PetTeacher';
+import { CREATURE_NAMES, type CreatureKind } from '@/components/PetTeacher';
+import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { SpeakingTeacher } from '@/components/SpeakingTeacher';
+import { useHebrewSpeech } from '@/hooks/useHebrewSpeech';
 
 export function usePlay() {
   const c = useColors();
   return { ...c, ...(c.isDark ? play.dark : play.light) };
 }
 
-const PRESENTERS: CreatureKind[] = ['zizo', 'lumi', 'rami'];
+const PRESENTERS = Object.keys(CREATURE_NAMES) as CreatureKind[];
 export function presenterFor(index: number): CreatureKind {
   return PRESENTERS[((index % PRESENTERS.length) + PRESENTERS.length) % PRESENTERS.length];
 }
@@ -42,23 +45,36 @@ export function ChunkyButton({ label, onPress, tone = 'brand', icon, disabled, t
 }
 
 /** A cast member presents the real question in a speech bubble beside them. */
-export function QuestionPrompt({ index, text, hebrew = false, label, children }: {
-  index: number; text: string; hebrew?: boolean; label?: string; children?: React.ReactNode;
+export function QuestionPrompt({ index, text, hebrew = false, label, children, spokenWord, compact = false }: {
+  index: number; text: string; hebrew?: boolean; label?: string; children?: React.ReactNode; spokenWord?: string; compact?: boolean;
 }) {
   const p = usePlay();
   const kind = presenterFor(index);
-  const tint = kind === 'zizo' ? p.coral : kind === 'lumi' ? p.sun : p.sky;
+  const speech = useHebrewSpeech(spokenWord);
+  const playing = speech.status !== 'idle';
+  const tint = kind === 'zizo' ? p.coral : kind === 'lumi' ? p.sun : kind === 'nuna' ? p.brand : p.sky;
   return (
     <View style={s.row}>
-      <View style={s.presenter} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Creature kind={kind} size={82} mood="happy" />
+      <View style={[s.presenter, compact && { width: 64 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <SpeakingTeacher kind={kind} speaking={speech.status === 'speaking'} size={compact ? 64 : 82} />
         <View style={[s.nameTag, { backgroundColor: tint }]}><Text style={s.nameText}>{CREATURE_NAMES[kind]}</Text></View>
       </View>
-      <View style={[s.bubble, { backgroundColor: p.card, borderColor: p.border }]}>
+      <View style={[s.bubble, compact && s.compactBubble, { backgroundColor: p.card, borderColor: p.border }]}>
         <View style={[s.tail, { backgroundColor: p.card, borderColor: p.border }]} />
         {!!label && <Text style={[s.bubbleLabel, { color: p.mutedForeground }]}>{label}</Text>}
         {children}
-        {!!text && <Text selectable style={[hebrew ? s.hebrew : s.arabic, { color: p.foreground }]}>{text}</Text>}
+        {!!spokenWord && <>
+          <Pressable testID="hebrew-speaker" onPress={speech.toggle}
+            accessibilityRole="button" accessibilityLabel={playing ? 'إيقاف النطق' : `اسمع نطق ${spokenWord} بالعبرية`}
+            accessibilityState={{ busy: speech.status === 'loading', selected: playing }}
+            style={[s.speaker, compact && s.compactSpeaker, { backgroundColor: playing ? p.brandSoft : p.skySoft, borderColor: playing ? p.brand : p.sky }]}>
+            <Ionicons name={playing ? 'stop-circle' : 'volume-high'} size={23} color={p.skyInk} />
+            {!compact && <Text style={[s.speakerLabel, { color: p.skyInk }]}>{speech.status === 'loading' ? 'جارٍ تجهيز الصوت…' : playing ? 'إيقاف النطق' : 'استمع للعبرية'}</Text>}
+          </Pressable>
+          {!!speech.error && <Text accessibilityRole="alert" accessibilityLiveRegion="polite"
+            style={[s.speechError, { color: p.coralInk }]}>{speech.error}</Text>}
+        </>}
+        {!!text && <Text selectable style={[hebrew ? s.hebrew : s.arabic, compact && { fontSize: 16, lineHeight: 25 }, { color: p.foreground }]}>{text}</Text>}
       </View>
     </View>
   );
@@ -79,15 +95,20 @@ export function ChunkyProgress({ value, color }: { value: number; color?: string
 
 const s = StyleSheet.create({
   button: { minHeight: 54, borderRadius: 16, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 18 },
-  label: { fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
+  label: { fontSize: 15, fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', lineHeight: 26, paddingVertical: 2, includeFontPadding: true },
   row: { flexDirection: 'row-reverse', alignItems: 'flex-end', gap: 8 },
   presenter: { alignItems: 'center', width: 84 },
   nameTag: { marginTop: -6, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 2 },
   nameText: { color: '#2a1e3a', fontSize: 11, fontWeight: '800' },
   bubble: { flex: 1, borderWidth: 2, borderBottomWidth: 4, borderRadius: 20, padding: 14, gap: 6, marginBottom: 20 },
+  compactBubble: { padding: 10, gap: 4, marginBottom: 8 },
+  compactSpeaker: { position: 'absolute', left: 10, top: 10, width: 44, height: 44, paddingHorizontal: 0, zIndex: 1 },
   tail: { position: 'absolute', right: -8, bottom: 22, width: 14, height: 14, borderRightWidth: 2, borderTopWidth: 2, transform: [{ rotate: '45deg' }] },
   bubbleLabel: { fontSize: 11, fontWeight: '700', textAlign: 'right' },
-  arabic: { fontSize: 17, lineHeight: 27, fontWeight: '700', textAlign: 'right', writingDirection: 'rtl' },
+  speaker: { minHeight: 44, borderRadius: 12, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  speakerLabel: { flexShrink: 1, fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 12, lineHeight: 21, textAlign: 'right' },
+  speechError: { fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
+  arabic: { fontSize: 17, lineHeight: 30, fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', includeFontPadding: true, textAlign: 'right', writingDirection: 'rtl' },
   hebrew: { fontSize: 19, lineHeight: 32, textAlign: 'right', writingDirection: 'rtl' },
   track: { height: 16, width: '100%', borderRadius: 8, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 8, minWidth: 16, alignSelf: 'flex-end' },

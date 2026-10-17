@@ -5,10 +5,10 @@ import { useColors } from '@/hooks/useColors';
 import { PROGRESS_MAX_HOP } from '@/lib/progress-marker';
 import { listenForReduceMotionChanges, updatePetTeacherMotion } from '@/lib/pet-teacher-motion';
 
-export type CreatureKind = 'zizo' | 'lumi' | 'rami';
+export type CreatureKind = 'zizo' | 'lumi' | 'rami' | 'nuna' | 'ghaima';
 export type CreatureMood = 'happy' | 'hype' | 'cheer';
 
-export const CREATURE_NAMES: Record<CreatureKind, string> = { zizo: 'زيزو', lumi: 'لومي', rami: 'رامي' };
+export const CREATURE_NAMES: Record<CreatureKind, string> = { zizo: 'زيزو', lumi: 'لومي', rami: 'رامي', nuna: 'نونا', ghaima: 'غيمة' };
 
 const tips = [
   'أنا زيزو، رفيقك في التدريب. نصل إلى هدفك خطوة بخطوة.',
@@ -23,6 +23,8 @@ const ink = {
   zizo: '#ff8a4c', zizoShade: '#e9672e', zizoBelly: '#ffe2c4', mint: '#5ee0c1', mintShade: '#2fb895',
   lumi: '#ffc83d', lumiShade: '#e9a400', lumiFace: '#fff6d6', flame: '#ff7a59', flameCore: '#ffd36b', teal: '#1f6f78',
   skin: '#c98a64', skinShade: '#b07350', hair: '#2b2230', hoodie: '#2b9bd6', hoodieShade: '#1f7cb3',
+  nuna: '#2fc4b2', nunaShade: '#1b9585', nunaBelly: '#d8fbf2', horn: '#ffd36b',
+  cloud: '#cfe0ff', cloudShade: '#9fbdf2', bolt: '#ffc83d', shoe: '#ff5d7a', tongue: '#ff8fa3',
 };
 
 function Eyes({ lx, rx, y, r, mood }: { lx: number; rx: number; y: number; r: number; mood: CreatureMood }) {
@@ -38,7 +40,15 @@ function Eyes({ lx, rx, y, r, mood }: { lx: number; rx: number; y: number; r: nu
   </>;
 }
 
-function Zizo({ mood }: { mood: CreatureMood }) {
+function OpenMouth({ x, y, w = 14, h = 14 }: { x: number; y: number; w?: number; h?: number }) {
+  return <G>
+    <Ellipse cx={x} cy={y} rx={w / 2} ry={h / 2} fill={ink.line} />
+    <Ellipse cx={x} cy={y + h * 0.24} rx={w * 0.3} ry={h * 0.2} fill={ink.tongue} />
+    <Rect x={x - w * 0.28} y={y - h / 2 + 1} width={w * 0.56} height={h * 0.16} rx={1.2} fill={ink.white} />
+  </G>;
+}
+
+function Zizo({ mood, mouthOpen }: { mood: CreatureMood; mouthOpen: boolean }) {
   const hype = mood === 'hype';
   return <G>
     <Path d="M40 46C24 32 16 14 22 5c11 6 20 22 26 36Z" fill={ink.zizo} />
@@ -55,7 +65,7 @@ function Zizo({ mood }: { mood: CreatureMood }) {
     <Eyes lx={46} rx={74} y={60} r={9.5} mood={mood} />
     <Ellipse cx="33" cy="76" rx="6" ry="3.6" fill={ink.blush} opacity={0.45} />
     <Ellipse cx="87" cy="76" rx="6" ry="3.6" fill={ink.blush} opacity={0.45} />
-    {mood === 'cheer'
+    {mouthOpen ? <OpenMouth x={60} y={80} w={16} h={15} /> : mood === 'cheer'
       ? <Path d="M52 79q8 6 16 0" stroke={ink.line} strokeWidth="3" fill="none" strokeLinecap="round" />
       : <>
         <Path d={hype ? 'M48 75q12 20 24 0Z' : 'M51 76q9 12 18 0Z'} fill={ink.line} />
@@ -75,7 +85,7 @@ function Zizo({ mood }: { mood: CreatureMood }) {
   </G>;
 }
 
-function Lumi({ mood }: { mood: CreatureMood }) {
+function Lumi({ mood, mouthOpen }: { mood: CreatureMood; mouthOpen: boolean }) {
   return <G>
     <Path d="M60 6c11 12 9 21 0 26-9-5-11-14 0-26Z" fill={ink.flame} />
     <Path d="M60 16c5 6 4 10 0 13-4-3-5-7 0-13Z" fill={ink.flameCore} />
@@ -90,14 +100,14 @@ function Lumi({ mood }: { mood: CreatureMood }) {
       : <Path d="M45 66q5-7 10 0M65 66q5-7 10 0" stroke={ink.line} strokeWidth="3.2" fill="none" strokeLinecap="round" />}
     <Ellipse cx="43" cy="75" rx="4" ry="2.6" fill={ink.blush} opacity={0.5} />
     <Ellipse cx="77" cy="75" rx="4" ry="2.6" fill={ink.blush} opacity={0.5} />
-    <Path d={mood === 'cheer' ? 'M55 78q5 3 10 0' : 'M53 75q7 9 14 0Z'} stroke={ink.line} strokeWidth="2.6" fill={mood === 'cheer' ? 'none' : ink.line} strokeLinecap="round" />
+    {mouthOpen ? <OpenMouth x={60} y={77} w={12} h={11} /> : <Path d={mood === 'cheer' ? 'M55 78q5 3 10 0' : 'M53 75q7 9 14 0Z'} stroke={ink.line} strokeWidth="2.6" fill={mood === 'cheer' ? 'none' : ink.line} strokeLinecap="round" />}
     <Rect x="38" y="100" width="44" height="9" rx="4.5" fill={ink.teal} />
     <Ellipse cx="48" cy="112" rx="7" ry="4" fill={ink.teal} />
     <Ellipse cx="72" cy="112" rx="7" ry="4" fill={ink.teal} />
   </G>;
 }
 
-function Rami({ mood }: { mood: CreatureMood }) {
+function Rami({ mood, mouthOpen }: { mood: CreatureMood; mouthOpen: boolean }) {
   return <G>
     <Path d="M22 118c0-24 16-36 38-36s38 12 38 36Z" fill={ink.hoodie} />
     <Path d="M46 84l14 12 14-12" stroke={ink.hoodieShade} strokeWidth="5" fill="none" strokeLinecap="round" />
@@ -118,7 +128,7 @@ function Rami({ mood }: { mood: CreatureMood }) {
     <Path d={mood === 'cheer' ? 'M44 46l10-1M76 46l-10-1' : 'M44 45q6-4 11-1M65 44q6-3 11 1'} stroke={ink.hair} strokeWidth="2.6" fill="none" strokeLinecap="round" />
     <Ellipse cx="42" cy="64" rx="5" ry="3" fill={ink.blush} opacity={0.35} />
     <Ellipse cx="78" cy="64" rx="5" ry="3" fill={ink.blush} opacity={0.35} />
-    {mood === 'cheer'
+    {mouthOpen ? <OpenMouth x={60} y={67} w={13} h={12} /> : mood === 'cheer'
       ? <Path d="M53 66q7 5 14 0" stroke={ink.line} strokeWidth="2.8" fill="none" strokeLinecap="round" />
       : <Path d="M50 63q10 13 20 0Z" fill={ink.line} />}
     {mood === 'hype' && <>
@@ -128,12 +138,62 @@ function Rami({ mood }: { mood: CreatureMood }) {
   </G>;
 }
 
+function Nuna({ mood, mouthOpen }: { mood: CreatureMood; mouthOpen: boolean }) {
+  const hype = mood === 'hype';
+  return <G>
+    <Path d="M86 96c18 4 28-6 24-18-3 8-10 11-18 8" stroke={ink.nuna} strokeWidth="9" fill="none" strokeLinecap="round" />
+    <Path d="M108 74l6-6 1 9Z" fill={ink.horn} />
+    <Path d="M26 64C10 52 8 36 16 30c4 10 10 18 18 22Z" fill={ink.nunaShade} />
+    <Path d="M94 64c16-12 18-28 10-34-4 10-10 18-18 22Z" fill={ink.nunaShade} />
+    <Path d="M60 34c24 0 34 18 34 38 0 24-14 38-34 38S26 96 26 72c0-20 10-38 34-38Z" fill={ink.nuna} />
+    <Path d="M48 22l6 12h-12Z M60 16l6 16h-12Z M72 22l6 12h-12Z" fill={ink.nunaShade} />
+    <Path d="M42 38c-6-10-4-20 2-24 2 8 4 14 8 20Z M78 38c6-10 4-20-2-24-2 8-4 14-8 20Z" fill={ink.horn} />
+    <Ellipse cx="60" cy="90" rx="18" ry="15" fill={ink.nunaBelly} />
+    <Path d="M48 84h24M50 92h20M53 99h14" stroke={ink.nuna} strokeWidth="1.6" opacity={0.5} />
+    <Eyes lx={47} rx={73} y={60} r={8.5} mood={mood} />
+    <Circle cx="55" cy="72" r="1.6" fill={ink.nunaShade} />
+    <Circle cx="65" cy="72" r="1.6" fill={ink.nunaShade} />
+    <Ellipse cx="35" cy="73" rx="5" ry="3" fill={ink.blush} opacity={0.45} />
+    <Ellipse cx="85" cy="73" rx="5" ry="3" fill={ink.blush} opacity={0.45} />
+    {mouthOpen ? <OpenMouth x={60} y={80} w={14} h={13} /> : mood === 'cheer'
+      ? <Path d="M53 79q7 5 14 0" stroke={ink.line} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+      : <><Path d={hype ? 'M49 77q11 16 22 0Z' : 'M52 78q8 9 16 0Z'} fill={ink.line} /><Path d="M54 78l2 3 2-3Z M62 78l2 3 2-3Z" fill={ink.white} /></>}
+    <Path d={hype ? 'M28 80c-10-6-12-16-8-24' : 'M30 86c-6 4-6 10-2 12'} stroke={ink.nunaShade} strokeWidth="7" fill="none" strokeLinecap="round" />
+    <Path d={hype ? 'M92 80c10-6 12-16 8-24' : 'M90 86c6 4 6 10 2 12'} stroke={ink.nunaShade} strokeWidth="7" fill="none" strokeLinecap="round" />
+    <Ellipse cx="48" cy="110" rx="8" ry="4.5" fill={ink.nunaShade} />
+    <Ellipse cx="72" cy="110" rx="8" ry="4.5" fill={ink.nunaShade} />
+  </G>;
+}
+
+function Ghaima({ mood, mouthOpen }: { mood: CreatureMood; mouthOpen: boolean }) {
+  const hype = mood === 'hype';
+  return <G>
+    <Path d="M64 4l-12 22h10l-6 18 18-26H62Z" fill={ink.bolt} />
+    <Path d={hype ? 'M22 70C8 62 6 48 12 40' : 'M22 74c-10 4-12 12-8 16'} stroke={ink.cloudShade} strokeWidth="7" fill="none" strokeLinecap="round" />
+    <Path d={hype ? 'M98 70c14-8 16-22 10-30' : 'M98 74c10 4 12 12 8 16'} stroke={ink.cloudShade} strokeWidth="7" fill="none" strokeLinecap="round" />
+    <Path d="M30 98c-14 0-20-12-14-22-8-10 0-26 14-24 2-16 22-24 34-14 12-10 32-2 32 14 14 0 20 16 12 24 6 12-2 22-14 22Z" fill={ink.cloud} />
+    <Path d="M30 98h68c-4 6-10 8-16 8H44c-6 0-12-2-14-8Z" fill={ink.cloudShade} />
+    <Eyes lx={48} rx={74} y={66} r={8} mood={mood} />
+    <Ellipse cx="38" cy="80" rx="5" ry="3" fill={ink.blush} opacity={0.5} />
+    <Ellipse cx="84" cy="80" rx="5" ry="3" fill={ink.blush} opacity={0.5} />
+    {mouthOpen ? <OpenMouth x={61} y={84} w={13} h={12} /> : mood === 'cheer'
+      ? <Path d="M55 83q6 4 12 0" stroke={ink.line} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+      : <Path d={hype ? 'M51 81q10 14 20 0Z' : 'M54 82q7 8 14 0Z'} fill={ink.line} />}
+    <Rect x="40" y="104" width="7" height="8" rx="3" fill={ink.cloudShade} />
+    <Rect x="74" y="104" width="7" height="8" rx="3" fill={ink.cloudShade} />
+    <Path d="M34 116c0-6 4-8 10-8s8 4 8 8Z M70 116c0-6 4-8 10-8s8 4 8 8Z" fill={ink.shoe} />
+    <Path d="M36 114h14M72 114h14" stroke={ink.white} strokeWidth="2" />
+  </G>;
+}
+
 /** Original Kalima cast. Pure illustration; hidden from assistive tech by callers. */
-export function Creature({ kind = 'zizo', mood = 'happy', size }: { kind?: CreatureKind; mood?: CreatureMood; size: number }) {
+export function Creature({ kind = 'zizo', mood = 'happy', size, mouthOpen = false }: { kind?: CreatureKind; mood?: CreatureMood; size: number; mouthOpen?: boolean }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
       <Ellipse cx="60" cy="116" rx="34" ry="3.5" fill={ink.line} opacity={0.1} />
-      {kind === 'zizo' ? <Zizo mood={mood} /> : kind === 'lumi' ? <Lumi mood={mood} /> : <Rami mood={mood} />}
+      {kind === 'zizo' ? <Zizo mood={mood} mouthOpen={mouthOpen} /> : kind === 'lumi' ? <Lumi mood={mood} mouthOpen={mouthOpen} />
+        : kind === 'nuna' ? <Nuna mood={mood} mouthOpen={mouthOpen} /> : kind === 'ghaima' ? <Ghaima mood={mood} mouthOpen={mouthOpen} />
+        : <Rami mood={mood} mouthOpen={mouthOpen} />}
     </Svg>
   );
 }

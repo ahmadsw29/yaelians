@@ -21,7 +21,7 @@ function NativeTabLayout() {
         />
         <NativeTabs.Trigger.Label>الرئيسية</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="practice">
+      <NativeTabs.Trigger name="practice" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }}
         />

@@ -51,6 +51,7 @@ export type StudyPlanAccessPlan = typeof StudyPlanAccessPlan[keyof typeof StudyP
 
 export const StudyPlanAccessPlan = {
   free: 'free',
+  premium: 'premium',
 } as const;
 
 export type StudyPlanAccessUsage = {

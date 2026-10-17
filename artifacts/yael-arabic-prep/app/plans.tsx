@@ -15,7 +15,7 @@ const PREMIUM_BENEFITS = ['جميع الدورات والمفردات', 'جلس�
 export default function PlansScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { chooseFree } = usePlanAccess();
+  const { chooseFree, isPremium } = usePlanAccess();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const selectFree = async () => {
@@ -31,6 +31,14 @@ export default function PlansScreen() {
       setSaving(false);
     }
   };
+
+  if (isPremium) return <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 20, backgroundColor: c.background }}>
+    <Text accessibilityRole="header" style={[styles.title, { color: c.foreground }]}>خطتك الكاملة مفعّلة</Text>
+    <Text style={[styles.subtitle, { color: c.foreground }]}>جميع الدورات والجلسات والنماذج متاحة لك بلا حدود.</Text>
+    <Pressable testID="premium-continue" accessibilityRole="button" onPress={() => router.replace('/(tabs)')} style={[styles.freeButton, { backgroundColor: c.primary }]}>
+      <Text style={[styles.freeButtonText, { color: c.primaryForeground }]}>تابع التعلّم</Text>
+    </Pressable>
+  </View>;
 
   return <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.page, { paddingTop: Math.max(insets.top, 24) + 12, paddingBottom: Math.max(insets.bottom, 20) + 24 }]}>
     <View style={styles.topRow}>

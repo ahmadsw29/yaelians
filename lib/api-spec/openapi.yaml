@@ -149,7 +149,7 @@ components:
       additionalProperties: false
       required: [plan, usage]
       properties:
-        plan: { type: [string, "null"], enum: [free, null] }
+        plan: { type: [string, "null"], enum: [free, premium, null] }
         usage:
           type: object
           additionalProperties: false

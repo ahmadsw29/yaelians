@@ -19,7 +19,7 @@ function utcDate(date = new Date()) {
 
 function planAccessResponse(plan: string | null, date: string, claims: { activity: string; key: string }[]) {
   return GetStudyPlanAccessResponse.parse({
-    plan: plan === "free" ? "free" : null,
+    plan: plan === "free" || plan === "premium" ? plan : null,
     usage: {
       date,
       vocabularyRounds: claims.filter(claim => claim.activity === "vocabulary").length,
@@ -74,12 +74,14 @@ router.put("/study/plan-access", async (req, res) => {
     if (deleting) return { status: 403 as const, access: planAccessResponse(null, utcDate(), []) };
     await clerkClient.users.getUser(userId);
     await tx.insert(accountPlanAccess).values({ userId, plan: parsed.data.plan })
-      .onConflictDoUpdate({ target: accountPlanAccess.userId, set: { plan: parsed.data.plan } });
+      .onConflictDoNothing();
+    // Self-service can choose only free; it must never overwrite an owner grant.
+    const [selected] = await tx.select().from(accountPlanAccess).where(eq(accountPlanAccess.userId, userId));
     const date = utcDate();
     const claims = await tx.select({ activity: planActivityClaims.activity, key: planActivityClaims.key })
       .from(planActivityClaims)
       .where(and(eq(planActivityClaims.userId, userId), eq(planActivityClaims.activityDate, date)));
-    return { status: 200 as const, access: planAccessResponse(parsed.data.plan, date, claims) };
+    return { status: 200 as const, access: planAccessResponse(selected?.plan ?? null, date, claims) };
   });
   if (result.status === 403) res.status(403).json({ error: "Account deletion is pending" });
   else res.json(result.access);
@@ -106,6 +108,9 @@ router.post("/study/plan-access/claims", async (req, res) => {
     let allowed = false;
     if (existing) {
       allowed = existing.activity === activity;
+    } else if (planRow?.plan === "premium") {
+      await tx.insert(planActivityClaims).values({ userId, key, activity, activityDate: date });
+      allowed = true;
     } else if (planRow?.plan === "free") {
       const currentClaims = await tx.select().from(planActivityClaims).where(and(
         eq(planActivityClaims.userId, userId),

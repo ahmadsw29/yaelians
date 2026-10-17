@@ -19,9 +19,10 @@ import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { getProfileNames } from '@/lib/profile';
 import ExamShortcuts from '@/components/ExamShortcuts';
+import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const BOLD = ARABIC_BOLD_FONT;
 
 export default function HomeScreen() {
   const { user } = useUser();

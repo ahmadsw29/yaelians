@@ -13,6 +13,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { getPracticeScreenSpacing } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
 import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/study';
 import { useStudy } from '@/lib/StudyProvider';
@@ -32,7 +35,7 @@ import {
 } from '@/lib/progress-marker';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const BOLD = ARABIC_BOLD_FONT;
 const WORD_BANK = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
 
 export default function PracticeScreen() {
@@ -91,6 +94,9 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = makeStyles(p, insets.top);
+  const screenSpacing = getPracticeScreenSpacing(Platform.OS, insets.top, insets.bottom, isLiquidGlassAvailable());
+  const [bodyHeight, setBodyHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
   const [correct, setCorrect] = useState(0);
@@ -219,8 +225,8 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
 
   const answered = choice !== null;
   return (
-    <View style={styles.screen}>
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={[styles.screen, screenSpacing]}>
+    <View testID="practice-top-bar" style={styles.topBar}>
       <StudySyncStatus />
       <View style={styles.header}>
         <Pressable onPress={() => router.push('/')} accessibilityRole="button" accessibilityLabel="العودة للرئيسية" hitSlop={10} style={styles.backButton}>
@@ -249,10 +255,18 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
         </Pressable>
       </View>
 
-      <Text style={styles.lessonKicker}>{mode === 'words' ? 'كلمة جديدة' : 'اقرأ القطعة على مهلك'}</Text>
+    </View>
+    <ScrollView testID="practice-question-body" key={`${mode}-${index}`} style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+      scrollEnabled={mode !== 'words' || contentHeight > bodyHeight + 1}
+      onLayout={event => setBodyHeight(event.nativeEvent.layout.height)}
+      onContentSizeChange={(_, height) => setContentHeight(height)}
+      bounces={mode !== 'words'}
+      contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}>
+
+      {mode !== 'words' && <Text style={styles.lessonKicker}>اقرأ القطعة على مهلك</Text>}
 
       {mode === 'words' ? (
-        <QuestionPrompt index={index} text={question.prompt}>
+        <QuestionPrompt key={`word-${index}`} index={index} text={question.prompt} spokenWord={question.word} compact>
           <View style={styles.wordStage}>
             <Text style={styles.hebrew}>{question.word}</Text>
             <Text style={styles.transliteration}>{question.transliteration}</Text>
@@ -310,19 +324,20 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
       </View>
     </ScrollView>
 
-      <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: Platform.OS === 'web' ? 100 : Math.max(insets.bottom, 14) }]}>
+      <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: 8 }]}>
         {answerFeedback && <Text
           accessibilityLiveRegion="polite"
           importantForAccessibility="yes"
           style={styles.accessibilityAnnouncement}
         >{answerFeedback.announcement}</Text>}
-        {answered && <View style={styles.feedbackRow}>
-          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={62} jumpKey={celebrationKey} />
+        <View style={mode === 'words' ? styles.compactFooterRow : undefined}>
+        {answered && <View style={[styles.feedbackRow, mode === 'words' && { width: 68, gap: 4 }]}>
+          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={mode === 'words' ? 34 : 62} jumpKey={celebrationKey} />
           <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28}
             color={isCorrect ? p.successInk : p.coralInk} accessibilityLabel={isCorrect ? 'إجابة صحيحة' : 'إجابة غير صحيحة'} />
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+          {mode !== 'words' && <View style={{ flex: 1, alignItems: 'flex-end' }}>
             {!isCorrect && <Text style={[styles.feedbackBody, { color: p.coralInk }]}>الإجابة الصحيحة: {question.correctAnswer}</Text>}
-          </View>
+          </View>}
         </View>}
         <ChunkyButton
           testID="next-question"
@@ -331,7 +346,9 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
           tone={!answered || isCorrect ? 'success' : 'coral'}
           icon="arrow-back"
           label={index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}
+          style={mode === 'words' ? { flex: 1 } : undefined}
         />
+        </View>
       </View>
     </View>
   );
@@ -341,32 +358,34 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
   const c = p;
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    content: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 14, paddingBottom: 24, maxWidth: 600, width: '100%', alignSelf: 'center' },
-    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 18 },
+    topBar: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(54, topInset) : 4, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    content: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 2, paddingBottom: 8, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 6 },
     backButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
     progressCount: { color: p.successInk, fontSize: 13, fontFamily: BOLD, fontWeight: '800', minWidth: 40, textAlign: 'center' },
-    modeSwitch: { flexDirection: 'row-reverse', backgroundColor: c.muted, borderRadius: 16, padding: 4, marginBottom: 16, gap: 4 },
-    modeButton: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 12 },
+    modeSwitch: { flexDirection: 'row-reverse', backgroundColor: c.muted, borderRadius: 16, padding: 3, marginBottom: 8, gap: 4 },
+    modeButton: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 5, borderRadius: 12 },
     modeButtonActive: { backgroundColor: p.skySoft, borderWidth: 2, borderColor: p.sky, borderBottomWidth: 4 },
-    modeText: { color: c.mutedForeground, fontFamily: BOLD, fontWeight: '700', fontSize: 13 },
+    modeText: { color: c.mutedForeground, fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22 },
     lessonKicker: { color: p.coralShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, textAlign: 'right', marginBottom: 10, letterSpacing: 0.3 },
-    wordStage: { alignItems: 'center', backgroundColor: p.brandSoft, borderRadius: 14, paddingVertical: 10 },
-    hebrew: { color: c.foreground, fontSize: 34, fontFamily: BOLD, fontWeight: '800', textAlign: 'center', writingDirection: 'rtl' },
+    wordStage: { alignItems: 'center', backgroundColor: p.brandSoft, borderRadius: 14, paddingVertical: 4, paddingLeft: 44 },
+    hebrew: { color: c.foreground, fontSize: 28, lineHeight: 36, fontFamily: BOLD, fontWeight: '800', textAlign: 'center', writingDirection: 'rtl' },
     transliteration: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'center', fontSize: 13, marginTop: 2 },
-    sentenceBox: { backgroundColor: c.muted, borderRadius: 12, padding: 10, alignItems: 'flex-end' },
-    sentenceLabel: { color: c.mutedForeground, fontSize: 10, fontFamily: FONT, marginBottom: 3 },
-    sentence: { color: c.foreground, fontFamily: BOLD, fontSize: 16, lineHeight: 26, textAlign: 'right', writingDirection: 'rtl' },
+    sentenceBox: { backgroundColor: c.muted, borderRadius: 12, padding: 6, alignItems: 'flex-end' },
+    sentenceLabel: { color: c.mutedForeground, fontSize: 10, lineHeight: 12, fontFamily: FONT, marginBottom: 1 },
+    sentence: { color: c.foreground, fontFamily: BOLD, fontSize: 14, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
     readingCard: { backgroundColor: c.card, borderRadius: 20, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, padding: 16, marginBottom: 14, alignItems: 'flex-end', gap: 8 },
     readingHebrew: { color: c.foreground, fontSize: 19, lineHeight: 32, fontFamily: BOLD, textAlign: 'right', writingDirection: 'rtl' },
     readingHint: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, backgroundColor: p.skySoft, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 5 },
     readingHintText: { color: p.skyInk, fontSize: 11, fontFamily: BOLD, fontWeight: '700' },
-    options: { gap: 10 },
-    option: { minHeight: 58, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+    options: { gap: 6 },
+    option: { minHeight: 48, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     pressedOption: { transform: [{ translateY: 3 }], borderBottomWidth: 2, borderColor: p.sky, backgroundColor: p.skySoft },
-    optionText: { flex: 1, textAlign: 'right', color: c.foreground, fontSize: 16, fontFamily: BOLD, fontWeight: '700', writingDirection: 'rtl' },
+    optionText: { flex: 1, textAlign: 'right', color: c.foreground, fontSize: 16, lineHeight: 24, includeFontPadding: true, fontFamily: BOLD, fontWeight: '800', writingDirection: 'rtl' },
     optionDot: { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: c.border, backgroundColor: c.muted, alignItems: 'center', justifyContent: 'center' },
     optionLetter: { color: c.mutedForeground, fontSize: 12, fontFamily: BOLD, fontWeight: '800' },
-    footer: { borderTopWidth: 2, borderTopColor: c.border, backgroundColor: c.background, paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 12, gap: 10, width: '100%', alignSelf: 'center' },
+    footer: { borderTopWidth: 2, borderTopColor: c.border, backgroundColor: c.background, paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 8, gap: 6, width: '100%', alignSelf: 'center' },
+    compactFooterRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, maxWidth: 600, width: '100%', alignSelf: 'center' },
     feedbackRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, maxWidth: 600, width: '100%', alignSelf: 'center' },
     accessibilityAnnouncement: { position: 'absolute', left: -10000, width: 1, height: 1, overflow: 'hidden' },
     feedbackBody: { fontSize: 14, fontWeight: '600', textAlign: 'right', marginTop: 2, writingDirection: 'rtl' },

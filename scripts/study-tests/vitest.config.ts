@@ -22,6 +22,8 @@ export default defineConfig({
           'study-tests/routes.test.ts',
           'study-tests/outbox.test.tsx',
           'study-tests/progress-marker.test.ts',
+          'study-tests/practice-layout.test.ts',
+          'study-tests/hebrew-speaker.test.ts',
           'study-tests/pet-teacher-motion.test.ts',
           'study-tests/practice-celebrations.test.ts',
         ],
