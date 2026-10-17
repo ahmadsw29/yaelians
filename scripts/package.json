@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "test:study": "bash study-tests/run.sh",
+    "test:study:clerk": "bash study-tests/real-clerk/run.sh",
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@clerk/backend": "^3.24.0",
     "@tanstack/react-query": "catalog:",
     "@types/express": "^5.0.6",
     "@types/node": "catalog:",

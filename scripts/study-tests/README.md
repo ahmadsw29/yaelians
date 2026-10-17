@@ -24,3 +24,23 @@ Coverage:
 This is not a Clerk authentication or native OS storage test. Test bearer strings
 represent already-authenticated identities; identity adapters are only wired by
 the test config. No production code is modified for testing.
+
+## Authenticated Clerk transition check
+
+Run `pnpm test:study:clerk` separately. It requires the configured Clerk
+development keys plus the same local PostgreSQL tools as the deterministic
+suite. The command rejects production keys before starting and creates its own
+temporary PostgreSQL cluster; it never reads or writes the application's
+database.
+
+This lane creates two uniquely tagged, temporary Clerk development users and
+real sessions using the Clerk Backend SDK. It checks the production
+`StudyProvider` request-auth helper, generated API client headers, and the
+unmocked Express/Clerk middleware across sign-out, revocation, and sign-in as
+the second user. It revokes/deletes only sessions/users created by that run.
+If the process is forcibly terminated before cleanup, remove only the
+`study-clerk-auth` test users bearing that run's private metadata in the Clerk
+Development environment. A revoked Clerk session's already-issued JWT may remain
+valid until expiry; the test verifies that such a token stays bound to its
+original user, while the provider refuses to dispatch work after its session
+changes. This test does not cover account deletion.

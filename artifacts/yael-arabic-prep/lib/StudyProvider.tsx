@@ -8,6 +8,7 @@ import {
   useSaveStudyLesson, useImportStudyStats, type StudyLessonInput,
 } from '@workspace/api-client-react';
 import { DEFAULT_STATS, readStudyStats, recordLesson, type StudyStats } from './study';
+import { getStudyAuthOptions } from './study-auth';
 
 type StudyContext = {
   stats: StudyStats; loading: boolean; message: string; pending: number;
@@ -105,13 +106,11 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   const [busy, setBusy] = useState(false);
 
   // Pin each request to this provider's account, never the global token getter.
-  const authOptions = async () => {
-    const session = clerk.session;
-    if (deleting.current || !alive.current || !userId || session?.user.id !== userId) throw new Error('Account changed');
-    const token = await session.getToken();
-    if (!token || !alive.current || clerk.session?.id !== session.id) throw new Error('Sign in again');
-    return { headers: { Authorization: `Bearer ${token}` }, credentials: 'omit' as const };
-  };
+  const authOptions = () => getStudyAuthOptions(
+    () => clerk.session ?? null,
+    userId,
+    () => !deleting.current && alive.current,
+  );
   const query = useGetStudyStats({
     query: {
       queryKey: key, enabled: !!userId, retry: false, refetchInterval: 30000,
