@@ -4,6 +4,7 @@ import {
   planAdaptiveRound, recordAdaptiveAnswer,
 } from '../../artifacts/yael-arabic-prep/lib/adaptive-restatement';
 import { completionFeedback } from '../../artifacts/yael-arabic-prep/lib/completion-feedback';
+import { SEMI_MASTER_XP, MASTER_XP } from '../../artifacts/yael-arabic-prep/lib/learner-ranks';
 
 test('a wrong answer returns next round while correct answers are spaced and remain eligible later', () => {
   const pool = Array.from({ length: 30 }, (_, index) => ({ id: `q-${index}` }));
@@ -37,17 +38,17 @@ test('resuming an unfinished round does not reshuffle or extend its deadline', (
 });
 
 test('six-question rounds use 6:30 below Semi-Master and exactly 6:00 from that rank onward', () => {
-  expect(adaptiveRoundDuration(2999)).toBe(390000);
-  expect(adaptiveRoundDuration(3000)).toBe(360000);
-  expect(adaptiveRoundDuration(6000)).toBe(360000);
+  expect(adaptiveRoundDuration(SEMI_MASTER_XP - 1)).toBe(390000);
+  expect(adaptiveRoundDuration(SEMI_MASTER_XP)).toBe(360000);
+  expect(adaptiveRoundDuration(MASTER_XP)).toBe(360000);
   const pool = Array.from({ length: 18 }, (_, i) => ({ id: `question-${i}` }));
-  const beginner = planAdaptiveRound(emptyAdaptiveMemory(), pool, 'beginner', 1000, () => 0.5, 2999);
-  const advanced = planAdaptiveRound(emptyAdaptiveMemory(), pool, 'advanced', 1000, () => 0.5, 3000);
+  const beginner = planAdaptiveRound(emptyAdaptiveMemory(), pool, 'beginner', 1000, () => 0.5, SEMI_MASTER_XP - 1);
+  const advanced = planAdaptiveRound(emptyAdaptiveMemory(), pool, 'advanced', 1000, () => 0.5, SEMI_MASTER_XP);
   expect(beginner.active!.questionIds).toHaveLength(6);
   expect(advanced.active!.questionIds).toHaveLength(6);
   expect(beginner.active!.deadline - beginner.active!.startedAt).toBe(390000);
   expect(advanced.active!.deadline - advanced.active!.startedAt).toBe(360000);
-  expect(planAdaptiveRound(beginner, pool, 'same-round', 2000, () => 0.5, 3000)).toBe(beginner);
+  expect(planAdaptiveRound(beginner, pool, 'same-round', 2000, () => 0.5, SEMI_MASTER_XP)).toBe(beginner);
 });
 
 test('celebrations require enough real correct work, not empty submission or weak scores', () => {
