@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useUser } from '@clerk/expo';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,15 +11,17 @@ const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
 export default function ProgressScreen() {
+  const { user } = useUser();
   const c = useColors();
   const insets = useSafeAreaInsets();
   const [stats, setStats] = useState<StudyStats>(DEFAULT_STATS);
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    readStudyStats().then((value) => { if (active) setStats(value); });
+    setStats(DEFAULT_STATS);
+    readStudyStats(user?.id).then((value) => { if (active) setStats(value); });
     return () => { active = false; };
-  }, []));
+  }, [user?.id]));
 
   const accuracy = stats.answeredQuestions
     ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
@@ -84,11 +87,12 @@ export default function ProgressScreen() {
 }
 
 function Metric({ icon, value, unit, label, tint, color }: { icon: keyof typeof Ionicons.glyphMap; value: string; unit: string; label: string; tint: string; color: string }) {
+  const c = useColors();
   return (
-    <View style={metricStyles.card}>
+    <View style={[metricStyles.card, { backgroundColor: c.card, borderColor: c.border }]}>
       <View style={[metricStyles.icon, { backgroundColor: tint }]}><Ionicons name={icon} size={19} color={color} /></View>
-      <Text style={metricStyles.value}>{value} <Text style={metricStyles.unit}>{unit}</Text></Text>
-      <Text style={metricStyles.label}>{label}</Text>
+      <Text style={[metricStyles.value, { color: c.foreground }]}>{value} <Text style={[metricStyles.unit, { color: c.mutedForeground }]}>{unit}</Text></Text>
+      <Text style={[metricStyles.label, { color: c.mutedForeground }]}>{label}</Text>
     </View>
   );
 }

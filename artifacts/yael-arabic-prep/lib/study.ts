@@ -22,9 +22,9 @@ export const DEFAULT_STATS: StudyStats = {
 
 const STATS_KEY = 'yael-study-stats-v1';
 
-export async function readStudyStats(): Promise<StudyStats> {
+export async function readStudyStats(userId?: string | null): Promise<StudyStats> {
   try {
-    const stored = await AsyncStorage.getItem(STATS_KEY);
+    const stored = await AsyncStorage.getItem(userId ? `${STATS_KEY}:${userId}` : STATS_KEY);
     if (!stored) return DEFAULT_STATS;
     const parsed = JSON.parse(stored) as Partial<StudyStats>;
     return { ...DEFAULT_STATS, ...parsed };
@@ -33,8 +33,8 @@ export async function readStudyStats(): Promise<StudyStats> {
   }
 }
 
-export async function recordLesson(correct: number, total: number) {
-  const previous = await readStudyStats();
+export async function recordLesson(correct: number, total: number, userId?: string | null) {
+  const previous = await readStudyStats(userId);
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
   const alreadyPracticedToday = previous.lastPracticeDate === today;
@@ -53,7 +53,7 @@ export async function recordLesson(correct: number, total: number) {
     masteredWords: previous.masteredWords + correct,
     lastPracticeDate: today,
   };
-  await AsyncStorage.setItem(STATS_KEY, JSON.stringify(next));
+  await AsyncStorage.setItem(userId ? `${STATS_KEY}:${userId}` : STATS_KEY, JSON.stringify(next));
   return next;
 }
 

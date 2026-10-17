@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useUser } from '@clerk/expo';
 import {
   Platform,
   Pressable,
@@ -18,6 +19,11 @@ const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
 export default function PracticeScreen() {
+  const { user } = useUser();
+  return <PracticeSession key={user?.id ?? 'guest'} userId={user?.id} />;
+}
+
+function PracticeSession({ userId }: { userId?: string }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -56,7 +62,7 @@ export default function PracticeScreen() {
   const next = async () => {
     if (index === 4) {
       setComplete(true);
-      await recordLesson(correct, 5);
+      await recordLesson(correct, 5, userId);
       setSaved(true);
       return;
     }
@@ -81,7 +87,7 @@ export default function PracticeScreen() {
         {saved ? (
           <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
             <Text style={styles.finishButtonText}>العودة للرئيسية</Text>
-            <Ionicons name="arrow-back" size={18} color="#fff" />
+            <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
           </Pressable>
         ) : null}
       </View>
@@ -187,7 +193,7 @@ export default function PracticeScreen() {
         style={({ pressed }) => [styles.nextButton, !choice && styles.nextDisabled, pressed && choice && styles.pressed]}
       >
         <Text style={styles.nextText}>{index === 4 ? 'إنهاء التدريب' : 'السؤال التالي'}</Text>
-        <Ionicons name="arrow-back" size={18} color="#fffdf8" />
+        <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
       </Pressable>
     </ScrollView>
   );
@@ -242,7 +248,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     feedbackSub: { color: '#8f6757', fontFamily: FONT, fontSize: 11, marginTop: 2 },
     nextButton: { minHeight: 53, borderRadius: 17, marginTop: 16, backgroundColor: c.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
     nextDisabled: { opacity: 0.4 },
-    nextText: { color: '#fffdf8', fontFamily: BOLD, fontSize: 14 },
+    nextText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },
     pressed: { opacity: 0.83, transform: [{ scale: 0.99 }] },
     completionScreen: { flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, paddingTop: Platform.OS === 'web' ? 67 : 0 },
     completionIcon: { width: 84, height: 84, borderRadius: 29, backgroundColor: '#fae9db', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
@@ -252,6 +258,6 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     xpBadge: { marginTop: 19, backgroundColor: '#fff0d9', borderRadius: 15, paddingHorizontal: 15, paddingVertical: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 7 },
     xpText: { color: '#976428', fontFamily: BOLD, fontSize: 14 },
     finishButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: c.primary, paddingVertical: 15, paddingHorizontal: 24, borderRadius: 17, marginTop: 28, minWidth: 210 },
-    finishButtonText: { color: '#fff', fontFamily: BOLD, fontSize: 14 },
+    finishButtonText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },
   });
 }

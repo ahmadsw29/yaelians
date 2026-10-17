@@ -13,6 +13,15 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { ClerkProvider, ClerkLoaded, useAuth, useClerk } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
+import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
+import { ThemeProvider } from '@/hooks/useColors';
+
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+if (domain) setBaseUrl(`https://${domain}`);
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -20,9 +29,27 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { getToken } = useAuth();
+  const { addListener } = useClerk();
+  const previousUser = React.useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  useEffect(() => addListener(({ user }) => {
+    const nextUser = user?.id ?? null;
+    if (previousUser.current !== undefined && previousUser.current !== nextUser) {
+      queryClient.clear();
+    }
+    previousUser.current = nextUser;
+  }), [addListener]);
+
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Back' }}>
+    <Stack screenOptions={{ headerBackTitle: 'رجوع' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
     </Stack>
   );
 }
@@ -45,15 +72,21 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+          <ThemeProvider>
+            <ErrorBoundary>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <ClerkLoaded>
+                    <RootLayoutNav />
+                  </ClerkLoaded>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </ErrorBoundary>
+          </ThemeProvider>
+        </ClerkProvider>
+      </QueryClientProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useUser } from '@clerk/expo';
 import {
   ActivityIndicator,
   Platform,
@@ -13,11 +14,14 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { DEFAULT_STATS, readStudyStats, StudyStats } from '@/lib/study';
+import { getProfileNames } from '@/lib/profile';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
 export default function HomeScreen() {
+  const { user } = useUser();
+  const { firstName } = getProfileNames(user);
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -26,14 +30,15 @@ export default function HomeScreen() {
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    readStudyStats().then((value) => {
+    setStats(DEFAULT_STATS);
+    readStudyStats(user?.id).then((value) => {
       if (active) {
         setStats(value);
         setLoading(false);
       }
     });
     return () => { active = false; };
-  }, []));
+  }, [user?.id]));
 
   const styles = makeStyles(colors, insets.top);
   const accuracy = stats.answeredQuestions
@@ -59,7 +64,7 @@ export default function HomeScreen() {
 
       <View style={styles.greeting}>
         <Text style={styles.eyebrow}>رحلتك نحو علامة أفضل</Text>
-        <Text style={styles.title}>أهلًا نور،{"\n"}جاهزة لدرس اليوم؟</Text>
+        <Text style={styles.title}>أهلًا{firstName ? ` ${firstName}` : ''}،{"\n"}نبدأ درس اليوم؟</Text>
         <Text style={styles.subtitle}>خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.</Text>
       </View>
 
@@ -127,14 +132,15 @@ export default function HomeScreen() {
 }
 
 function PathItem({ icon, label, detail, color, iconColor }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; detail: string; color: string; iconColor: string }) {
+  const c = useColors();
   return (
     <View style={pathStyles.row}>
       <View style={[pathStyles.icon, { backgroundColor: color }]}>
         <MaterialCommunityIcons name={icon} size={21} color={iconColor} />
       </View>
       <View style={pathStyles.copy}>
-        <Text style={pathStyles.label}>{label}</Text>
-        <Text style={pathStyles.detail}>{detail}</Text>
+        <Text style={[pathStyles.label, { color: c.foreground }]}>{label}</Text>
+        <Text style={[pathStyles.detail, { color: c.mutedForeground }]}>{detail}</Text>
       </View>
       <Ionicons name="checkmark-circle" size={20} color="#d6ddd4" />
     </View>
@@ -142,11 +148,12 @@ function PathItem({ icon, label, detail, color, iconColor }: { icon: keyof typeo
 }
 
 function StatCard({ icon, value, label, color }: { icon: keyof typeof Ionicons.glyphMap; value: string; label: string; color: string }) {
+  const c = useColors();
   return (
-    <View style={statStyles.card}>
+    <View style={[statStyles.card, { backgroundColor: c.card, borderColor: c.border }]}>
       <Ionicons name={icon} size={17} color={color} />
-      <Text style={statStyles.value}>{value}</Text>
-      <Text style={statStyles.label}>{label}</Text>
+      <Text style={[statStyles.value, { color: c.foreground }]}>{value}</Text>
+      <Text style={[statStyles.label, { color: c.mutedForeground }]}>{label}</Text>
     </View>
   );
 }
