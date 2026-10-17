@@ -27,7 +27,7 @@ export default function PracticeScreen() {
   const { user } = useUser();
   const { ready, plan, isPremium, claimActivity } = usePlanAccess();
   const router = useRouter();
-  const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'continue' | 'untracked' | 'blocked'>('checking');
 
   useEffect(() => {
     let active = true;
@@ -36,19 +36,39 @@ export default function PracticeScreen() {
     void claimActivity('vocabulary').then(allowed => {
       if (!active) return;
       if (allowed) setAccess('allowed');
-      else {
-        setAccess('blocked');
-        router.replace('/plans?reason=daily-vocabulary-limit');
-      }
+      else setAccess('continue');
     }).catch(() => { if (active) setAccess('blocked'); });
     return () => { active = false; };
   }, [claimActivity, isPremium, plan, ready, router]);
 
-  if (!ready || !plan || access !== 'allowed') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>{access === 'blocked' ? 'افتح الخطط لمتابعة التعلّم.' : 'جارٍ تجهيز التدريب…'}</Text></View>;
-  return <PracticeSession key={user?.id ?? 'guest'} userId={user?.id} isPremium={isPremium} />;
+  if (!ready || !plan || access === 'checking' || access === 'blocked') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>{access === 'blocked' ? 'تعذّر التحقق من خطتك. أعد المحاولة.' : 'جارٍ تجهيز التدريب…'}</Text></View>;
+  if (access === 'continue' && !isPremium) return <FreePracticePrompt onContinue={() => setAccess('untracked')} />;
+  return <PracticeSession key={`${user?.id ?? 'guest'}:${access}`} userId={user?.id} isPremium={isPremium} trackThisRound={access === 'allowed'} />;
 }
 
-function PracticeSession({ userId, isPremium }: { userId?: string; isPremium: boolean }) {
+function FreePracticePrompt({ onContinue }: { onContinue: () => void }) {
+  const c = useColors();
+  const router = useRouter();
+  return <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, gap: 15, backgroundColor: c.background }}>
+    <View style={{ alignSelf: 'center', width: 58, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: c.secondary }}>
+      <Ionicons name="sparkles" size={27} color={c.primary} />
+    </View>
+    <Text style={{ color: c.foreground, fontSize: 24, fontWeight: '700', textAlign: 'center' }}>أنهيت جولتك المحفوظة اليوم</Text>
+    <Text style={{ color: c.mutedForeground, fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+      تقدر تواصل التدريب مجانًا. الجولات الإضافية لن تُضاف إلى تقدّمك اليومي.
+    </Text>
+    <Pressable testID="continue-free-practice" accessibilityRole="button" onPress={onContinue}
+      style={({ pressed }) => ({ minHeight: 52, borderRadius: 16, backgroundColor: c.primary, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9, opacity: pressed ? 0.82 : 1 })}>
+      <Text style={{ color: c.primaryForeground, fontWeight: '700', fontSize: 15 }}>واصل التدريب</Text><Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
+    </Pressable>
+    <Pressable testID="vocabulary-see-plans" accessibilityRole="button" onPress={() => router.push('/plans')}
+      style={({ pressed }) => ({ minHeight: 48, borderRadius: 16, backgroundColor: c.card, borderColor: c.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.78 : 1 })}>
+      <Text style={{ color: c.foreground, fontWeight: '600' }}>عرض الخطط</Text>
+    </Pressable>
+  </View>;
+}
+
+function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: string; isPremium: boolean; trackThisRound: boolean }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -62,6 +82,7 @@ function PracticeSession({ userId, isPremium }: { userId?: string; isPremium: bo
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<'words' | 'reading'>('words');
+  const [trackProgress, setTrackProgress] = useState(trackThisRound);
   const [wordOrder, setWordOrder] = useState(() => WORD_BANK.map((_, i) => i));
   const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
   const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
@@ -95,6 +116,11 @@ function PracticeSession({ userId, isPremium }: { userId?: string; isPremium: bo
       if (saving.current || saved) return;
       saving.current = true;
       setComplete(true);
+      if (!trackProgress) {
+        setSaved(true);
+        saving.current = false;
+        return;
+      }
       setSaveError(false);
       try {
         await save(correct, activeQuestions.length);
@@ -115,6 +141,7 @@ function PracticeSession({ userId, isPremium }: { userId?: string; isPremium: bo
   };
 
   const continuePractice = () => {
+    if (!isPremium) setTrackProgress(false);
     const nextOrder = WORD_BANK.map((_, i) => i);
     for (let i = nextOrder.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -139,17 +166,16 @@ function PracticeSession({ userId, isPremium }: { userId?: string; isPremium: bo
         <View style={styles.completionIcon}>
           <Ionicons name="trophy" size={38} color="#bd7637" />
         </View>
-        <Text style={styles.completionEyebrow}>أحسنت! أنهيت تدريب اليوم</Text>
+        <Text style={styles.completionEyebrow}>{trackProgress ? 'أحسنت! أنهيت جولتك المحفوظة اليوم' : 'تدريب إضافي بلا حفظ للتقدّم'}</Text>
         <Text style={styles.completionTitle}>خطوة جديدة نحو{"\n"}هدفك</Text>
         <Text style={styles.completionText}>أجبت عن {correct} من {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length} أسئلة بشكل صحيح</Text>
-        <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>
+        {trackProgress && <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>}
         {saved ? (
           <>
-          {mode === 'words' && isPremium && <Pressable onPress={continuePractice} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="continue-vocabulary">
-            <Text style={styles.continueButtonText}>واصل التدريب بجولة جديدة</Text>
+          {mode === 'words' && <Pressable onPress={continuePractice} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="continue-vocabulary">
+            <Text style={styles.continueButtonText}>{isPremium ? 'واصل التدريب بجولة جديدة' : 'واصل التدريب دون حفظ جولة إضافية'}</Text>
             <Ionicons name="refresh" size={18} color={c.primary} />
           </Pressable>}
-          {mode === 'words' && !isPremium && <Text style={{ color: c.mutedForeground, textAlign: 'center', lineHeight: 22, paddingHorizontal: 12 }}>أنهيت جولتك المجانية اليوم. عُد غدًا لجولة جديدة، أو اطّلع على الخطة الكاملة.</Text>}
           <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
             <Text style={styles.finishButtonText}>العودة للرئيسية</Text>
             <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />

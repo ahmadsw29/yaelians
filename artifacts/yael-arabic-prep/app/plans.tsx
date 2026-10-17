@@ -9,7 +9,7 @@ import { usePlanAccess } from '@/lib/PlanAccess';
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
-const FREE_BENEFITS = ['جولة مفردات واحدة كل يوم', 'قسم امتحان محدد بوقت واحد كل يوم', 'الوصول إلى نموذج B-17'];
+const FREE_BENEFITS = ['جولة مفردات محفوظة واحدة كل يوم', 'قسم امتحان محدد بوقت واحد كل يوم', 'الوصول إلى نموذج B-17'];
 const PREMIUM_BENEFITS = ['جميع الدورات والمفردات', 'جلسات امتحان بلا حدود', 'مكتبة النماذج كاملة'];
 
 export default function PlansScreen() {
