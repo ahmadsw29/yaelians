@@ -1,16 +1,22 @@
 import { Router } from "express";
 import { isDeepStrictEqual } from "node:util";
-import { getAuth } from "@clerk/express";
-import { db, studyEvents, studyProgress } from "@workspace/db";
+import { clerkClient, getAuth } from "@clerk/express";
+import { lockAccount } from "./account";
+import { db, studyEvents, studyProgress, accountDeletions } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { GetStudyStatsResponse, ImportStudyStatsBody, SaveStudyLessonBody } from "@workspace/api-zod";
 import { addLesson, emptyStats, validLegacyStats } from "../lib/study";
 
 const router = Router();
-router.use("/study", (req, res, next) => {
+router.use("/study", async (req, res, next) => {
   res.set("Cache-Control", "no-store");
   if (!getAuth(req).userId) {
     res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  const [deleting] = await db.select().from(accountDeletions).where(eq(accountDeletions.userId, getAuth(req).userId!));
+  if (deleting) {
+    res.status(403).json({ error: "Account deletion is pending" });
     return;
   }
   next();
@@ -38,6 +44,11 @@ for (const kind of ["lessons", "import"] as const) {
     }
     const payload = { kind, ...data };
     const result = await db.transaction(async (tx) => {
+      await lockAccount(tx, userId);
+      const [deleting] = await tx.select().from(accountDeletions).where(eq(accountDeletions.userId, userId));
+      if (deleting) return { status: 403, stats: emptyStats };
+      // A still-unexpired JWT must not recreate data for a deleted identity.
+      await clerkClient.users.getUser(userId);
       await tx.insert(studyProgress).values({ userId, stats: emptyStats }).onConflictDoNothing();
       // Lock the account row: different devices and imports cannot overwrite each other.
       const [row] = await tx.select().from(studyProgress).where(eq(studyProgress.userId, userId)).for("update");
@@ -57,7 +68,9 @@ for (const kind of ["lessons", "import"] as const) {
       await tx.update(studyProgress).set({ stats: next }).where(eq(studyProgress.userId, userId));
       return { status: 200, stats: next };
     });
-    if (result.status === 409) {
+    if (result.status === 403) {
+      res.status(403).json({ error: "Account deletion is pending" });
+    } else if (result.status === 409) {
       res.status(409).json({ error: "Cloud progress exists or event ID conflicts. Local progress has not been replaced." });
     } else res.json(result.stats);
   });

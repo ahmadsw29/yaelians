@@ -11,6 +11,16 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /account:
+    delete:
+      operationId: deleteMyAccount
+      security: [{ bearerAuth: [] }]
+      description: Irrevocably request deletion of the authenticated account and cloud progress. Requires recent multi-factor verification. Cleanup retries automatically if the identity provider is unavailable.
+      responses:
+        "202": { description: Deletion accepted; cleanup continues automatically }
+        "401": { description: Authentication required }
+        "403": { description: Recent verification required }
+        "503": { description: Deletion could not be completed; retry }
   /study/stats:
     get:
       operationId: getStudyStats

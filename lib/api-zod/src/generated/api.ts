@@ -8,6 +8,12 @@
 import * as zod from 'zod';
 
 
+/**
+ * Irrevocably request deletion of the authenticated account and cloud progress. Requires recent multi-factor verification. Cleanup retries automatically if the identity provider is unavailable.
+ */
+export const DeleteMyAccountResponse = zod.void()
+
+
 export const getStudyStatsResponseXpMin = 0;
 export const getStudyStatsResponseXpMax = 1000000000;
 

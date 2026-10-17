@@ -9,3 +9,15 @@ The user chose customizable cartoon avatars rather than Snapchat Bitmoji integra
 The managed Clerk tenant rejects built-in first_name during signup. Display names belong in display-only unsafeMetadata unless tenant settings change.
 **Why:** Real signup returned HTTP 422 for first_name; built-in names are not enabled on this tenant. Metadata must never grant authorization.
 **How to apply:** Keep login/signup limited to configured identity fields; preserve existing metadata when editing the profile.
+
+Account-deletion testing must use a newly created disposable account, never an existing learner.
+**Why:** The user explicitly prohibited deleting existing users during implementation or testing.
+**How to apply:** Establish that the test account was created for the current test before taking any destructive action.
+
+Deletion must survive partial failure between the identity provider and cloud storage; keep it scoped to the authenticated account and preserve guest/other-account device data.
+**Why:** Identity deletion and database commits cannot form one atomic transaction. Revoking identity first without a durable retry can strand cloud data.
+**How to apply:** Preserve the durable, irrevocable deletion-request approach and its explicit pending-state messaging when extending this flow.
+
+Persist device cleanup intent before sending the irreversible deletion request, and recover it before study providers mount. An expired-token rejection after an uncertain request does not prove the original deletion failed.
+**Why:** A lost response or app termination can leave private device data behind after cloud identity revocation; an in-memory retry dialog cannot recover after restart.
+**How to apply:** Keep accepted versus unconfirmed outcomes distinct. Both resume explicitly authorized device erasure, but unconfirmed outcomes must explain that cloud deletion may need another verified request, never offer to “keep” a potentially deleted account.

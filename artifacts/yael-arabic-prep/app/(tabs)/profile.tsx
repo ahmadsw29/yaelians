@@ -9,6 +9,8 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { AvatarConfig, avatarOptions, CartoonAvatar, getAvatarConfig } from '@/components/CartoonAvatar';
 import { AuthButton, AuthField, authError } from '@/components/AuthScreen';
 import { getProfileNames } from '@/lib/profile';
+import { useAccountDeletion } from '@/lib/AccountDeletion';
+import { useStudy } from '@/lib/StudyProvider';
 
 function ThemeSettings() {
   const colors = useColors();
@@ -33,6 +35,8 @@ function ThemeSettings() {
 }
 
 function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>['user']> }) {
+  const openDeletion = useAccountDeletion();
+  const { pauseForDeletion } = useStudy();
   const colors = useColors();
   const { signOut } = useClerk();
   const profileNames = getProfileNames(user);
@@ -105,6 +109,11 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
     <AuthButton testID="profile-save" title={saving ? 'جارٍ الحفظ…' : 'حفظ التغييرات'} onPress={() => void save()} disabled={busy || !firstName.trim()} />
     <ThemeSettings />
     <AuthButton testID="profile-logout" title={loggingOut ? 'جارٍ تسجيل الخروج…' : 'تسجيل الخروج'} onPress={() => void logout()} disabled={busy} secondary />
+    <View style={[styles.card, { borderColor: colors.destructive, backgroundColor: colors.card }]}>
+      <Text style={[styles.sectionTitle, { color: colors.destructive }]}>حذف الحساب</Text>
+      <Text style={[styles.caption, { color: colors.mutedForeground }]}>حذف دائم للحساب وبيانات التعلّم. ستُطلب موافقتك والتحقق من هويتك أولًا.</Text>
+      <AuthButton testID="profile-delete-account" title="حذف حسابي…" secondary disabled={busy} onPress={() => openDeletion(pauseForDeletion)} />
+    </View>
   </>;
 }
 

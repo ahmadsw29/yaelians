@@ -14,6 +14,7 @@ type StudyContext = {
   legacy: StudyStats | null; busy: boolean;
   refresh: () => void; save: (correct: number) => Promise<void>;
   migrate: () => void; keepCloud: () => void;
+  pauseForDeletion: () => Promise<() => void>;
 };
 const Context = createContext<StudyContext | null>(null);
 export function useStudy() {
@@ -35,6 +36,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   const storageKey = `yael-study-outbox-v1:${userId}`;
   const decisionKey = `yael-study-migration-v1:${userId}`;
   const alive = useRef(true);
+  const deleting = useRef(false);
   const queue = useRef<StudyLessonInput[]>([]);
   const serial = useRef<Promise<unknown>>(Promise.resolve());
   const ready = useRef(false);
@@ -49,7 +51,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   // Pin each request to this provider's account, never the global token getter.
   const authOptions = async () => {
     const session = clerk.session;
-    if (!alive.current || !userId || session?.user.id !== userId) throw new Error('Account changed');
+    if (deleting.current || !alive.current || !userId || session?.user.id !== userId) throw new Error('Account changed');
     const token = await session.getToken();
     if (!token || !alive.current || clerk.session?.id !== session.id) throw new Error('Sign in again');
     return { headers: { Authorization: `Bearer ${token}` }, credentials: 'omit' as const };
@@ -72,7 +74,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     return next;
   };
   const flush = async () => {
-    if (!userId || !ready.current || migrationNeeded.current || !alive.current) return;
+    if (deleting.current || !userId || !ready.current || migrationNeeded.current || !alive.current) return;
     setBusy(true);
     try {
       while (queue.current.length && alive.current) {
@@ -98,6 +100,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     }
   };
   const refresh = () => {
+    if (deleting.current) return;
     if (userId) {
       void query.refetch();
       void run(flush);
@@ -146,7 +149,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   });
 
   const save = (correct: number) => run(async () => {
-    if (!ready.current || !alive.current) throw new Error('Progress is not ready');
+    if (deleting.current || !ready.current || !alive.current) throw new Error('Progress is not ready');
     if (!userId) {
       const stats = await recordLesson(correct, 5);
       if (alive.current) setGuest(stats);
@@ -162,7 +165,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   });
   const decide = (importLocal: boolean) => {
     void run(async () => {
-      if (!alive.current || !userId || !ready.current) return;
+      if (deleting.current || !alive.current || !userId || !ready.current) return;
       setBusy(true);
       try {
         if (importLocal && legacy) {
@@ -187,5 +190,11 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     message: message || (query.isError ? 'تعذّر تحميل التقدّم السحابي. الأرقام قد لا تكون محدّثة. حاول مجددًا.' : ''),
     pending, legacy, busy, refresh, save,
     migrate: () => decide(true), keepCloud: () => decide(false),
+    pauseForDeletion: async () => {
+      deleting.current = true;
+      await serial.current;
+      await client.cancelQueries({ queryKey: key, exact: true });
+      return () => { deleting.current = false; };
+    },
   }}>{children}</Context.Provider>;
 }

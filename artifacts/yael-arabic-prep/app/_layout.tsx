@@ -20,6 +20,7 @@ import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ThemeProvider } from '@/hooks/useColors';
 import { StudyProvider } from '@/lib/StudyProvider';
+import { AccountDeletionProvider } from '@/lib/AccountDeletion';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -99,7 +100,7 @@ export default function RootLayout() {
             <ErrorBoundary>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
-                  <ReadyNavigation />
+                  <AccountDeletionProvider><ReadyNavigation /></AccountDeletionProvider>
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </ErrorBoundary>
