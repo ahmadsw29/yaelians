@@ -311,11 +311,6 @@ function ExamSession({ userId }: { userId?: string }) {
                   </View>
                 </Pressable>;
               })}</View>
-              {session.answers[stage][session.question] !== null && button('مسح الإجابة', () => edit(s => {
-                const answers = s.answers.map(row => [...row]);
-                answers[s.stage][s.question] = null;
-                return { ...s, answers };
-              }), 'exam-clear-answer', true)}
               <View style={styles.navigation}>
                 <View style={{ flex: 1 }}>{button('السابق', () => edit(s => ({ ...s, question: s.question - 1 })), 'exam-previous', true, session.question === 0)}</View>
                 <View style={{ flex: 1 }}>{button('التالي', () => edit(s => ({ ...s, question: s.question + 1 })), 'exam-next', true, session.question === 21)}</View>

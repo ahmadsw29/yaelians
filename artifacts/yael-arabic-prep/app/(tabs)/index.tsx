@@ -16,6 +16,7 @@ import { useColors } from '@/hooks/useColors';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { getProfileNames } from '@/lib/profile';
+import ExamShortcuts from '@/components/ExamShortcuts';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -58,6 +59,7 @@ export default function HomeScreen() {
         <Text style={styles.subtitle}>خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.</Text>
       </View>
 
+      <ExamShortcuts />
       <Pressable
         accessibilityRole="button"
         testID="start-practice"
