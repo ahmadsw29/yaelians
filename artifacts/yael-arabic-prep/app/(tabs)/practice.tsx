@@ -16,7 +16,7 @@ import { useColors } from '@/hooks/useColors';
 import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/study';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
-import PetTeacher, { PetTeacherReaction } from '@/components/PetTeacher';
+import { PetTeacherReaction } from '@/components/PetTeacher';
 import { usePlanAccess } from '@/lib/PlanAccess';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
@@ -189,11 +189,6 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <StudySyncStatus />
-      <Pressable testID="open-exam" accessibilityRole="button" onPress={() => router.push(isPremium ? '/exam' : '/plans?reason=premium-exam')} style={{ padding: 16, borderRadius: 18, backgroundColor: c.primary, marginBottom: 15 }}>
-        <Text style={{ color: c.primaryForeground, fontWeight: '700', textAlign: 'right', fontSize: 16 }}>محاكاة YAEL كاملة</Text>
-        <Text style={{ color: c.primaryForeground, textAlign: 'right', marginTop: 5 }}>٦٦ سؤالًا + كتابة · ٧٥ دقيقة</Text>
-      </Pressable>
-      <PetTeacher />
       <View style={styles.header}>
         <Pressable onPress={() => router.push('/')} accessibilityRole="button" style={styles.backButton}>
           <Ionicons name="arrow-forward" size={21} color={c.foreground} />
