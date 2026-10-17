@@ -38,6 +38,19 @@ export type PracticeAnswerSelection = {
   celebrationKey: number;
 };
 
+export type PracticeAnswerState = 'correct' | 'wrong' | 'default';
+
+export function getPracticeAnswerState(
+  choice: string | null,
+  option: string,
+  correctAnswer: string,
+): PracticeAnswerState {
+  if (choice === null) return 'default';
+  if (option === correctAnswer) return 'correct';
+  if (choice === option) return 'wrong';
+  return 'default';
+}
+
 export function selectPracticeAnswer(
   current: PracticeAnswerSelection,
   answer: string,

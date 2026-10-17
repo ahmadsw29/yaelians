@@ -26,6 +26,7 @@ import {
   PROGRESS_ROW_BOTTOM_SPACE,
   PROGRESS_ROW_GAP,
   PRACTICE_HORIZONTAL_PADDING,
+  getPracticeAnswerState,
   getPracticeModeReset,
   getProgressMarkerPosition,
   selectPracticeAnswer,
@@ -273,9 +274,8 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
       <Text style={styles.prompt}>{question.prompt}</Text>
       <View style={styles.options}>
         {question.options.map((option, optionIndex) => {
-          const correctOption = option === question.correctAnswer;
           const selected = choice === option;
-          const answerState = choice && correctOption ? 'correct' : selected ? 'wrong' : 'default';
+          const answerState = getPracticeAnswerState(choice, option, question.correctAnswer);
           return (
             <Pressable
               key={option}

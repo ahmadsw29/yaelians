@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { PROGRESS_MAX_HOP } from '../../artifacts/yael-arabic-prep/lib/progress-marker';
+import {
+  PROGRESS_MAX_HOP,
+  getPracticeAnswerState,
+  getProgressMarkerPosition,
+  selectPracticeAnswer,
+} from '../../artifacts/yael-arabic-prep/lib/progress-marker';
 import {
   listenForReduceMotionChanges,
   updatePetTeacherMotion,
@@ -90,5 +95,27 @@ describe.each(platforms)('%s reduce-motion preference changes', platform => {
     expect(updatePetTeacherMotion('happy', 2, reduceMotion, previousJumpKey, jump, squash)).toBe(true);
 
     unsubscribe();
+  });
+
+  it('keeps feedback, correct counts, and progress while the mascot stays still', () => {
+    const initial = { choice: null, correct: 0, celebrationKey: 0 };
+    const correct = selectPracticeAnswer(initial, 'right', 'right');
+    expect(correct).not.toBeNull();
+    expect(getPracticeAnswerState(correct!.choice, 'right', 'right')).toBe('correct');
+    expect(correct!.correct).toBe(1);
+    expect(getProgressMarkerPosition(1, 4).percent).toBe(50);
+
+    const wrong = selectPracticeAnswer(initial, 'wrong', 'right');
+    expect(wrong).not.toBeNull();
+    expect(getPracticeAnswerState(wrong!.choice, 'wrong', 'right')).toBe('wrong');
+    expect(getPracticeAnswerState(wrong!.choice, 'right', 'right')).toBe('correct');
+    expect(wrong!.correct).toBe(0);
+
+    const previousJumpKey = { current: 0 };
+    const jump = new TestMotionValue(-PROGRESS_MAX_HOP);
+    const squash = new TestMotionValue(1.12);
+    expect(updatePetTeacherMotion('happy', correct!.celebrationKey, true, previousJumpKey, jump, squash)).toBe(false);
+    expect(jump.value).toBe(0);
+    expect(squash.value).toBe(1);
   });
 });

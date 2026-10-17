@@ -9,6 +9,7 @@ import {
   PROGRESS_RANGE_INSET,
   PROGRESS_ROW_BOTTOM_SPACE,
   PROGRESS_ROW_GAP,
+  getPracticeAnswerState,
   getPracticeModeReset,
   getProgressMarkerPosition,
   getProgressPercent,
@@ -49,6 +50,15 @@ describe('practice progress marker regressions', () => {
     const wrong = selectPracticeAnswer(initial, 'wrong', 'right');
     expect(wrong).toEqual({ choice: 'wrong', correct: 0, celebrationKey: 0 });
     expect(selectPracticeAnswer(wrong!, 'right', 'right')).toBeNull();
+  });
+
+  it('keeps correct and incorrect answer feedback states available independently of motion', () => {
+    expect(getPracticeAnswerState(null, 'right', 'right')).toBe('default');
+    expect(getPracticeAnswerState('right', 'right', 'right')).toBe('correct');
+    expect(getPracticeAnswerState('wrong', 'wrong', 'right')).toBe('wrong');
+    // The correct answer remains visually identified even when another option was selected.
+    expect(getPracticeAnswerState('wrong', 'right', 'right')).toBe('correct');
+    expect(getPracticeAnswerState('wrong', 'other', 'right')).toBe('default');
   });
 
   it('keeps the marker within the progress row and away from the count on a 320 px phone', () => {
