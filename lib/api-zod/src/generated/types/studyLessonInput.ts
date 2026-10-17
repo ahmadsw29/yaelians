@@ -24,6 +24,13 @@ export interface StudyLessonInput {
      */
   total: number;
   /**
+     * Vocabulary identities answered correctly in this lesson (NFC-normalized Hebrew headwords). Omit for older clients; reading lessons send an empty array. At most one identity per correct answer.
+     * @maxItems 20
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  masteredWordIds?: string[];
+  /**
      * Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.
      * @maxLength 24
      * @pattern ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$

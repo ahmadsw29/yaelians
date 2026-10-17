@@ -13,3 +13,9 @@ Offline completion dates use UTC, not device-local calendar days. Preserve dates
 **Why:** Client clocks cannot be verified offline. Bounded backdating balances offline use with limiting arbitrary historical streak claims; sync-day fallback preserves earned lesson counters rather than permanently blocking the outbox.
 
 **How to apply:** Do not re-date acknowledged event IDs on retry. Existing snapshots only prove their final consecutive run; preserve that run without inventing earlier activity. The streak remains the run ending on the latest practice day, consistent with existing display behavior.
+
+Never preserve a score-derived legacy mastered-word total as an offset to unique vocabulary mastery. Preserve the other learning counters, but count mastery only where vocabulary identities are known.
+
+**Why:** Old scores cannot identify distinct words. Retaining their total as a baseline would count an unknown overlap again when those words are practiced, recreating the inflated vocabulary total.
+
+**How to apply:** Old snapshots, legacy imports, and pending lessons without word identities retain points and lesson history but cannot establish vocabulary mastery. Reading answers are not evidence of vocabulary mastery either.

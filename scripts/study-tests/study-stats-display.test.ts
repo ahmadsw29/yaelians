@@ -9,7 +9,7 @@ test('account and progress stats share values and accuracy formatting', () => {
     streak: 3,
     correctAnswers: 7,
     answeredQuestions: 9,
-    masteredWords: 7,
+    masteredWords: 3,
     lessonsCompleted: 2,
   };
   const accountSummary = getStudyStatsDisplay(stats);
@@ -20,7 +20,7 @@ test('account and progress stats share values and accuracy formatting', () => {
     xp: '80',
     streak: '3',
     accuracy: '78%',
-    masteredWords: '7',
+    masteredWords: '3',
     lessonsCompleted: '2',
   });
 });

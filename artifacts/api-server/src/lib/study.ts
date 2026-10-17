@@ -2,8 +2,17 @@ import type { StudyStats } from "@workspace/api-zod";
 
 export const emptyStats: StudyStats = {
   xp: 0, streak: 0, correctAnswers: 0, answeredQuestions: 0,
-  lessonsCompleted: 0, masteredWords: 0, lastPracticeDate: null,
+  lessonsCompleted: 0, masteredWords: 0, masteredWordIds: [], lastPracticeDate: null,
 };
+
+export function uniqueWordIds(ids: string[] = []): string[] {
+  return [...new Set(ids.map(id => id.trim().normalize("NFC")).filter(Boolean))];
+}
+
+export function withWordMastery(stats: StudyStats): StudyStats {
+  const masteredWordIds = uniqueWordIds(stats.masteredWordIds);
+  return { ...stats, masteredWordIds, masteredWords: masteredWordIds.length };
+}
 
 const DAY_MS = 86400000;
 export type PracticeRange = [number, number];
@@ -40,15 +49,17 @@ export function addPracticeDay(ranges: PracticeRange[], time: Date): PracticeRan
 }
 
 export function addLesson(previous: StudyStats, correct: number, total: number, now = new Date(),
-  ranges = addPracticeDay(seedPracticeRanges(previous), now)): StudyStats {
+  ranges = addPracticeDay(seedPracticeRanges(previous), now), wordIds: string[] = []): StudyStats {
   const [start, end] = ranges[ranges.length - 1];
+  const masteredWordIds = uniqueWordIds([...(previous.masteredWordIds ?? []), ...wordIds]);
   return {
     xp: previous.xp + correct * 10,
     streak: end - start + 1,
     correctAnswers: previous.correctAnswers + correct,
     answeredQuestions: previous.answeredQuestions + total,
     lessonsCompleted: previous.lessonsCompleted + 1,
-    masteredWords: previous.masteredWords + correct,
+    masteredWordIds,
+    masteredWords: masteredWordIds.length,
     lastPracticeDate: new Date(end * DAY_MS).toISOString().slice(0, 10),
   };
 }
@@ -57,7 +68,9 @@ export function validLegacyStats(stats: StudyStats) {
   const day = stats.lastPracticeDate;
   return stats.correctAnswers <= stats.answeredQuestions
     && stats.xp === stats.correctAnswers * 10
-    && stats.masteredWords === stats.correctAnswers
+    && stats.masteredWords <= stats.correctAnswers
+    && (stats.masteredWordIds === undefined
+      || uniqueWordIds(stats.masteredWordIds).length === stats.masteredWords)
     && stats.answeredQuestions >= stats.lessonsCompleted
     && stats.streak <= stats.lessonsCompleted
     && (stats.lessonsCompleted === 0

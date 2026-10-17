@@ -10,7 +10,7 @@ const lesson = (eventId: string, correct = 3) => ({
   eventId: `integration-${eventId}`, correct, total: 5, completedAt: new Date().toISOString(),
 });
 const legacy = { ...emptyStats, xp: 40, correctAnswers: 4, answeredQuestions: 5,
-  lessonsCompleted: 1, masteredWords: 4, streak: 1, lastPracticeDate: new Date().toISOString().slice(0, 10) };
+  lessonsCompleted: 1, masteredWords: 4, masteredWordIds: undefined, streak: 1, lastPracticeDate: new Date().toISOString().slice(0, 10) };
 
 test('a free vocabulary claim has one non-resettable five-minute window and no replay after completion', async () => {
   const user = 'five-minute-free';
@@ -114,12 +114,58 @@ test('conflicting legacy imports have one winner and cannot replace newer lesson
   const results = await Promise.all(imports.map(data => api.request('legacy-race', 'import', data)));
   expect(results.map(r => r.status).sort()).toEqual([200, 409]);
   const winner = imports[results.findIndex(r => r.status === 200)];
-  expect(await (await api.request('legacy-race')).json()).toEqual(winner.stats);
+  expect(await (await api.request('legacy-race')).json()).toEqual({
+    ...winner.stats, masteredWords: 0, masteredWordIds: [],
+  });
   expect((await api.request('legacy-race', 'import', winner)).status).toBe(200);
   await api.request('legacy-race', 'lessons', lesson('new-work'));
   expect((await api.request('legacy-race', 'import', { ...winner, eventId: 'integration-another-import' })).status).toBe(409);
   expect(await (await api.request('legacy-race')).json()).toMatchObject({
     lessonsCompleted: 2, xp: winner.stats.xp + 30,
+  });
+});
+
+test('mastery is a per-account union across rounds, retries and concurrent devices, not a score', async () => {
+  const first = { ...lesson('mastery-first', 3), masteredWordIds: ['שלום', 'שלום', ' ספר '] };
+  expect((await api.request('word-mastery', 'lessons', first)).status).toBe(200);
+  expect((await api.request('word-mastery', 'lessons', first)).status).toBe(200);
+  const responses = await Promise.all(Array.from({ length: 8 }, (_, i) =>
+    api.request('word-mastery', 'lessons', {
+      ...lesson(`mastery-device-${i}`, 2), masteredWordIds: ['ספר', 'בית'],
+    })));
+  expect(responses.every(r => r.status === 200)).toBe(true);
+  expect(await (await api.request('word-mastery')).json()).toMatchObject({
+    masteredWords: 3, masteredWordIds: ['שלום', 'ספר', 'בית'],
+    lessonsCompleted: 9, correctAnswers: 19, xp: 190,
+  });
+  // Reading answers and older clients still earn XP, but cannot prove new vocabulary.
+  await api.request('word-mastery', 'lessons', { ...lesson('mastery-reading'), masteredWordIds: [] });
+  await api.request('word-mastery', 'lessons', lesson('mastery-old-client'));
+  expect(await (await api.request('word-mastery')).json()).toMatchObject({ masteredWords: 3, xp: 250 });
+  await api.request('word-mastery-other', 'lessons', first);
+  expect(await (await api.request('word-mastery-other')).json()).toMatchObject({ masteredWords: 2 });
+});
+
+test('mastery identities are validated before writing and cannot bypass a free-plan claim', async () => {
+  for (const ids of [[''], ['   '], ['a'.repeat(101)], ['a', 'b', 'c', 'd'], [42]]) {
+    expect((await api.request('bad-word-ids', 'lessons', {
+      ...lesson('mastery-invalid'), masteredWordIds: ids,
+    })).status).toBe(400);
+  }
+  await api.request('mastery-free', 'plan-access', { plan: 'free' }, 'PUT');
+  expect(await (await api.request('mastery-free', 'lessons', {
+    ...lesson('mastery-unclaimed'), masteredWordIds: ['שלום'],
+  })).json()).toMatchObject({ progressCredited: false, stats: { masteredWords: 0, masteredWordIds: [] } });
+});
+
+test('legacy counters are not treated as known words; lessons and XP survive normalization', async () => {
+  await db.insert(studyProgress).values({ userId: 'pre-mastery', stats: legacy });
+  expect(await (await api.request('pre-mastery')).json()).toMatchObject({
+    masteredWords: 0, masteredWordIds: [], xp: 40, lessonsCompleted: 1,
+  });
+  await api.request('pre-mastery', 'lessons', { ...lesson('mastery-after-upgrade'), masteredWordIds: ['שלום'] });
+  expect(await (await api.request('pre-mastery')).json()).toMatchObject({
+    masteredWords: 1, masteredWordIds: ['שלום'], xp: 70, lessonsCompleted: 2,
   });
 });
 

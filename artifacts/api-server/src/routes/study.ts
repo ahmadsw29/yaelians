@@ -9,7 +9,7 @@ import {
   ChooseStudyPlanBody, ClaimStudyActivityBody, ClaimStudyActivityResponse, GetStudyPlanAccessResponse,
   GetStudyStatsResponse, ImportStudyStatsBody, SaveStudyLessonBody, SaveStudyLessonResponse,
 } from "@workspace/api-zod";
-import { addLesson, addPracticeDay, emptyStats, lessonPracticeTime, seedPracticeRanges, validLegacyStats } from "../lib/study";
+import { addLesson, addPracticeDay, emptyStats, lessonPracticeTime, seedPracticeRanges, validLegacyStats, withWordMastery } from "../lib/study";
 
 const router = Router();
 type Activity = "vocabulary" | "timed-section";
@@ -57,7 +57,7 @@ router.use("/study", studyCoursesRouter);
 router.get("/study/stats", async (req, res) => {
   const userId = getAuth(req).userId!;
   const [row] = await db.select().from(studyProgress).where(eq(studyProgress.userId, userId));
-  res.json(GetStudyStatsResponse.parse(row?.stats ?? emptyStats));
+  res.json(withWordMastery(GetStudyStatsResponse.parse(row?.stats ?? emptyStats)));
 });
 
 router.get("/study/plan-access", async (req, res) => {
@@ -175,7 +175,9 @@ for (const kind of ["lessons", "import"] as const) {
       return;
     }
     if (("stats" in data && !validLegacyStats(data.stats))
-      || ("correct" in data && data.correct > data.total)) {
+      || ("correct" in data && (data.correct > data.total
+        || (data.masteredWordIds?.length ?? 0) > data.correct
+        || data.masteredWordIds?.some(id => !id.trim())))) {
       res.status(400).json({ error: "Inconsistent study data" });
       return;
     }
@@ -189,7 +191,7 @@ for (const kind of ["lessons", "import"] as const) {
       await tx.insert(studyProgress).values({ userId, stats: emptyStats }).onConflictDoNothing();
       // Lock the account row: different devices and imports cannot overwrite each other.
       const [row] = await tx.select().from(studyProgress).where(eq(studyProgress.userId, userId)).for("update");
-      const previous = GetStudyStatsResponse.parse(row.stats);
+      const previous = withWordMastery(GetStudyStatsResponse.parse(row.stats));
       const [event] = await tx.select().from(studyEvents).where(and(
         eq(studyEvents.userId, userId), eq(studyEvents.eventId, data.eventId),
       ));
@@ -219,8 +221,8 @@ for (const kind of ["lessons", "import"] as const) {
       const practiceRanges = "stats" in data ? seedPracticeRanges(data.stats)
         : progressCredited ? addPracticeDay(row.practiceRanges ?? seedPracticeRanges(previous), practiceTime)
           : (row.practiceRanges ?? seedPracticeRanges(previous));
-      const next = "stats" in data ? data.stats
-        : progressCredited ? addLesson(previous, data.correct, data.total, practiceTime, practiceRanges)
+      const next = "stats" in data ? withWordMastery(data.stats)
+        : progressCredited ? addLesson(previous, data.correct, data.total, practiceTime, practiceRanges, data.masteredWordIds)
           : previous;
       GetStudyStatsResponse.parse(next);
       await tx.insert(studyEvents).values({

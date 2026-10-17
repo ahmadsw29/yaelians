@@ -38,6 +38,12 @@ export interface StudyStats {
      */
   masteredWords: number;
   /**
+     * Unique vocabulary identities mastered by this account. Older snapshots without identities cannot prove word mastery.
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  masteredWordIds?: string[];
+  /**
      * @nullable
      * @pattern ^\d{4}-\d{2}-\d{2}$
      */

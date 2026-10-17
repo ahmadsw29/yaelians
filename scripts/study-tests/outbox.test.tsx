@@ -41,7 +41,7 @@ const legacyKey = (user: string) => `yael-study-stats-v1:${user}`;
 const decisionKey = (user: string) => `yael-study-migration-v1:${user}`;
 const savedQueue = (user: string) => JSON.parse(disk.get(outbox(user)) ?? '[]');
 const legacy = { ...DEFAULT_STATS, lessonsCompleted: 1, answeredQuestions: 5,
-  correctAnswers: 4, masteredWords: 4, xp: 40, streak: 1,
+  correctAnswers: 4, masteredWords: 4, masteredWordIds: undefined, xp: 40, streak: 1,
   lastPracticeDate: new Date().toISOString().slice(0, 10) };
 function Probe() { state = useStudy(); return null; }
 function view(showStatus = false) {
@@ -126,7 +126,7 @@ test('pending lessons survive provider/process-state restart and drain exactly o
 test('signed-in vocabulary lesson stats refresh consistently and stale values are hidden until retry succeeds', async () => {
   await mount('account-progress-refresh');
   await act(async () => {
-    await state.save(4, 5, 'vocabulary-activity-00001');
+    await state.save(4, 5, 'vocabulary-activity-00001', ['שלום', 'בית', 'ספר', 'עץ']);
   });
   await until(() => {
     expect(state.pending).toBe(0);
@@ -182,6 +182,45 @@ test('signed-in vocabulary lesson stats refresh consistently and stale values ar
     lessonsCompleted: 1, answeredQuestions: 5, correctAnswers: 4,
     masteredWords: 4, xp: 40,
   });
+});
+
+test('offline vocabulary identities survive restart and deduplicate overlapping rounds after sync', async () => {
+  offline = true;
+  await mount('mastery-offline');
+  await act(async () => {
+    await state.save(2, 5, undefined, ['שלום', 'בית']);
+    await state.save(2, 5, undefined, ['בית', 'ספר']);
+  });
+  await until(() => { expect(state.pending).toBe(2); expect(state.busy).toBe(false); });
+  const durable = savedQueue('mastery-offline');
+  expect(durable.map((event: any) => event.masteredWordIds)).toEqual([['שלום', 'בית'], ['בית', 'ספר']]);
+  await unmount();
+  offline = false;
+  await mount('mastery-offline');
+  await until(() => { expect(state.pending).toBe(0); expect(state.stats.masteredWords).toBe(3); });
+  expect(await cloud('mastery-offline')).toMatchObject({ masteredWords: 3, correctAnswers: 4 });
+  expect(getStudyStatsDisplay(state.stats).masteredWords).toBe('3');
+  await act(async () => { await state.save(1, 5, undefined, ['בית']); });
+  await until(() => expect(state.stats.correctAnswers).toBe(5));
+  expect(state.stats.masteredWords).toBe(3);
+});
+
+test('guest mastery survives storage reload and remains separate from account vocabulary', async () => {
+  await mount(null);
+  await act(async () => {
+    await state.save(2, 5, undefined, ['שלום', 'בית']);
+    await state.save(2, 5, undefined, ['בית', 'שלום']);
+    await state.save(3, 5, undefined, []); // Reading does not add words.
+  });
+  expect(state.stats).toMatchObject({ masteredWords: 2, correctAnswers: 7, xp: 70 });
+  await unmount();
+  await mount(null);
+  expect(state.stats.masteredWords).toBe(2);
+  await switchTo('mastery-guest-boundary');
+  expect(state.stats.masteredWords).toBe(0);
+  await switchTo(null);
+  expect(state.stats.masteredWords).toBe(2);
+  expect(posts).toEqual([]);
 });
 
 test('malformed outbox JSON is preserved until the user archives it and chooses to continue', async () => {

@@ -7,6 +7,7 @@ export type StudyStats = {
   answeredQuestions: number;
   lessonsCompleted: number;
   masteredWords: number;
+  masteredWordIds?: string[];
   lastPracticeDate: string | null;
 };
 
@@ -17,6 +18,7 @@ export const DEFAULT_STATS: StudyStats = {
   answeredQuestions: 0,
   lessonsCompleted: 0,
   masteredWords: 0,
+  masteredWordIds: [],
   lastPracticeDate: null,
 };
 
@@ -27,14 +29,17 @@ export async function readStudyStats(): Promise<StudyStats> {
     const stored = await AsyncStorage.getItem(STATS_KEY);
     if (!stored) return DEFAULT_STATS;
     const parsed = JSON.parse(stored) as Partial<StudyStats>;
-    return { ...DEFAULT_STATS, ...parsed };
+    const masteredWordIds = [...new Set((parsed.masteredWordIds ?? []).map(id => id.trim().normalize('NFC')).filter(Boolean))];
+    return { ...DEFAULT_STATS, ...parsed, masteredWordIds, masteredWords: masteredWordIds.length };
   } catch {
     return DEFAULT_STATS;
   }
 }
 
-export async function recordLesson(correct: number, total: number) {
+export async function recordLesson(correct: number, total: number, wordIds: string[] = []) {
   const previous = await readStudyStats();
+  const masteredWordIds = [...new Set([...(previous.masteredWordIds ?? []), ...wordIds]
+    .map(id => id.trim().normalize('NFC')).filter(Boolean))];
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
   const alreadyPracticedToday = previous.lastPracticeDate === today;
@@ -50,7 +55,8 @@ export async function recordLesson(correct: number, total: number) {
     correctAnswers: previous.correctAnswers + correct,
     answeredQuestions: previous.answeredQuestions + total,
     lessonsCompleted: previous.lessonsCompleted + 1,
-    masteredWords: previous.masteredWords + correct,
+    masteredWordIds,
+    masteredWords: masteredWordIds.length,
     lastPracticeDate: today,
   };
   await AsyncStorage.setItem(STATS_KEY, JSON.stringify(next));

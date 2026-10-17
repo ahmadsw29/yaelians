@@ -234,6 +234,10 @@ components:
         answeredQuestions: { type: integer, minimum: 0, maximum: 100000000 }
         lessonsCompleted: { type: integer, minimum: 0, maximum: 10000000 }
         masteredWords: { type: integer, minimum: 0, maximum: 100000000 }
+        masteredWordIds:
+          type: array
+          description: Unique vocabulary identities mastered by this account. Older snapshots without identities cannot prove word mastery.
+          items: { type: string, minLength: 1, maxLength: 100 }
         lastPracticeDate: { type: [string, "null"], pattern: '^\d{4}-\d{2}-\d{2}$' }
     StudyPlanAccess:
       type: object
@@ -295,6 +299,11 @@ components:
         eventId: { type: string, minLength: 16, maxLength: 100, pattern: '^[a-zA-Z0-9-]+$' }
         correct: { type: integer, minimum: 0, maximum: 20 }
         total: { type: integer, minimum: 1, maximum: 20 }
+        masteredWordIds:
+          type: array
+          maxItems: 20
+          description: Vocabulary identities answered correctly in this lesson (NFC-normalized Hebrew headwords). Omit for older clients; reading lessons send an empty array. At most one identity per correct answer.
+          items: { type: string, minLength: 1, maxLength: 100 }
         completedAt:
           type: string
           maxLength: 24
@@ -315,4 +324,3 @@ components:
           type: string
       required:
         - status
-

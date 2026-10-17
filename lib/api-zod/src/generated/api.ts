@@ -96,6 +96,8 @@ export const getStudyStatsResponseLessonsCompletedMax = 10000000;
 export const getStudyStatsResponseMasteredWordsMin = 0;
 export const getStudyStatsResponseMasteredWordsMax = 100000000;
 
+export const getStudyStatsResponseMasteredWordIdsItemMax = 100;
+
 export const getStudyStatsResponseLastPracticeDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
@@ -106,6 +108,7 @@ export const GetStudyStatsResponse = zod.object({
   "answeredQuestions": zod.number().int().min(getStudyStatsResponseAnsweredQuestionsMin).max(getStudyStatsResponseAnsweredQuestionsMax),
   "lessonsCompleted": zod.number().int().min(getStudyStatsResponseLessonsCompletedMin).max(getStudyStatsResponseLessonsCompletedMax),
   "masteredWords": zod.number().int().min(getStudyStatsResponseMasteredWordsMin).max(getStudyStatsResponseMasteredWordsMax),
+  "masteredWordIds": zod.array(zod.string().min(1).max(getStudyStatsResponseMasteredWordIdsItemMax)).optional().describe('Unique vocabulary identities mastered by this account. Older snapshots without identities cannot prove word mastery.'),
   "lastPracticeDate": zod.string().regex(getStudyStatsResponseLastPracticeDateRegExp).nullable()
 })
 
@@ -199,6 +202,10 @@ export const saveStudyLessonBodyCorrectMax = 20;
 
 export const saveStudyLessonBodyTotalMax = 20;
 
+export const saveStudyLessonBodyMasteredWordIdsItemMax = 100;
+
+export const saveStudyLessonBodyMasteredWordIdsMax = 20;
+
 export const saveStudyLessonBodyCompletedAtMax = 24;
 
 
@@ -214,6 +221,7 @@ export const SaveStudyLessonBody = zod.object({
   "eventId": zod.string().min(saveStudyLessonBodyEventIdMin).max(saveStudyLessonBodyEventIdMax).regex(saveStudyLessonBodyEventIdRegExp),
   "correct": zod.number().int().min(saveStudyLessonBodyCorrectMin).max(saveStudyLessonBodyCorrectMax),
   "total": zod.number().int().min(1).max(saveStudyLessonBodyTotalMax),
+  "masteredWordIds": zod.array(zod.string().min(1).max(saveStudyLessonBodyMasteredWordIdsItemMax)).max(saveStudyLessonBodyMasteredWordIdsMax).optional().describe('Vocabulary identities answered correctly in this lesson (NFC-normalized Hebrew headwords). Omit for older clients; reading lessons send an empty array. At most one identity per correct answer.'),
   "completedAt": zod.string().max(saveStudyLessonBodyCompletedAtMax).regex(saveStudyLessonBodyCompletedAtRegExp).optional().describe('Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.'),
   "activityKey": zod.string().min(saveStudyLessonBodyActivityKeyMin).max(saveStudyLessonBodyActivityKeyMax).regex(saveStudyLessonBodyActivityKeyRegExp).optional().describe('Server-issued vocabulary activity claim. Free-plan progress is credited only once for a matching claim.')
 })
@@ -236,6 +244,8 @@ export const saveStudyLessonResponseStatsLessonsCompletedMax = 10000000;
 export const saveStudyLessonResponseStatsMasteredWordsMin = 0;
 export const saveStudyLessonResponseStatsMasteredWordsMax = 100000000;
 
+export const saveStudyLessonResponseStatsMasteredWordIdsItemMax = 100;
+
 export const saveStudyLessonResponseStatsLastPracticeDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
@@ -247,6 +257,7 @@ export const SaveStudyLessonResponse = zod.object({
   "answeredQuestions": zod.number().int().min(saveStudyLessonResponseStatsAnsweredQuestionsMin).max(saveStudyLessonResponseStatsAnsweredQuestionsMax),
   "lessonsCompleted": zod.number().int().min(saveStudyLessonResponseStatsLessonsCompletedMin).max(saveStudyLessonResponseStatsLessonsCompletedMax),
   "masteredWords": zod.number().int().min(saveStudyLessonResponseStatsMasteredWordsMin).max(saveStudyLessonResponseStatsMasteredWordsMax),
+  "masteredWordIds": zod.array(zod.string().min(1).max(saveStudyLessonResponseStatsMasteredWordIdsItemMax)).optional().describe('Unique vocabulary identities mastered by this account. Older snapshots without identities cannot prove word mastery.'),
   "lastPracticeDate": zod.string().regex(saveStudyLessonResponseStatsLastPracticeDateRegExp).nullable()
 }),
   "progressCredited": zod.boolean()
@@ -279,6 +290,8 @@ export const importStudyStatsBodyStatsLessonsCompletedMax = 10000000;
 export const importStudyStatsBodyStatsMasteredWordsMin = 0;
 export const importStudyStatsBodyStatsMasteredWordsMax = 100000000;
 
+export const importStudyStatsBodyStatsMasteredWordIdsItemMax = 100;
+
 export const importStudyStatsBodyStatsLastPracticeDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
@@ -291,6 +304,7 @@ export const ImportStudyStatsBody = zod.object({
   "answeredQuestions": zod.number().int().min(importStudyStatsBodyStatsAnsweredQuestionsMin).max(importStudyStatsBodyStatsAnsweredQuestionsMax),
   "lessonsCompleted": zod.number().int().min(importStudyStatsBodyStatsLessonsCompletedMin).max(importStudyStatsBodyStatsLessonsCompletedMax),
   "masteredWords": zod.number().int().min(importStudyStatsBodyStatsMasteredWordsMin).max(importStudyStatsBodyStatsMasteredWordsMax),
+  "masteredWordIds": zod.array(zod.string().min(1).max(importStudyStatsBodyStatsMasteredWordIdsItemMax)).optional().describe('Unique vocabulary identities mastered by this account. Older snapshots without identities cannot prove word mastery.'),
   "lastPracticeDate": zod.string().regex(importStudyStatsBodyStatsLastPracticeDateRegExp).nullable()
 })
 })
@@ -313,6 +327,8 @@ export const importStudyStatsResponseLessonsCompletedMax = 10000000;
 export const importStudyStatsResponseMasteredWordsMin = 0;
 export const importStudyStatsResponseMasteredWordsMax = 100000000;
 
+export const importStudyStatsResponseMasteredWordIdsItemMax = 100;
+
 export const importStudyStatsResponseLastPracticeDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
@@ -323,6 +339,7 @@ export const ImportStudyStatsResponse = zod.object({
   "answeredQuestions": zod.number().int().min(importStudyStatsResponseAnsweredQuestionsMin).max(importStudyStatsResponseAnsweredQuestionsMax),
   "lessonsCompleted": zod.number().int().min(importStudyStatsResponseLessonsCompletedMin).max(importStudyStatsResponseLessonsCompletedMax),
   "masteredWords": zod.number().int().min(importStudyStatsResponseMasteredWordsMin).max(importStudyStatsResponseMasteredWordsMax),
+  "masteredWordIds": zod.array(zod.string().min(1).max(importStudyStatsResponseMasteredWordIdsItemMax)).optional().describe('Unique vocabulary identities mastered by this account. Older snapshots without identities cannot prove word mastery.'),
   "lastPracticeDate": zod.string().regex(importStudyStatsResponseLastPracticeDateRegExp).nullable()
 })
 

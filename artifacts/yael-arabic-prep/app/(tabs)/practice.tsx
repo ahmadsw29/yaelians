@@ -112,6 +112,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
   const [correct, setCorrect] = useState(0);
+  const masteredWordIds = useRef<string[]>([]);
   const [celebrationKey, setCelebrationKey] = useState(0);
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -156,6 +157,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     setIndex(reset.index);
     setChoice(reset.choice);
     setCorrect(reset.correct);
+    masteredWordIds.current = [];
     setCelebrationKey(reset.celebrationKey);
     setComplete(reset.complete);
     setSaved(reset.saved);
@@ -191,6 +193,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       AccessibilityInfo.announceForAccessibility(feedback.announcement);
     }
     if (answer === question.correctAnswer) {
+      if (mode === 'words' && question.word) masteredWordIds.current.push(question.word.trim().normalize('NFC'));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -211,7 +214,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       }
       setSaveError(false);
       try {
-        await save(correct, finalTotal.current, activityKey ?? undefined);
+        await save(correct, finalTotal.current, activityKey ?? undefined, masteredWordIds.current);
         setSaved(true);
       } catch {
         setSaveError(true);
@@ -245,6 +248,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     setIndex(0);
     setChoice(null);
     setCorrect(0);
+    masteredWordIds.current = [];
     setCelebrationKey(0);
     setComplete(false);
     setSaved(false);

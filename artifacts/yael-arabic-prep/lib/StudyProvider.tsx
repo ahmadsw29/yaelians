@@ -15,7 +15,7 @@ type StudyContext = {
   stats: StudyStats; loading: boolean; statsUnavailable: boolean; message: string; pending: number;
   recovery: { validCount: number; invalidCount: number; problem: 'invalid-json' | 'not-array' | 'invalid-events' } | null;
   legacy: StudyStats | null; busy: boolean;
-  refresh: () => void; save: (correct: number, total?: number, activityKey?: string) => Promise<void>;
+  refresh: () => void; save: (correct: number, total?: number, activityKey?: string, masteredWordIds?: string[]) => Promise<void>;
   recoverOutbox: () => void;
   migrate: () => void; keepCloud: () => void;
   pauseForDeletion: () => Promise<() => void>;
@@ -33,13 +33,16 @@ type OutboxRecovery = {
 function isStudyLessonInput(value: unknown): value is PendingStudyLesson {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const event = value as Record<string, unknown>;
-  const allowedKeys = new Set(['eventId', 'correct', 'total', 'completedAt', 'activityKey']);
+  const allowedKeys = new Set(['eventId', 'correct', 'total', 'completedAt', 'activityKey', 'masteredWordIds']);
   if (Object.keys(event).some(key => !allowedKeys.has(key))) return false;
   if (typeof event.eventId !== 'string' || event.eventId.length < 16 || event.eventId.length > 100
     || !/^[a-zA-Z0-9-]+$/.test(event.eventId)) return false;
   if (typeof event.correct !== 'number' || !Number.isInteger(event.correct) || event.correct < 0 || event.correct > 20) return false;
   if (typeof event.total !== 'number' || !Number.isInteger(event.total) || event.total < 1 || event.total > 20
     || event.correct > event.total) return false;
+  if (event.masteredWordIds !== undefined
+    && (!Array.isArray(event.masteredWordIds) || event.masteredWordIds.length > event.correct
+      || event.masteredWordIds.some(id => typeof id !== 'string' || !id.trim() || id.length > 100))) return false;
   if (event.completedAt !== undefined) {
     if (typeof event.completedAt !== 'string' || event.completedAt.length > 24
       || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(event.completedAt)) return false;
@@ -216,20 +219,22 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     return () => { clearInterval(timer); subscription.remove(); };
   });
 
-  const save = (correct: number, total = 5, activityKey?: string) => {
+  const save = (correct: number, total = 5, activityKey?: string, masteredWordIds: string[] = []) => {
     // Capture at completion, before waiting behind an in-flight sync operation.
     const completedAt = new Date().toISOString();
     return run(async () => {
     if (deleting.current || !ready.current || !alive.current || recoveryRef.current) throw new Error('Resolve the saved lesson recovery notice before saving progress');
-    if (!Number.isInteger(correct) || !Number.isInteger(total) || correct < 0 || total < 1 || total > 20 || correct > total) {
+    if (!Number.isInteger(correct) || !Number.isInteger(total) || correct < 0 || total < 1 || total > 20 || correct > total
+      || masteredWordIds.length > correct || masteredWordIds.some(id => !id.trim() || id.length > 100)) {
       throw new Error('Invalid lesson score');
     }
     if (!userId) {
-      const stats = await recordLesson(correct, total);
+      const stats = await recordLesson(correct, total, masteredWordIds);
       if (alive.current) setGuest(stats);
       return;
     }
     const event: PendingStudyLesson = {
+      masteredWordIds,
       eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`,
       correct, total, completedAt, ...(activityKey ? { activityKey } : {}),
     };

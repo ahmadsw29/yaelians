@@ -7,8 +7,16 @@ import { addLesson, addPracticeDay, emptyStats, lessonPracticeTime, seedPractice
 test("lesson counters accumulate without mutating defaults", () => {
   const next = addLesson(emptyStats, 3, 5, new Date("2026-10-01T12:00:00Z"));
   assert.deepEqual(next, { xp: 30, streak: 1, correctAnswers: 3, answeredQuestions: 5,
-    lessonsCompleted: 1, masteredWords: 3, lastPracticeDate: "2026-10-01" });
+    lessonsCompleted: 1, masteredWords: 0, masteredWordIds: [], lastPracticeDate: "2026-10-01" });
   assert.equal(emptyStats.xp, 0);
+});
+
+test("canonical vocabulary identities count once, even across differently ordered Unicode", () => {
+  const first = addLesson(emptyStats, 3, 5, new Date("2026-10-01"), undefined, [" שָׁלוֹם ", "שָׁלוֹם", "ספר"]);
+  const again = addLesson(first, 2, 5, new Date("2026-10-02"), undefined, ["שָׁלוֹם".normalize("NFD"), "ספר"]);
+  assert.equal(first.masteredWords, 2);
+  assert.equal(again.masteredWords, 2);
+  assert.equal(again.correctAnswers, 5);
 });
 
 test("streak increments only on consecutive UTC days and resets after a gap", () => {
