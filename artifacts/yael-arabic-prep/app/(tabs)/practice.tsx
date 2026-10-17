@@ -117,6 +117,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const isCorrect = answerFeedback?.isCorrect ?? false;
 
   const changeMode = (nextMode: 'words' | 'reading') => {
+    if (nextMode === mode) return;
     const reset = getPracticeModeReset(nextMode);
     setMode(reset.mode);
     setIndex(reset.index);
@@ -125,6 +126,8 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     setCelebrationKey(reset.celebrationKey);
     setComplete(reset.complete);
     setSaved(reset.saved);
+    setCompletionCelebration(null);
+    setSaveError(false);
   };
 
   const select = (answer: string) => {

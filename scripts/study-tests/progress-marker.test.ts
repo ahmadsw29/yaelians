@@ -42,6 +42,51 @@ describe('practice progress marker regressions', () => {
     expect(getProgressMarkerPosition(readingReset.index, READING_QUESTIONS.length).percent).toBe(readingStart);
   });
 
+  it('starts a clean round when switching modes after an answer', () => {
+    const answeredWords = selectPracticeAnswer(
+      { choice: null, correct: 0, celebrationKey: 0 },
+      'old correct answer',
+      'old correct answer',
+    )!;
+    expect(getPracticeAnswerFeedback(answeredWords.choice, 'old correct answer')?.isCorrect).toBe(true);
+
+    const readingReset = getPracticeModeReset('reading');
+    expect(readingReset).toMatchObject({
+      mode: 'reading',
+      index: 0,
+      choice: null,
+      correct: 0,
+      celebrationKey: 0,
+      complete: false,
+      saved: false,
+    });
+    expect(getPracticeAnswerFeedback(readingReset.choice, 'new correct answer')).toBeNull();
+    expect(getPracticeAnswerState(readingReset.choice, 'new correct answer', 'new correct answer')).toBe('default');
+    expect(getProgressMarkerPosition(readingReset.index, READING_QUESTIONS.length).percent)
+      .toBeCloseTo(100 / READING_QUESTIONS.length);
+
+    const answeredReading = selectPracticeAnswer(
+      { choice: readingReset.choice, correct: readingReset.correct, celebrationKey: readingReset.celebrationKey },
+      'new correct answer',
+      'new correct answer',
+    )!;
+    expect(answeredReading).toEqual({ choice: 'new correct answer', correct: 1, celebrationKey: 1 });
+    expect(getPracticeAnswerFeedback(answeredReading.choice, 'new correct answer')?.isCorrect).toBe(true);
+
+    const wordsReset = getPracticeModeReset('words');
+    expect(wordsReset).toMatchObject({ mode: 'words', index: 0, choice: null, correct: 0, celebrationKey: 0 });
+    expect(getPracticeAnswerFeedback(wordsReset.choice, 'old correct answer')).toBeNull();
+    expect(getProgressMarkerPosition(wordsReset.index, wordQuestions.length).percent)
+      .toBeCloseTo(100 / wordQuestions.length);
+    const answeredNewWords = selectPracticeAnswer(
+      { choice: wordsReset.choice, correct: wordsReset.correct, celebrationKey: wordsReset.celebrationKey },
+      'new wrong answer',
+      'old correct answer',
+    )!;
+    expect(answeredNewWords).toEqual({ choice: 'new wrong answer', correct: 0, celebrationKey: 0 });
+    expect(getPracticeAnswerFeedback(answeredNewWords.choice, 'old correct answer')?.isCorrect).toBe(false);
+  });
+
   it('advances the hop trigger once for a correct answer and not for a wrong answer', () => {
     const initial = { choice: null, correct: 0, celebrationKey: 0 };
     const correct = selectPracticeAnswer(initial, 'right', 'right');
