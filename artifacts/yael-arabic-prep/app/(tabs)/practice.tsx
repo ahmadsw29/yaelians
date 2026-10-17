@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/expo';
 import {
+  AccessibilityInfo,
   Platform,
   Pressable,
   ScrollView,
@@ -23,6 +24,7 @@ import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/
 import { usePlanAccess } from '@/lib/PlanAccess';
 import {
   PRACTICE_HORIZONTAL_PADDING,
+  getPracticeAnswerFeedback,
   getPracticeAnswerState,
   getPracticeModeReset,
   getProgressMarkerPosition,
@@ -105,7 +107,8 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const question = mode === 'words'
     ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
     : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
-  const isCorrect = choice === question.correctAnswer;
+  const answerFeedback = getPracticeAnswerFeedback(choice, question.correctAnswer);
+  const isCorrect = answerFeedback?.isCorrect ?? false;
 
   const changeMode = (nextMode: 'words' | 'reading') => {
     const reset = getPracticeModeReset(nextMode);
@@ -121,9 +124,13 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const select = (answer: string) => {
     const selection = selectPracticeAnswer({ choice, correct, celebrationKey }, answer, question.correctAnswer);
     if (!selection) return;
+    const feedback = getPracticeAnswerFeedback(selection.choice, question.correctAnswer);
     setChoice(selection.choice);
     setCorrect(selection.correct);
     setCelebrationKey(selection.celebrationKey);
+    if (Platform.OS === 'ios' && feedback) {
+      AccessibilityInfo.announceForAccessibility(feedback.announcement);
+    }
     if (answer === question.correctAnswer) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
@@ -304,7 +311,12 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     </ScrollView>
 
       <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: Platform.OS === 'web' ? 100 : Math.max(insets.bottom, 14) }]}>
-        {answered && <View style={styles.feedbackRow} accessibilityLiveRegion="polite">
+        {answerFeedback && <Text
+          accessibilityLiveRegion="polite"
+          importantForAccessibility="yes"
+          style={styles.accessibilityAnnouncement}
+        >{answerFeedback.announcement}</Text>}
+        {answered && <View style={styles.feedbackRow}>
           <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={62} jumpKey={celebrationKey} />
           <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28}
             color={isCorrect ? p.successInk : p.coralInk} accessibilityLabel={isCorrect ? 'إجابة صحيحة' : 'إجابة غير صحيحة'} />
@@ -356,6 +368,7 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     optionLetter: { color: c.mutedForeground, fontSize: 12, fontFamily: BOLD, fontWeight: '800' },
     footer: { borderTopWidth: 2, borderTopColor: c.border, backgroundColor: c.background, paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 12, gap: 10, width: '100%', alignSelf: 'center' },
     feedbackRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    accessibilityAnnouncement: { position: 'absolute', left: -10000, width: 1, height: 1, overflow: 'hidden' },
     feedbackBody: { fontSize: 14, fontWeight: '600', textAlign: 'right', marginTop: 2, writingDirection: 'rtl' },
     completionScreen: { flexGrow: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
     saveError: { backgroundColor: p.coralSoft, borderColor: p.coral, borderWidth: 2, borderRadius: 14, padding: 12, marginBottom: 8 },

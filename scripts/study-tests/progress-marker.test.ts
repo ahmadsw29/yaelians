@@ -9,6 +9,7 @@ import {
   PROGRESS_RANGE_INSET,
   PROGRESS_ROW_BOTTOM_SPACE,
   PROGRESS_ROW_GAP,
+  getPracticeAnswerFeedback,
   getPracticeAnswerState,
   getPracticeModeReset,
   getProgressMarkerPosition,
@@ -59,6 +60,18 @@ describe('practice progress marker regressions', () => {
     // The correct answer remains visually identified even when another option was selected.
     expect(getPracticeAnswerState('wrong', 'right', 'right')).toBe('correct');
     expect(getPracticeAnswerState('wrong', 'other', 'right')).toBe('default');
+  });
+
+  it('provides one accessible correctness announcement for each selected answer', () => {
+    expect(getPracticeAnswerFeedback(null, 'correct')).toBeNull();
+    expect(getPracticeAnswerFeedback('correct', 'correct')).toEqual({
+      isCorrect: true,
+      announcement: 'إجابتك «correct» صحيحة',
+    });
+    expect(getPracticeAnswerFeedback('selected', 'correct')).toEqual({
+      isCorrect: false,
+      announcement: 'إجابتك «selected» غير صحيحة. الإجابة الصحيحة: correct',
+    });
   });
 
   it('keeps the marker within the progress row and away from the count on a 320 px phone', () => {

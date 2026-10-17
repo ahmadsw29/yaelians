@@ -40,6 +40,25 @@ export type PracticeAnswerSelection = {
 
 export type PracticeAnswerState = 'correct' | 'wrong' | 'default';
 
+export type PracticeAnswerFeedback = {
+  isCorrect: boolean;
+  announcement: string;
+};
+
+export function getPracticeAnswerFeedback(
+  choice: string | null,
+  correctAnswer: string,
+): PracticeAnswerFeedback | null {
+  if (choice === null) return null;
+  const isCorrect = choice === correctAnswer;
+  return {
+    isCorrect,
+    announcement: isCorrect
+      ? `إجابتك «${choice}» صحيحة`
+      : `إجابتك «${choice}» غير صحيحة. الإجابة الصحيحة: ${correctAnswer}`,
+  };
+}
+
 export function getPracticeAnswerState(
   choice: string | null,
   option: string,
