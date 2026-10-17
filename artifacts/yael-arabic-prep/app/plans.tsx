@@ -56,7 +56,7 @@ export default function PlansScreen() {
 
     <View testID="plan-premium" style={[styles.card, styles.premiumCard, { backgroundColor: c.primary, borderColor: c.primary }]}>
       <View style={styles.cardHeader}>
-        <View style={styles.priceCopy}><Text style={[styles.planName, { color: c.primaryForeground }]}>الخطة الكاملة</Text><Text style={[styles.price, { color: c.primaryForeground }]}>₪50<Text style={[styles.period, { color: c.primaryForeground }]}> / شهريًا</Text></Text></View>
+        <View style={styles.priceCopy}><Text style={[styles.planName, { color: c.primaryForeground }]}>الخطة الكاملة</Text><Text style={[styles.price, { color: c.primaryForeground }]}>₪48.90<Text style={[styles.period, { color: c.primaryForeground }]}> / شهريًا</Text></Text></View>
         <View style={[styles.badge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}><Ionicons name="sparkles" size={14} color={c.primaryForeground} /><Text style={[styles.badgeText, { color: c.primaryForeground }]}>بلا حدود</Text></View>
       </View>
       <View style={styles.benefitList}>{PREMIUM_BENEFITS.map(item => <Benefit key={item} label={item} inverse />)}</View>

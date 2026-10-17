@@ -128,7 +128,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
         <View style={styles.upgradeCopy}>
           <Text style={[styles.upgradeEyebrow, { color: colors.primaryForeground }]}>للمزيد من التعلّم</Text>
           <Text style={[styles.upgradeTitle, { color: colors.primaryForeground }]}>استكشف الخطة الكاملة</Text>
-          <Text style={[styles.upgradePrice, { color: colors.primaryForeground }]}>₪50 شهريًا</Text>
+          <Text style={[styles.upgradePrice, { color: colors.primaryForeground }]}>₪48.90 شهريًا</Text>
         </View>
         <Feather name="arrow-left" size={20} color={colors.primaryForeground} />
       </Pressable>

@@ -76,13 +76,13 @@ export function Refreshed() {
         </div>
       </section>
       <section className="ya-plan">
-        <div className="ya-plan-head"><div><h2 className="ya-plan-title">أنت على الخطة المجانية</h2><p className="ya-plan-desc">واصل التقدّم، وافتح كل أدوات الدراسة وقتما تكون جاهزًا.</p></div><div className="ya-plan-price"><strong>₪50</strong><small>شهريًا</small></div></div>
+        <div className="ya-plan-head"><div><h2 className="ya-plan-title">أنت على الخطة المجانية</h2><p className="ya-plan-desc">واصل التقدّم، وافتح كل أدوات الدراسة وقتما تكون جاهزًا.</p></div><div className="ya-plan-price"><strong>₪48.90</strong><small>شهريًا</small></div></div>
         <div className="ya-usage">
           <div className="ya-usage-row"><span className="ya-usage-label"><BookOpen size={14}/> جولة مفردات اليوم</span><span className="ya-usage-count">1 من 1 مستخدمة</span><div className="ya-track"><b/></div></div>
           <div className="ya-usage-row"><span className="ya-usage-label"><Target size={14}/> جلسة امتحان اليوم</span><span className="ya-usage-count">0 من 1 مستخدمة</span><div className="ya-track"><b style={{width:'0%',background:'#efbd75'}}/></div></div>
         </div>
         <a className="ya-upgrade" href="/plans">اكتشف الخطة الكاملة <ArrowLeft size={16}/></a>
-        <p className="ya-plan-note">₪50 شهريًا · الدفع غير متاح حاليًا، لكن يمكنك الاطلاع على تفاصيل الخطة.</p>
+        <p className="ya-plan-note">₪48.90 شهريًا · الدفع غير متاح حاليًا، لكن يمكنك الاطلاع على تفاصيل الخطة.</p>
       </section>
       <section className="ya-card">
         <h2 className="ya-card-title"><UserRound size={17}/> بياناتك</h2>
