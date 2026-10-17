@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import PetTeacher from '@/components/PetTeacher';
+import { QuestionPrompt } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
@@ -295,7 +296,6 @@ function ExamSession({ userId }: { userId?: string }) {
             </View>
             {button('ابدأ المحاكاة • يبدأ الوقت الآن', () => { setNotice(''); setNow(Date.now()); commit(newSession()); }, 'exam-start')}
           </> : activeExam ? <>
-            <PetTeacher quiet />
             {question ? <>
               <View style={styles.row}>
                 <Text style={styles.caption}>{22 - unanswered} / 22 إجابة</Text>
@@ -303,7 +303,7 @@ function ExamSession({ userId }: { userId?: string }) {
               </View>
               <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${((22 - unanswered) / 22) * 100}%` }]} /></View>
               {question.passage && <View style={styles.card}><Text style={styles.caption}>النص • اقرأ ثم أجب</Text><Text selectable style={styles.hebrew}>{question.passage}</Text></View>}
-              <Text selectable style={styles.hebrew}>{question.prompt}</Text>
+              <QuestionPrompt index={stage * 22 + session.question} hebrew text={question.prompt} />
               <View style={{ gap: 10 }}>{question.options.map((option, index) => {
                 const selected = session.answers[stage][session.question] === index;
                 return <Pressable key={`${question.id}-${index}`} testID={`exam-option-${index}`} accessibilityRole="radio"
@@ -410,21 +410,21 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     notice: { padding: 16, gap: 10, borderRadius: c.radius, backgroundColor: c.secondary },
     error: { padding: 16, gap: 12, borderRadius: c.radius, backgroundColor: c.card, borderWidth: 1, borderColor: c.destructive },
     link: { fontFamily: BOLD, fontSize: 14, lineHeight: 24, color: c.primary, textAlign: 'right', textDecorationLine: 'underline' },
-    button: { minHeight: 50, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: c.radius, backgroundColor: c.primary },
-    secondaryButton: { backgroundColor: c.secondary },
+    button: { minHeight: 50, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: 16, borderBottomWidth: 5, borderColor: c.isDark ? c.background : c.text, backgroundColor: c.primary },
+    secondaryButton: { backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border },
     buttonText: { fontFamily: BOLD, fontSize: 15, lineHeight: 24, textAlign: 'center', color: c.primaryForeground },
     row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
     clock: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 9 },
     clockText: { fontFamily: BOLD, fontSize: 20, color: c.primary, fontVariant: ['tabular-nums'], writingDirection: 'ltr' },
-    progressTrack: { height: 5, borderRadius: 3, backgroundColor: c.border, overflow: 'hidden' },
-    progressFill: { height: 5, borderRadius: 3, backgroundColor: c.primary },
-    option: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderRadius: c.radius, borderWidth: 1, borderColor: c.border, backgroundColor: c.card },
+    progressTrack: { height: 14, borderRadius: 7, backgroundColor: c.border, overflow: 'hidden' },
+    progressFill: { height: 14, borderRadius: 7, alignSelf: 'flex-end', backgroundColor: c.primary },
+    option: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderRadius: c.radius, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border, backgroundColor: c.card },
     optionText: { flex: 1, fontSize: 18, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
     optionNumber: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: c.muted },
     numberText: { fontFamily: BOLD, color: c.foreground, fontSize: 13 },
     navigation: { flexDirection: 'row-reverse', gap: 12 },
     questionGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
-    questionChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
+    questionChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontFamily: BOLD, fontSize: 14, color: c.foreground },
     essayInput: { minHeight: 320, padding: 18, borderRadius: c.radius, borderWidth: 1, borderColor: c.input, backgroundColor: c.card, color: c.foreground, fontSize: 19, lineHeight: 32, textAlign: 'right', writingDirection: 'rtl' },
     score: { fontFamily: BOLD, fontSize: 48, color: c.primary, textAlign: 'right', writingDirection: 'ltr' },

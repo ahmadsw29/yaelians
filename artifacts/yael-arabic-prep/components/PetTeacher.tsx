@@ -1,42 +1,139 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
-import Svg, { Path, Ellipse, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useColors } from '@/hooks/useColors';
 import { PROGRESS_MAX_HOP } from '@/lib/progress-marker';
 import { listenForReduceMotionChanges, updatePetTeacherMotion } from '@/lib/pet-teacher-motion';
 
+export type CreatureKind = 'zizo' | 'lumi' | 'rami';
+export type CreatureMood = 'happy' | 'hype' | 'cheer';
+
+export const CREATURE_NAMES: Record<CreatureKind, string> = { zizo: 'زيزو', lumi: 'لومي', rami: 'رامي' };
+
 const tips = [
-  'أنا رامي، مدرّبك. نصل إلى هدفك خطوة بخطوة.',
+  'أنا زيزو، رفيقك في التدريب. نصل إلى هدفك خطوة بخطوة.',
   'اقرأ الجملة كاملة قبل اختيار الإجابة.',
   'الخطأ فرصة للتعلّم، وليس سببًا للتوقّف.',
   'ابحث عن دليل في النص، ولا تعتمد على التخمين وحده.',
 ];
-// Fixed illustration pigments, independent of the app's light/dark surfaces.
-const tutorInk = { skin: '#c78b67', shadow: '#b87955', hair: '#263431', jacket: '#344e49', shirt: '#f6e6c8', gold: '#e7a15e', mouth: '#704337' };
 
-export function YoungTutorArt({ mood = 'happy', size, full = false }: { mood?: 'happy' | 'sad'; size: number; full?: boolean }) {
-  const happy = mood === 'happy';
-  return (
-    <Svg width={size} height={size} viewBox={full ? '0 0 190 218' : '51 23 99 139'}>
-      <Ellipse cx="99" cy="202" rx="66" ry="9" fill={tutorInk.hair} opacity=".12" />
-      <Path d="M40 210c4-46 24-67 58-67s57 21 60 67H40Z" fill={tutorInk.gold} />
-      <Path d="M54 211c3-35 15-57 45-62l12 18 13-18c19 6 30 25 34 62H54Z" fill={tutorInk.jacket} />
-      <Path d="m84 149 15 20 14-20 9 9-13 24H91l-15-24 8-9Z" fill={tutorInk.shirt} />
-      <Path d="M77 105h43v43c-6 11-14 16-22 16-9 0-16-6-21-16v-43Z" fill={tutorInk.shadow} />
-      <Path d="M67 77c0-27 13-43 33-43 23 0 37 16 37 44v19c0 29-17 46-37 46-19 0-33-18-33-46V77Z" fill={tutorInk.skin} />
-      <Path d="M66 86c-7-29 8-55 32-58 17-3 36 5 42 25 6 18-1 34-2 40-4-7-7-15-7-25-14 7-35 9-57 5-1 11-2 20-5 27-3-3-3-8-3-14Z" fill={tutorInk.hair} />
-      <Path d="M74 73c7-12 18-19 34-21 11-1 21 2 28 8-3-18-17-28-35-27-20 1-31 16-27 40Z" fill={tutorInk.hair} />
-      <Path d={happy ? 'M78 91c4-3 10-3 14 0m20 0c4-3 10-3 14 0' : 'M78 92l14-3m20 0 14 3'} fill="none" stroke={tutorInk.mouth} strokeWidth="3" strokeLinecap="round" />
-      <Path d={happy ? 'M83 99c2 2 6 2 8 0m21 0c2 2 6 2 8 0' : 'M83 100h7m23 0h7'} fill="none" stroke={tutorInk.hair} strokeWidth="2.5" strokeLinecap="round" />
-      <Path d="M102 98c-1 8-4 13-2 15 2 2 5 2 8 0" fill="none" stroke={tutorInk.shadow} strokeWidth="2" strokeLinecap="round" />
-      <Path d={happy ? 'M91 126c6 6 16 6 22 0' : 'M93 129q9-4 18 0'} fill="none" stroke={tutorInk.mouth} strokeWidth="2.7" strokeLinecap="round" />
-      {full && <>
-        <Path d="M128 161c14-6 25-16 29-30" fill="none" stroke={tutorInk.skin} strokeWidth="10" strokeLinecap="round" />
-        <Path d="M155 131c3-8 9-10 15-6l3 4-5 11-10 1" fill={tutorInk.skin} />
-        <Rect x="126" y="86" width="48" height="39" rx="8" fill={tutorInk.shirt} stroke={tutorInk.gold} strokeWidth="1.5" transform="rotate(7 126 86)" />
-        <SvgText x="150" y="106" textAnchor="middle" fontSize="11" fontWeight="700" fill={tutorInk.jacket}>יעל</SvgText>
-        <Path d="M139 113h24" stroke={tutorInk.gold} strokeWidth="2.5" strokeLinecap="round" />
+// Fixed illustration pigments: the creatures keep their identity on light and dark surfaces.
+const ink = {
+  line: '#2a1e3a', white: '#fffdf7', blush: '#ff5d7a',
+  zizo: '#ff8a4c', zizoShade: '#e9672e', zizoBelly: '#ffe2c4', mint: '#5ee0c1', mintShade: '#2fb895',
+  lumi: '#ffc83d', lumiShade: '#e9a400', lumiFace: '#fff6d6', flame: '#ff7a59', flameCore: '#ffd36b', teal: '#1f6f78',
+  skin: '#c98a64', skinShade: '#b07350', hair: '#2b2230', hoodie: '#2b9bd6', hoodieShade: '#1f7cb3',
+};
+
+function Eyes({ lx, rx, y, r, mood }: { lx: number; rx: number; y: number; r: number; mood: CreatureMood }) {
+  return <>
+    <Ellipse cx={lx} cy={y} rx={r} ry={r * 1.18} fill={ink.white} />
+    <Ellipse cx={rx} cy={y} rx={r} ry={r * 1.18} fill={ink.white} />
+    <Circle cx={lx + 1} cy={y + 2} r={r * 0.6} fill={ink.line} />
+    <Circle cx={rx - 1} cy={y + 2} r={r * 0.6} fill={ink.line} />
+    <Circle cx={lx + 3} cy={y - 1} r={r * 0.22} fill={ink.white} />
+    <Circle cx={rx + 1} cy={y - 1} r={r * 0.22} fill={ink.white} />
+    {mood === 'cheer' && <Path d={`M${lx - r} ${y - r * 1.5} l${r * 1.4} -${r * 0.4} M${rx + r} ${y - r * 1.5} l-${r * 1.4} -${r * 0.4}`} stroke={ink.line} strokeWidth={2.6} strokeLinecap="round" />}
+    {mood === 'hype' && <Path d={`M${lx - r} ${y - r * 1.5} q${r} -${r * 0.9} ${r * 1.8} 0 M${rx - r * 0.8} ${y - r * 1.5} q${r} -${r * 0.9} ${r * 1.8} 0`} stroke={ink.line} strokeWidth={2.6} fill="none" strokeLinecap="round" />}
+  </>;
+}
+
+function Zizo({ mood }: { mood: CreatureMood }) {
+  const hype = mood === 'hype';
+  return <G>
+    <Path d="M40 46C24 32 16 14 22 5c11 6 20 22 26 36Z" fill={ink.zizo} />
+    <Path d="M80 46c16-14 24-32 18-41-11 6-20 22-26 36Z" fill={ink.zizo} />
+    <Circle cx="23" cy="7" r="6" fill={ink.mint} />
+    <Circle cx="97" cy="7" r="6" fill={ink.mint} />
+    <Path d="M28 70C11 63 6 79 17 88c6-3 10-7 12-10Z" fill={ink.mint} />
+    <Path d="M92 70c17-7 22 9 11 18-6-3-10-7-12-10Z" fill={ink.mint} />
+    <Ellipse cx="46" cy="110" rx="9" ry="5" fill={ink.zizoShade} />
+    <Ellipse cx="74" cy="110" rx="9" ry="5" fill={ink.zizoShade} />
+    <Path d="M60 30c26 0 38 22 38 44 0 24-16 36-38 36S22 98 22 74c0-22 12-44 38-44Z" fill={ink.zizo} />
+    <Path d="M54 33c-3-10 4-14 8-8 2-6 10-4 6 8Z" fill={ink.zizoShade} />
+    <Ellipse cx="60" cy="88" rx="21" ry="16" fill={ink.zizoBelly} />
+    <Eyes lx={46} rx={74} y={60} r={9.5} mood={mood} />
+    <Ellipse cx="33" cy="76" rx="6" ry="3.6" fill={ink.blush} opacity={0.45} />
+    <Ellipse cx="87" cy="76" rx="6" ry="3.6" fill={ink.blush} opacity={0.45} />
+    {mood === 'cheer'
+      ? <Path d="M52 79q8 6 16 0" stroke={ink.line} strokeWidth="3" fill="none" strokeLinecap="round" />
+      : <>
+        <Path d={hype ? 'M48 75q12 20 24 0Z' : 'M51 76q9 12 18 0Z'} fill={ink.line} />
+        <Path d={hype ? 'M53 76l3 4 3-4Z M61 76l3 4 3-4Z' : 'M55 76l2.5 3 2.5-3Z'} fill={ink.white} />
       </>}
+    {hype
+      ? <>
+        <Path d="M25 76C14 66 12 52 16 44" stroke={ink.zizo} strokeWidth="9" strokeLinecap="round" fill="none" />
+        <Path d="M95 76c11-10 13-24 9-32" stroke={ink.zizo} strokeWidth="9" strokeLinecap="round" fill="none" />
+        <Path d="M10 30l3 6 6 1-5 4 1 6-5-3-5 3 1-6-4-4 6-1Z" fill={ink.mint} />
+        <Path d="M108 24l2 4 4 1-3 3 1 4-4-2-3 2 1-4-3-3 4-1Z" fill={ink.mint} />
+      </>
+      : <>
+        <Path d="M26 82c-6 6-6 12-2 14" stroke={ink.zizoShade} strokeWidth="7" strokeLinecap="round" fill="none" />
+        <Path d="M94 82c6 6 6 12 2 14" stroke={ink.zizoShade} strokeWidth="7" strokeLinecap="round" fill="none" />
+      </>}
+  </G>;
+}
+
+function Lumi({ mood }: { mood: CreatureMood }) {
+  return <G>
+    <Path d="M60 6c11 12 9 21 0 26-9-5-11-14 0-26Z" fill={ink.flame} />
+    <Path d="M60 16c5 6 4 10 0 13-4-3-5-7 0-13Z" fill={ink.flameCore} />
+    <Rect x="40" y="30" width="40" height="10" rx="5" fill={ink.teal} />
+    <Path d="M30 62c-10 2-14 10-10 16" stroke={ink.lumiShade} strokeWidth="7" strokeLinecap="round" fill="none" />
+    <Path d={mood === 'hype' ? 'M90 62c10-4 14-14 12-22' : 'M90 62c10 2 14 10 10 16'} stroke={ink.lumiShade} strokeWidth="7" strokeLinecap="round" fill="none" />
+    <Rect x="28" y="38" width="64" height="64" rx="26" fill={ink.lumi} />
+    <Rect x="28" y="84" width="64" height="18" rx="9" fill={ink.lumiShade} opacity={0.5} />
+    <Rect x="37" y="49" width="46" height="38" rx="17" fill={ink.lumiFace} />
+    {mood === 'cheer'
+      ? <Eyes lx={50} rx={70} y={64} r={5.5} mood="cheer" />
+      : <Path d="M45 66q5-7 10 0M65 66q5-7 10 0" stroke={ink.line} strokeWidth="3.2" fill="none" strokeLinecap="round" />}
+    <Ellipse cx="43" cy="75" rx="4" ry="2.6" fill={ink.blush} opacity={0.5} />
+    <Ellipse cx="77" cy="75" rx="4" ry="2.6" fill={ink.blush} opacity={0.5} />
+    <Path d={mood === 'cheer' ? 'M55 78q5 3 10 0' : 'M53 75q7 9 14 0Z'} stroke={ink.line} strokeWidth="2.6" fill={mood === 'cheer' ? 'none' : ink.line} strokeLinecap="round" />
+    <Rect x="38" y="100" width="44" height="9" rx="4.5" fill={ink.teal} />
+    <Ellipse cx="48" cy="112" rx="7" ry="4" fill={ink.teal} />
+    <Ellipse cx="72" cy="112" rx="7" ry="4" fill={ink.teal} />
+  </G>;
+}
+
+function Rami({ mood }: { mood: CreatureMood }) {
+  return <G>
+    <Path d="M22 118c0-24 16-36 38-36s38 12 38 36Z" fill={ink.hoodie} />
+    <Path d="M46 84l14 12 14-12" stroke={ink.hoodieShade} strokeWidth="5" fill="none" strokeLinecap="round" />
+    <Path d="M40 86q20 18 40 0" stroke={ink.flame} strokeWidth="6" fill="none" strokeLinecap="round" />
+    <Circle cx="38" cy="86" r="6" fill={ink.flame} />
+    <Circle cx="82" cy="86" r="6" fill={ink.flame} />
+    <Rect x="53" y="70" width="14" height="14" rx="5" fill={ink.skinShade} />
+    <Circle cx="34" cy="54" r="6" fill={ink.skinShade} />
+    <Circle cx="86" cy="54" r="6" fill={ink.skinShade} />
+    <Circle cx="60" cy="50" r="27" fill={ink.skin} />
+    <Path d="M33 46c-5-17 9-27 21-24 6-9 25-7 29 7 7 4 6 14 3 19-8-8-20-10-30-8-9 2-16 4-23 6Z" fill={ink.hair} />
+    <Circle cx="42" cy="28" r="6" fill={ink.hair} />
+    <Circle cx="78" cy="25" r="6" fill={ink.hair} />
+    <Ellipse cx="50" cy="55" rx="3.6" ry={mood === 'hype' ? 5 : 4.4} fill={ink.line} />
+    <Ellipse cx="70" cy="55" rx="3.6" ry={mood === 'hype' ? 5 : 4.4} fill={ink.line} />
+    <Circle cx="51.2" cy="53.4" r="1.2" fill={ink.white} />
+    <Circle cx="71.2" cy="53.4" r="1.2" fill={ink.white} />
+    <Path d={mood === 'cheer' ? 'M44 46l10-1M76 46l-10-1' : 'M44 45q6-4 11-1M65 44q6-3 11 1'} stroke={ink.hair} strokeWidth="2.6" fill="none" strokeLinecap="round" />
+    <Ellipse cx="42" cy="64" rx="5" ry="3" fill={ink.blush} opacity={0.35} />
+    <Ellipse cx="78" cy="64" rx="5" ry="3" fill={ink.blush} opacity={0.35} />
+    {mood === 'cheer'
+      ? <Path d="M53 66q7 5 14 0" stroke={ink.line} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+      : <Path d="M50 63q10 13 20 0Z" fill={ink.line} />}
+    {mood === 'hype' && <>
+      <Path d="M96 104c8-10 10-24 6-34" stroke={ink.hoodie} strokeWidth="10" strokeLinecap="round" fill="none" />
+      <Circle cx="101" cy="66" r="7" fill={ink.skin} />
+    </>}
+  </G>;
+}
+
+/** Original Kalima cast. Pure illustration; hidden from assistive tech by callers. */
+export function Creature({ kind = 'zizo', mood = 'happy', size }: { kind?: CreatureKind; mood?: CreatureMood; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 120 120">
+      <Ellipse cx="60" cy="116" rx="34" ry="3.5" fill={ink.line} opacity={0.1} />
+      {kind === 'zizo' ? <Zizo mood={mood} /> : kind === 'lumi' ? <Lumi mood={mood} /> : <Rami mood={mood} />}
     </Svg>
   );
 }
@@ -45,11 +142,13 @@ export function PetTeacherReaction({
   mood,
   size = 64,
   jumpKey = 0,
+  kind = 'zizo',
   testID,
 }: {
   mood: 'happy' | 'sad';
   size?: number;
   jumpKey?: number;
+  kind?: CreatureKind;
   testID?: string;
 }) {
   const jump = useRef(new Animated.Value(0)).current;
@@ -78,7 +177,7 @@ export function PetTeacherReaction({
     <Animated.View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       testID={testID}
       style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: jump }, { scale: squash }] }}>
-      <YoungTutorArt mood={mood} size={size} />
+      <Creature kind={kind} mood={mood === 'happy' ? 'hype' : 'cheer'} size={size} />
     </Animated.View>
   );
 }
@@ -88,19 +187,20 @@ export default function StudyTutor({ quiet = false }: { quiet?: boolean }) {
   const [tip, setTip] = useState(0);
   const [hidden, setHidden] = useState(false);
   if (hidden) return (
-    <Pressable accessibilityRole="button" accessibilityLabel="إظهار المدرّب رامي" onPress={() => setHidden(false)} style={{ padding: 10 }}>
-      <Text style={{ color: c.primary, textAlign: 'right' }}>إظهار رامي</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="إظهار زيزو" onPress={() => setHidden(false)} style={{ padding: 10 }}>
+      <Text style={{ color: c.primary, textAlign: 'right', fontWeight: '700' }}>إظهار زيزو</Text>
     </Pressable>
   );
   return (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, padding: 10, borderRadius: 18, backgroundColor: c.secondary, marginVertical: 10 }}>
-      <Pressable testID="pet-teacher" accessibilityRole="button" accessibilityLabel={quiet ? 'المدرّب رامي في وضع هادئ' : 'نصيحة جديدة من رامي'} onPress={() => { if (!quiet) setTip((tip + 1) % tips.length); }}>
-        <YoungTutorArt size={68} />
+    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginVertical: 8 }}>
+      <Pressable testID="pet-teacher" accessibilityRole="button" accessibilityLabel={quiet ? 'زيزو في وضع هادئ' : 'نصيحة جديدة من زيزو'} onPress={() => { if (!quiet) setTip((tip + 1) % tips.length); }}>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature size={76} mood={quiet ? 'happy' : 'hype'} /></View>
       </Pressable>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: c.secondaryForeground, fontSize: 12, lineHeight: 21, textAlign: 'right' }}>{quiet ? 'رامي معك. خذ وقتك في قراءة السؤال، ثم اختر بثقة.' : tips[tip]}</Text>
-        <Pressable onPress={() => setHidden(true)} accessibilityRole="button" accessibilityLabel="إخفاء المدرّب رامي" style={{ alignSelf: 'flex-end', paddingVertical: 5 }}>
-          <Text style={{ color: c.mutedForeground, fontSize: 11 }}>إخفاء</Text>
+      <View style={{ flex: 1, backgroundColor: c.card, borderColor: c.border, borderWidth: 2, borderBottomWidth: 4, borderRadius: 18, paddingHorizontal: 13, paddingVertical: 10 }}>
+        <View style={{ position: 'absolute', right: -7, top: 22, width: 12, height: 12, backgroundColor: c.card, borderColor: c.border, borderRightWidth: 2, borderTopWidth: 2, transform: [{ rotate: '45deg' }] }} />
+        <Text style={{ color: c.foreground, fontSize: 13, lineHeight: 22, textAlign: 'right', fontWeight: '600' }}>{quiet ? 'زيزو معك. خذ وقتك في قراءة السؤال، ثم اختر بثقة.' : tips[tip]}</Text>
+        <Pressable onPress={() => setHidden(true)} accessibilityRole="button" accessibilityLabel="إخفاء زيزو" style={{ alignSelf: 'flex-start', paddingVertical: 4 }}>
+          <Text style={{ color: c.mutedForeground, fontSize: 11, fontWeight: '700' }}>إخفاء</Text>
         </Pressable>
       </View>
     </View>

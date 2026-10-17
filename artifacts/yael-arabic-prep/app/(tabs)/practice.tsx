@@ -17,16 +17,11 @@ import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/s
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { PetTeacherReaction } from '@/components/PetTeacher';
+import { ChunkyButton, ChunkyProgress, QuestionPrompt, usePlay } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import {
-  PROGRESS_COUNT_MAX_WIDTH,
-  PROGRESS_MASCOT_SIZE,
-  PROGRESS_LINE_HEIGHT,
-  PROGRESS_RANGE_INSET,
-  PROGRESS_ROW_BOTTOM_SPACE,
-  PROGRESS_ROW_GAP,
   PRACTICE_HORIZONTAL_PADDING,
   getPracticeAnswerState,
   getPracticeModeReset,
@@ -89,10 +84,11 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
-  const c = useColors();
+  const p = usePlay();
+  const c = p;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const styles = makeStyles(c, insets.top);
+  const styles = makeStyles(p, insets.top);
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
   const [correct, setCorrect] = useState(0);
@@ -187,94 +183,91 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     return (
       <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.completionScreen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 112 }]}>
         <StudySyncStatus />
-        {saveError && <Pressable onPress={next} accessibilityRole="button">
-          <Text style={{ color: c.foreground }}>لم يُحفظ الدرس. اضغط لإعادة المحاولة قبل المغادرة.</Text>
+        {saveError && <Pressable onPress={next} accessibilityRole="button" style={styles.saveError}>
+          <Text style={{ color: p.coralInk, fontWeight: '700', textAlign: 'center' }}>لم يُحفظ الدرس. اضغط لإعادة المحاولة قبل المغادرة.</Text>
         </Pressable>}
         {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
         <Text style={styles.completionEyebrow}>{trackProgress ? 'أحسنت! أنهيت جولتك المحفوظة اليوم' : 'تدريب إضافي بلا حفظ للتقدّم'}</Text>
         <Text style={styles.completionTitle}>خطوة جديدة نحو{"\n"}هدفك</Text>
-        <Text style={styles.completionText}>أجبت عن {correct} من {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length} أسئلة بشكل صحيح</Text>
-        {trackProgress && <View style={styles.xpBadge}><Ionicons name="star" size={17} color="#d38b35" /><Text style={styles.xpText}>+{correct * 10} نقطة خبرة</Text></View>}
+        <View style={styles.resultRow}>
+          <View style={[styles.resultTile, { borderColor: p.success, backgroundColor: p.successSoft }]}>
+            <Text style={[styles.resultValue, { color: p.successInk }]}>{correct} / {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length}</Text>
+            <Text style={[styles.resultLabel, { color: p.successInk }]}>إجابات صحيحة</Text>
+          </View>
+          {trackProgress && <View style={[styles.resultTile, { borderColor: p.sun, backgroundColor: p.sunSoft }]}>
+            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 5 }}><Ionicons name="star" size={18} color={p.sunShade} /><Text style={[styles.resultValue, { color: p.sunInk }]}>+{correct * 10}</Text></View>
+            <Text style={[styles.resultLabel, { color: p.sunInk }]}>نقطة خبرة</Text>
+          </View>}
+        </View>
         {saved ? (
-          <>
-          {mode === 'words' && <Pressable onPress={continuePractice} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]} testID="continue-vocabulary">
-            <Text style={styles.continueButtonText}>{isPremium ? 'واصل التدريب بجولة جديدة' : 'واصل التدريب دون حفظ جولة إضافية'}</Text>
-            <Ionicons name="refresh" size={18} color={c.primary} />
-          </Pressable>}
-          <Pressable onPress={finish} style={({ pressed }) => [styles.finishButton, pressed && styles.pressed]} testID="finish-practice">
-            <Text style={styles.finishButtonText}>العودة للرئيسية</Text>
-            <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
-          </Pressable>
-          </>
+          <View style={{ width: '100%', maxWidth: 420, gap: 12, marginTop: 24 }}>
+            {mode === 'words' && <ChunkyButton tone="ghost" icon="refresh" onPress={continuePractice} testID="continue-vocabulary"
+              label={isPremium ? 'واصل التدريب بجولة جديدة' : 'واصل التدريب دون حفظ جولة إضافية'} />}
+            <ChunkyButton icon="arrow-back" onPress={finish} testID="finish-practice" label="العودة للرئيسية" />
+          </View>
         ) : null}
       </ScrollView>
     );
   }
 
+  const answered = choice !== null;
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.screen}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <StudySyncStatus />
       <View style={styles.header}>
-        <Pressable onPress={() => router.push('/')} accessibilityRole="button" style={styles.backButton}>
-          <Ionicons name="arrow-forward" size={21} color={c.foreground} />
+        <Pressable onPress={() => router.push('/')} accessibilityRole="button" accessibilityLabel="العودة للرئيسية" hitSlop={10} style={styles.backButton}>
+          <Ionicons name="close" size={26} color={c.mutedForeground} />
         </Pressable>
-        <View style={styles.headerCopy}>
-          <Text style={styles.headerLabel}>{mode === 'words' ? 'تدريب المفردات · ٢٠ كلمة' : 'فهم المقروء'}</Text>
-        </View>
-      </View>
-      <View style={styles.progressRow}>
-        <Text style={styles.progressCount}>{index + 1} / {activeQuestions.length}</Text>
         <View
           accessible
           accessibilityRole="progressbar"
           accessibilityLabel={`التقدّم: السؤال ${index + 1} من ${activeQuestions.length}`}
           accessibilityValue={{ min: 1, max: activeQuestions.length, now: index + 1 }}
-          style={styles.progressLine}
+          style={{ flex: 1 }}
         >
-          <View style={styles.progressRange}>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: progressPosition.fillWidth }]} />
-            </View>
-            <View style={[styles.progressMascot, { left: progressPosition.mascotLeft }]}>
-              <PetTeacherReaction mood="happy" size={PROGRESS_MASCOT_SIZE} jumpKey={celebrationKey} testID="progress-mascot" />
-            </View>
-          </View>
+          <ChunkyProgress value={progressPosition.percent / 100} />
         </View>
+        <Text style={styles.progressCount}>{index + 1}/{activeQuestions.length}</Text>
       </View>
 
       <View style={styles.modeSwitch}>
-        {isPremium && <Pressable onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
-          <Text style={[styles.modeText, mode === 'reading' && styles.modeTextActive]}>فهم المقروء</Text>
+        {isPremium && <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'reading' }} onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
+          <Ionicons name="book" size={15} color={mode === 'reading' ? p.skyInk : c.mutedForeground} />
+          <Text style={[styles.modeText, mode === 'reading' && { color: p.skyInk }]}>فهم المقروء</Text>
         </Pressable>}
-        <Pressable onPress={() => changeMode('words')} style={[styles.modeButton, mode === 'words' && styles.modeButtonActive]}>
-          <Text style={[styles.modeText, mode === 'words' && styles.modeTextActive]}>مفردات</Text>
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'words' }} onPress={() => changeMode('words')} style={[styles.modeButton, mode === 'words' && styles.modeButtonActive]}>
+          <Ionicons name="chatbubbles" size={15} color={mode === 'words' ? p.skyInk : c.mutedForeground} />
+          <Text style={[styles.modeText, mode === 'words' && { color: p.skyInk }]}>مفردات</Text>
         </Pressable>
       </View>
 
+      <Text style={styles.lessonKicker}>{mode === 'words' ? 'كلمة جديدة' : 'اقرأ القطعة على مهلك'}</Text>
+
       {mode === 'words' ? (
-        <View style={styles.wordCard}>
-          <View style={styles.wordTop}>
-            <View style={styles.wordTag}><Text style={styles.wordTagText}>كلمة جديدة</Text></View>
+        <QuestionPrompt index={index} text={question.prompt}>
+          <View style={styles.wordStage}>
+            <Text style={styles.hebrew}>{question.word}</Text>
+            <Text style={styles.transliteration}>{question.transliteration}</Text>
           </View>
-          <Text style={styles.hebrew}>{question.word}</Text>
-          <Text style={styles.transliteration}>{question.transliteration}</Text>
           <View style={styles.sentenceBox}>
             <Text style={styles.sentenceLabel}>مثال بالعبرية</Text>
             <Text style={styles.sentence} selectable>{question.sentence}</Text>
           </View>
-        </View>
+        </QuestionPrompt>
       ) : (
-        <View style={styles.readingCard}>
-          <View style={styles.wordTag}><Text style={styles.wordTagText}>اقرأ القطعة على مهلك</Text></View>
-          <Text style={styles.readingHebrew} selectable>{question.passage}</Text>
-          <View style={styles.readingHint}>
-            <Ionicons name="eye-outline" size={16} color="#729187" />
-            <Text style={styles.readingHintText}>ابحث عن الفكرة الأساسية</Text>
+        <>
+          <View style={styles.readingCard}>
+            <View style={styles.readingHint}>
+              <Ionicons name="eye-outline" size={15} color={p.skyInk} />
+              <Text style={styles.readingHintText}>ابحث عن الفكرة الأساسية</Text>
+            </View>
+            <Text style={styles.readingHebrew} selectable>{question.passage}</Text>
           </View>
-        </View>
+          <QuestionPrompt index={index} text={question.prompt} />
+        </>
       )}
 
-      <Text style={styles.prompt}>{question.prompt}</Text>
       <View style={styles.options}>
         {question.options.map((option, optionIndex) => {
           const selected = choice === option;
@@ -288,98 +281,89 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
               onPress={() => select(option)}
               style={({ pressed }) => [
                 styles.option,
-                answerState === 'correct' && styles.correctOption,
-                answerState === 'wrong' && styles.wrongOption,
-                pressed && !choice && styles.pressed,
+                answerState === 'correct' && { borderColor: p.success, backgroundColor: p.successSoft },
+                answerState === 'wrong' && { borderColor: p.coral, backgroundColor: p.coralSoft },
+                answered && answerState === 'default' && { opacity: 0.6 },
+                pressed && !choice && styles.pressedOption,
               ]}
             >
+              <View style={[styles.optionDot, answerState === 'correct' && { backgroundColor: p.success, borderColor: p.successShade }, answerState === 'wrong' && { backgroundColor: p.coral, borderColor: p.coralShade }]}>
+                {answerState === 'correct' ? <Ionicons name="checkmark" size={16} color={p.onBrand} />
+                  : answerState === 'wrong' ? <Ionicons name="close" size={16} color={p.onBrand} />
+                  : <Text style={styles.optionLetter}>{['أ', 'ب', 'ج', 'د'][optionIndex]}</Text>}
+              </View>
               <Text style={[
                 styles.optionText,
-                answerState === 'correct' && styles.correctText,
-                answerState === 'wrong' && styles.wrongText,
+                answerState === 'correct' && { color: p.successInk },
+                answerState === 'wrong' && { color: p.coralInk },
               ]}>{option}</Text>
-              {answerState !== 'default' && <View style={styles.answerReaction}>
-                {answerState === 'correct' && <Ionicons name="checkmark-circle" size={20} color="#28755f" />}
-                {answerState === 'wrong' && <Ionicons name="close-circle" size={20} color="#bb584b" />}
-                {selected && <PetTeacherReaction mood={answerState === 'correct' ? 'happy' : 'sad'} size={42} />}
-              </View>}
-              {answerState === 'default' && <View style={styles.optionDot}><Text style={styles.optionLetter}>{['أ', 'ب', 'ج', 'د'][optionIndex]}</Text></View>}
             </Pressable>
           );
         })}
       </View>
-
-      <Pressable
-        accessibilityRole="button"
-        testID="next-question"
-        disabled={!choice || loading}
-        onPress={next}
-        style={({ pressed }) => [styles.nextButton, !choice && styles.nextDisabled, pressed && choice && styles.pressed]}
-      >
-        <Text style={styles.nextText}>{index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}</Text>
-        <Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
-      </Pressable>
     </ScrollView>
+
+      <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: Platform.OS === 'web' ? 100 : Math.max(insets.bottom, 14) }]}>
+        {answered && <View style={styles.feedbackRow} accessibilityLiveRegion="polite">
+          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={62} jumpKey={celebrationKey} />
+          <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28}
+            color={isCorrect ? p.successInk : p.coralInk} accessibilityLabel={isCorrect ? 'إجابة صحيحة' : 'إجابة غير صحيحة'} />
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            {!isCorrect && <Text style={[styles.feedbackBody, { color: p.coralInk }]}>الإجابة الصحيحة: {question.correctAnswer}</Text>}
+          </View>
+        </View>}
+        <ChunkyButton
+          testID="next-question"
+          disabled={!choice || loading}
+          onPress={next}
+          tone={!answered || isCorrect ? 'success' : 'coral'}
+          icon="arrow-back"
+          label={index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}
+        />
+      </View>
+    </View>
   );
 }
 
-function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
+function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
+  const c = p;
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    content: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 14, paddingBottom: Platform.OS === 'web' ? 118 : 32, maxWidth: 600, width: '100%', alignSelf: 'center' },
-    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 24 },
-    backButton: { width: 42, height: 42, borderRadius: 15, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.border },
-    headerCopy: { flex: 1, alignItems: 'flex-end' },
-    headerLabel: { color: c.foreground, fontFamily: BOLD, fontSize: 18 },
-    progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: PROGRESS_ROW_GAP, marginBottom: PROGRESS_ROW_BOTTOM_SPACE },
-    progressCount: { color: c.primary, fontSize: 12, fontFamily: BOLD, maxWidth: PROGRESS_COUNT_MAX_WIDTH },
-    progressLine: { flex: 1, minWidth: PROGRESS_MASCOT_SIZE + PROGRESS_RANGE_INSET * 2, height: PROGRESS_LINE_HEIGHT, position: 'relative', justifyContent: 'center', overflow: 'visible' },
-    progressRange: { position: 'absolute', left: PROGRESS_RANGE_INSET, right: PROGRESS_RANGE_INSET, top: 0, bottom: 0 },
-    progressTrack: { position: 'absolute', left: 0, right: 0, bottom: 10, height: 7, borderRadius: 4, backgroundColor: '#e6e7db' },
-    progressFill: { height: '100%', backgroundColor: '#e88c67', borderRadius: 4 },
-    progressMascot: { position: 'absolute', top: 0, width: PROGRESS_MASCOT_SIZE, height: PROGRESS_MASCOT_SIZE, transform: [{ translateX: -PROGRESS_MASCOT_SIZE / 2 }] },
-    modeSwitch: { flexDirection: 'row-reverse', backgroundColor: '#eeece4', borderRadius: 14, padding: 4, marginBottom: 14 },
-    modeButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 11 },
-    modeButtonActive: { backgroundColor: c.card },
-    modeText: { color: c.mutedForeground, fontFamily: FONT, fontSize: 12 },
-    modeTextActive: { color: c.primary, fontFamily: BOLD },
-    wordCard: { backgroundColor: '#e4eee7', borderRadius: 25, padding: 19, minHeight: 207, justifyContent: 'space-between', marginBottom: 22 },
-    readingCard: { backgroundColor: '#e4eee7', borderRadius: 25, padding: 19, minHeight: 207, justifyContent: 'space-between', marginBottom: 22, alignItems: 'flex-end' },
-    readingHebrew: { color: '#17332f', fontSize: 19, lineHeight: 31, fontFamily: BOLD, textAlign: 'right', writingDirection: 'rtl', marginVertical: 12 },
-    readingHint: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,253,248,0.72)', borderRadius: 12, paddingHorizontal: 9, paddingVertical: 6 },
-    readingHintText: { color: '#68867a', fontSize: 10, fontFamily: FONT },
-    wordTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-    wordTag: { backgroundColor: '#d1e4d9', borderRadius: 12, paddingVertical: 5, paddingHorizontal: 9 },
-    wordTagText: { color: '#407565', fontFamily: BOLD, fontSize: 11 },
-    hebrew: { color: '#17332f', fontSize: 34, fontFamily: BOLD, textAlign: 'center', marginTop: 10 },
-    transliteration: { color: '#68867a', fontFamily: FONT, textAlign: 'center', fontSize: 13, marginTop: 2 },
-    sentenceBox: { backgroundColor: 'rgba(255,253,248,0.72)', borderRadius: 15, padding: 10, alignItems: 'flex-end', marginTop: 13 },
-    sentenceLabel: { color: '#74817a', fontSize: 10, fontFamily: FONT, marginBottom: 3 },
-    sentence: { color: '#244b43', fontFamily: BOLD, fontSize: 15, textAlign: 'right' },
-    prompt: { color: c.foreground, fontFamily: BOLD, fontSize: 17, textAlign: 'right', marginBottom: 12 },
-    options: { gap: 9 },
-    option: { minHeight: 53, borderRadius: 17, paddingHorizontal: 14, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, flexDirection: 'row-reverse', alignItems: 'center', gap: 11 },
-    optionText: { flex: 1, textAlign: 'right', color: c.foreground, fontSize: 14, fontFamily: BOLD },
-    optionDot: { width: 25, height: 25, borderRadius: 9, backgroundColor: '#f0eee6', alignItems: 'center', justifyContent: 'center' },
-    optionLetter: { color: c.mutedForeground, fontSize: 11, fontFamily: BOLD },
-    correctOption: { borderColor: '#70a68d', backgroundColor: '#e8f3ea' },
-    wrongOption: { borderColor: '#d9988d', backgroundColor: '#fff0eb' },
-    correctText: { color: '#28755f' },
-    wrongText: { color: '#ad5347' },
-    answerReaction: { flexDirection: 'row', direction: 'ltr', alignItems: 'center', gap: 3 },
-    nextButton: { minHeight: 53, borderRadius: 17, marginTop: 16, backgroundColor: c.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    nextDisabled: { opacity: 0.4 },
-    nextText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },
-    pressed: { opacity: 0.83, transform: [{ scale: 0.99 }] },
+    content: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 14, paddingBottom: 24, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 18 },
+    backButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+    progressCount: { color: p.successInk, fontSize: 13, fontFamily: BOLD, fontWeight: '800', minWidth: 40, textAlign: 'center' },
+    modeSwitch: { flexDirection: 'row-reverse', backgroundColor: c.muted, borderRadius: 16, padding: 4, marginBottom: 16, gap: 4 },
+    modeButton: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 12 },
+    modeButtonActive: { backgroundColor: p.skySoft, borderWidth: 2, borderColor: p.sky, borderBottomWidth: 4 },
+    modeText: { color: c.mutedForeground, fontFamily: BOLD, fontWeight: '700', fontSize: 13 },
+    lessonKicker: { color: p.coralShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, textAlign: 'right', marginBottom: 10, letterSpacing: 0.3 },
+    wordStage: { alignItems: 'center', backgroundColor: p.brandSoft, borderRadius: 14, paddingVertical: 10 },
+    hebrew: { color: c.foreground, fontSize: 34, fontFamily: BOLD, fontWeight: '800', textAlign: 'center', writingDirection: 'rtl' },
+    transliteration: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'center', fontSize: 13, marginTop: 2 },
+    sentenceBox: { backgroundColor: c.muted, borderRadius: 12, padding: 10, alignItems: 'flex-end' },
+    sentenceLabel: { color: c.mutedForeground, fontSize: 10, fontFamily: FONT, marginBottom: 3 },
+    sentence: { color: c.foreground, fontFamily: BOLD, fontSize: 16, lineHeight: 26, textAlign: 'right', writingDirection: 'rtl' },
+    readingCard: { backgroundColor: c.card, borderRadius: 20, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, padding: 16, marginBottom: 14, alignItems: 'flex-end', gap: 8 },
+    readingHebrew: { color: c.foreground, fontSize: 19, lineHeight: 32, fontFamily: BOLD, textAlign: 'right', writingDirection: 'rtl' },
+    readingHint: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, backgroundColor: p.skySoft, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 5 },
+    readingHintText: { color: p.skyInk, fontSize: 11, fontFamily: BOLD, fontWeight: '700' },
+    options: { gap: 10 },
+    option: { minHeight: 58, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+    pressedOption: { transform: [{ translateY: 3 }], borderBottomWidth: 2, borderColor: p.sky, backgroundColor: p.skySoft },
+    optionText: { flex: 1, textAlign: 'right', color: c.foreground, fontSize: 16, fontFamily: BOLD, fontWeight: '700', writingDirection: 'rtl' },
+    optionDot: { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: c.border, backgroundColor: c.muted, alignItems: 'center', justifyContent: 'center' },
+    optionLetter: { color: c.mutedForeground, fontSize: 12, fontFamily: BOLD, fontWeight: '800' },
+    footer: { borderTopWidth: 2, borderTopColor: c.border, backgroundColor: c.background, paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 12, gap: 10, width: '100%', alignSelf: 'center' },
+    feedbackRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    feedbackBody: { fontSize: 14, fontWeight: '600', textAlign: 'right', marginTop: 2, writingDirection: 'rtl' },
     completionScreen: { flexGrow: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-    completionEyebrow: { color: c.primary, fontFamily: BOLD, fontSize: 14 },
-    completionTitle: { color: c.foreground, fontFamily: BOLD, fontSize: 29, lineHeight: 39, textAlign: 'center', marginTop: 9 },
-    completionText: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, marginTop: 12 },
-    xpBadge: { marginTop: 19, backgroundColor: '#fff0d9', borderRadius: 15, paddingHorizontal: 15, paddingVertical: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 7 },
-    xpText: { color: '#976428', fontFamily: BOLD, fontSize: 14 },
-    finishButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: c.primary, paddingVertical: 15, paddingHorizontal: 24, borderRadius: 17, marginTop: 28, minWidth: 210 },
-    finishButtonText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },
-    continueButton: { backgroundColor: c.card, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 22, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: c.primary },
-    continueButtonText: { color: c.primary, fontFamily: BOLD, fontSize: 14 },
+    saveError: { backgroundColor: p.coralSoft, borderColor: p.coral, borderWidth: 2, borderRadius: 14, padding: 12, marginBottom: 8 },
+    completionEyebrow: { color: p.brandShade, fontFamily: BOLD, fontWeight: '800', fontSize: 14, marginTop: 8 },
+    completionTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 29, lineHeight: 39, textAlign: 'center', marginTop: 9 },
+    resultRow: { flexDirection: 'row-reverse', gap: 10, marginTop: 18, width: '100%', maxWidth: 420 },
+    resultTile: { flex: 1, borderWidth: 2, borderBottomWidth: 5, borderRadius: 18, paddingVertical: 14, alignItems: 'center', gap: 4 },
+    resultValue: { fontSize: 22, fontWeight: '800' },
+    resultLabel: { fontSize: 12, fontWeight: '700' },
   });
 }

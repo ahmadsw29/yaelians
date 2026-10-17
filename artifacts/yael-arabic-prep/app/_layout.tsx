@@ -13,12 +13,12 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Redirect, Stack, useSegments } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
-import { ThemeProvider } from '@/hooks/useColors';
+import { ThemeProvider, useColors } from '@/hooks/useColors';
 import { StudyProvider } from '@/lib/StudyProvider';
 import { AccountDeletionProvider } from '@/lib/AccountDeletion';
 import { PlanAccessProvider, usePlanAccess } from '@/lib/PlanAccess';
@@ -52,6 +52,9 @@ function RootLayoutNav() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { addListener } = useClerk();
   const segments = useSegments();
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const palette = useColors();
   const { ready: planReady, plan } = usePlanAccess();
   const previousUser = React.useRef<string | null | undefined>(undefined);
 
@@ -69,22 +72,26 @@ function RootLayoutNav() {
   }), [addListener]);
 
   const firstSegment = segments[0];
+  let redirectTo: '/welcome' | '/plans' | '/plans?reason=premium-exam' | '/(tabs)' | null = null;
   if (isLoaded) {
     if (!isSignedIn && firstSegment !== 'welcome' && firstSegment !== '(auth)') {
-      return <Redirect href="/welcome" />;
-    }
-    if (isSignedIn && planReady && !plan && firstSegment !== 'plans') {
-      return <Redirect href="/plans" />;
-    }
-    if (isSignedIn && planReady && plan && firstSegment === 'exam') {
-      return <Redirect href="/plans?reason=premium-exam" />;
-    }
-    if (isSignedIn && planReady && plan && (firstSegment === 'welcome' || firstSegment === '(auth)')) {
-      return <Redirect href="/(tabs)" />;
+      redirectTo = '/welcome';
+    } else if (isSignedIn && planReady && !plan && firstSegment !== 'plans') {
+      redirectTo = '/plans';
+    } else if (isSignedIn && planReady && plan && firstSegment === 'exam') {
+      redirectTo = '/plans?reason=premium-exam';
+    } else if (isSignedIn && planReady && plan && (firstSegment === 'welcome' || firstSegment === '(auth)')) {
+      redirectTo = '/(tabs)';
     }
   }
+  // Keep the root navigator mounted while guards redirect. Replacing it with a
+  // Redirect tears down its state and can repeatedly remount the same route.
+  useEffect(() => {
+    if (navigationState?.key && redirectTo) router.replace(redirectTo);
+  }, [navigationState?.key, redirectTo, router]);
 
   return (
+    <>
     <Stack screenOptions={{ headerBackTitle: 'رجوع' }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
@@ -95,6 +102,10 @@ function RootLayoutNav() {
       <Stack.Screen name="exam-library" options={{ headerShown: false }} />
       <Stack.Screen name="source-session" options={{ headerShown: false }} />
     </Stack>
+    {redirectTo && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
+      <ActivityIndicator color={palette.primary} />
+    </View>}
+    </>
   );
 }
 

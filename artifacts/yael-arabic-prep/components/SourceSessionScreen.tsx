@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import PetTeacher from '@/components/PetTeacher';
+import { QuestionPrompt } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
@@ -288,7 +289,6 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
             </View>
             {button('ابدأ • يبدأ الوقت الآن', () => { setNotice(''); setNow(Date.now()); commit(newSourceSession(exam, mode, section)); }, 'source-start')}
           </> : active ? <>
-            <PetTeacher quiet />
             {q ? <>
               <View style={s.row}>
                 <Text style={s.caption}>{questions.length - unanswered} / {questions.length} إجابة</Text>
@@ -299,7 +299,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
                 <Text style={s.caption}>النص • اقرأ ثم أجب</Text>
                 <Text selectable style={s.hebrew}>{q.passage}</Text>
               </View>}
-              <Text selectable style={s.hebrew}>{q.number}. {q.prompt}</Text>
+              <QuestionPrompt index={session.stage * 100 + session.question} hebrew text={`${q.number}. ${q.prompt}`} />
               <View style={{ gap: 10 }} accessibilityRole="radiogroup">{q.options.map((option, index) => {
                 const selected = answers[session.question] === index;
                 return <Pressable key={`${q.id}-${index}`} testID={`source-option-${index}`} accessibilityRole="radio"
@@ -419,15 +419,15 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     notice: { padding: 16, gap: 10, borderRadius: c.radius, backgroundColor: c.secondary },
     error: { padding: 16, gap: 12, borderRadius: c.radius, backgroundColor: c.card, borderWidth: 1, borderColor: c.destructive },
     skeleton: { borderRadius: c.radius, backgroundColor: c.muted, opacity: 0.7 },
-    button: { minHeight: 50, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: c.radius, backgroundColor: c.primary },
-    secondaryButton: { backgroundColor: c.secondary },
+    button: { minHeight: 50, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: 16, borderBottomWidth: 5, borderColor: c.isDark ? c.background : c.text, backgroundColor: c.primary },
+    secondaryButton: { backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border },
     buttonText: { fontFamily: BOLD, fontSize: 15, lineHeight: 24, textAlign: 'center', color: c.primaryForeground },
     row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
     clock: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 9 },
     clockText: { fontFamily: BOLD, fontSize: 19, color: c.primary, fontVariant: ['tabular-nums'], writingDirection: 'ltr' },
-    progressTrack: { height: 5, borderRadius: 3, backgroundColor: c.border, overflow: 'hidden' },
-    progressFill: { height: 5, borderRadius: 3, backgroundColor: c.primary },
-    option: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderRadius: c.radius, borderWidth: 1, borderColor: c.border, backgroundColor: c.card },
+    progressTrack: { height: 14, borderRadius: 7, backgroundColor: c.border, overflow: 'hidden' },
+    progressFill: { height: 14, borderRadius: 7, alignSelf: 'flex-end', backgroundColor: c.primary },
+    option: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderRadius: c.radius, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border, backgroundColor: c.card },
     optionText: { flex: 1, fontSize: 18, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
     optionTextSmall: { flex: 1, fontSize: 16, lineHeight: 26, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
     reviewOption: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: c.border },
@@ -435,7 +435,7 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     numberText: { fontFamily: BOLD, color: c.foreground, fontSize: 13 },
     navigation: { flexDirection: 'row-reverse', gap: 12 },
     grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
-    chip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
+    chip: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontFamily: BOLD, fontSize: 14, color: c.foreground },
     essayInput: { minHeight: 320, padding: 18, borderRadius: c.radius, borderWidth: 1, borderColor: c.input, backgroundColor: c.card, color: c.foreground, fontSize: 19, lineHeight: 32, textAlign: 'right', writingDirection: 'rtl' },
     statRow: { flexDirection: 'row-reverse', gap: 10 },

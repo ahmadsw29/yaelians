@@ -5,4 +5,4 @@
 - [Uploaded exam solutions](exam-solutions.md) — User wants us to solve uploaded questions; distinguish generated solutions from official keys.
 - [Study sync testing](study-testing.md) — Keep concurrency tests on isolated real PostgreSQL; identity adapters do not test authentication.
 - [Expo native component test boundary](practice-marker-testing.md) — Exercise UI state transitions through pure helpers when Vitest cannot parse React Native Flow imports.
-- [Learner audience and tutor](learner-audience.md) — Students are 17–24; use a young adult tutor, not a cat, and masculine Arabic learner copy.
+- [Learner audience and tutor](learner-audience.md) — Ages 17–24; an energetic fantasy pet and question-presenting characters, no progress-bar mascot; masculine Arabic copy.
