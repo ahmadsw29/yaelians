@@ -58,7 +58,7 @@ export function validLegacyStats(stats: StudyStats) {
   return stats.correctAnswers <= stats.answeredQuestions
     && stats.xp === stats.correctAnswers * 10
     && stats.masteredWords === stats.correctAnswers
-    && stats.answeredQuestions === stats.lessonsCompleted * 5
+    && stats.answeredQuestions >= stats.lessonsCompleted
     && stats.streak <= stats.lessonsCompleted
     && (stats.lessonsCompleted === 0
       ? day === null && stats.streak === 0

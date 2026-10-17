@@ -14,7 +14,9 @@ Coverage:
 - The actual StudyProvider, generated API client and React Query, with test-only
   adapters for Clerk identity, AppState and AsyncStorage.
 - Lost acknowledgments, delayed responses/token acquisition across account
-  switches, guest isolation, storage errors and explicit migration decisions.
+  switches, guest isolation, storage errors, damaged-outbox recovery and explicit
+  migration decisions. Recovery tests verify the exact original is archived and
+  preserved when archive or queue replacement writes fail.
 - Restart recovery in two **independent Node processes**, sharing only a temporary
   device-storage file and the temporary database. Original event IDs survive.
 - Existing counter/date/streak unit tests.

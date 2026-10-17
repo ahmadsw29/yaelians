@@ -11,11 +11,65 @@ import { DEFAULT_STATS, readStudyStats, recordLesson, type StudyStats } from './
 
 type StudyContext = {
   stats: StudyStats; loading: boolean; message: string; pending: number;
+  recovery: { validCount: number; invalidCount: number; problem: 'invalid-json' | 'not-array' | 'invalid-events' } | null;
   legacy: StudyStats | null; busy: boolean;
   refresh: () => void; save: (correct: number, total?: number) => Promise<void>;
+  recoverOutbox: () => void;
   migrate: () => void; keepCloud: () => void;
   pauseForDeletion: () => Promise<() => void>;
 };
+
+type PendingStudyLesson = StudyLessonInput & { completedAt?: string };
+
+type OutboxRecovery = {
+  raw: string;
+  validEvents: PendingStudyLesson[];
+  invalidCount: number;
+  problem: 'invalid-json' | 'not-array' | 'invalid-events';
+};
+
+function isStudyLessonInput(value: unknown): value is PendingStudyLesson {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const event = value as Record<string, unknown>;
+  const allowedKeys = new Set(['eventId', 'correct', 'total', 'completedAt']);
+  if (Object.keys(event).some(key => !allowedKeys.has(key))) return false;
+  if (typeof event.eventId !== 'string' || event.eventId.length < 16 || event.eventId.length > 100
+    || !/^[a-zA-Z0-9-]+$/.test(event.eventId)) return false;
+  if (typeof event.correct !== 'number' || !Number.isInteger(event.correct) || event.correct < 0 || event.correct > 20) return false;
+  if (typeof event.total !== 'number' || !Number.isInteger(event.total) || event.total < 1 || event.total > 20
+    || event.correct > event.total) return false;
+  if (event.completedAt !== undefined) {
+    if (typeof event.completedAt !== 'string' || event.completedAt.length > 24
+      || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(event.completedAt)) return false;
+    try {
+      if (new Date(event.completedAt).toISOString() !== event.completedAt) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+function inspectOutbox(raw: string): { events: PendingStudyLesson[]; recovery: OutboxRecovery | null } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { events: [], recovery: { raw, validEvents: [], invalidCount: 0, problem: 'invalid-json' } };
+  }
+  if (!Array.isArray(parsed)) {
+    return { events: [], recovery: { raw, validEvents: [], invalidCount: 0, problem: 'not-array' } };
+  }
+  const events = parsed.filter(isStudyLessonInput);
+  const invalidCount = parsed.length - events.length;
+  return {
+    events,
+    recovery: invalidCount
+      ? { raw, validEvents: events, invalidCount, problem: 'invalid-events' }
+      : null,
+  };
+}
+
 const Context = createContext<StudyContext | null>(null);
 export function useStudy() {
   const value = useContext(Context);
@@ -41,10 +95,12 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
   const serial = useRef<Promise<unknown>>(Promise.resolve());
   const ready = useRef(false);
   const migrationNeeded = useRef(false);
+  const recoveryRef = useRef<OutboxRecovery | null>(null);
   const [guest, setGuest] = useState(DEFAULT_STATS);
   const [legacy, setLegacy] = useState<StudyStats | null>(null);
   const [pending, setPending] = useState(0);
   const [message, setMessage] = useState('');
+  const [recovery, setRecovery] = useState<StudyContext['recovery']>(null);
   const [initialized, setInitialized] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -74,7 +130,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     return next;
   };
   const flush = async () => {
-    if (deleting.current || !userId || !ready.current || migrationNeeded.current || !alive.current) return;
+    if (deleting.current || !userId || !ready.current || migrationNeeded.current || recoveryRef.current || !alive.current) return;
     setBusy(true);
     try {
       while (queue.current.length && alive.current) {
@@ -116,13 +172,18 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
             AsyncStorage.getItem(`yael-study-stats-v1:${userId}`),
             AsyncStorage.getItem(decisionKey),
           ]);
-          const parsed = outbox ? JSON.parse(outbox) : [];
-          if (!Array.isArray(parsed)) throw new Error('Invalid outbox');
-          queue.current = parsed;
+          const inspected = outbox !== null ? inspectOutbox(outbox) : { events: [], recovery: null };
+          queue.current = inspected.events;
+          recoveryRef.current = inspected.recovery;
           const previous = old ? JSON.parse(old) as StudyStats : null;
           migrationNeeded.current = !decision && !!previous?.lessonsCompleted;
           if (alive.current) {
-            setPending(parsed.length);
+            setPending(inspected.events.length);
+            setRecovery(inspected.recovery ? {
+              validCount: inspected.recovery.validEvents.length,
+              invalidCount: inspected.recovery.invalidCount,
+              problem: inspected.recovery.problem,
+            } : null);
             setLegacy(migrationNeeded.current ? previous : null);
           }
         } else {
@@ -152,19 +213,53 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     // Capture at completion, before waiting behind an in-flight sync operation.
     const completedAt = new Date().toISOString();
     return run(async () => {
-    if (deleting.current || !ready.current || !alive.current) throw new Error('Progress is not ready');
+    if (deleting.current || !ready.current || !alive.current || recoveryRef.current) throw new Error('Resolve the saved lesson recovery notice before saving progress');
+    if (!Number.isInteger(correct) || !Number.isInteger(total) || correct < 0 || total < 1 || total > 20 || correct > total) {
+      throw new Error('Invalid lesson score');
+    }
     if (!userId) {
       const stats = await recordLesson(correct, total);
       if (alive.current) setGuest(stats);
       return;
     }
-    const event: StudyLessonInput = { eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`, correct, total, completedAt };
+    const event: PendingStudyLesson = { eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`, correct, total, completedAt };
     const next = [...queue.current, event];
     await AsyncStorage.setItem(storageKey, JSON.stringify(next));
     queue.current = next;
     if (alive.current) setPending(next.length);
     // Completion means durable on-device storage, not an unconfirmed cloud save.
     void run(flush);
+    });
+  };
+  const recoverOutbox = () => {
+    void run(async () => {
+      const damaged = recoveryRef.current;
+      if (deleting.current || !alive.current || !userId || !ready.current || !damaged) return;
+      setBusy(true);
+      try {
+        const archivePrefix = `yael-study-outbox-recovery-v1:${userId}:`;
+        let archiveKey = `${archivePrefix}${Date.now()}`;
+        let suffix = 0;
+        while ((await AsyncStorage.getItem(archiveKey)) !== null) {
+          suffix += 1;
+          archiveKey = `${archivePrefix}${Date.now()}-${suffix}`;
+        }
+        // Keep the exact original bytes before changing the active queue.
+        await AsyncStorage.setItem(archiveKey, damaged.raw);
+        await AsyncStorage.setItem(storageKey, JSON.stringify(damaged.validEvents));
+        queue.current = damaged.validEvents;
+        recoveryRef.current = null;
+        if (alive.current) {
+          setRecovery(null);
+          setPending(damaged.validEvents.length);
+          setMessage('');
+        }
+        await flush();
+      } catch {
+        if (alive.current) setMessage('تعذّر حفظ نسخة الاستعادة. بقيت البيانات الأصلية كما هي؛ تحقّق من مساحة الجهاز ثم أعد المحاولة.');
+      } finally {
+        if (alive.current) setBusy(false);
+      }
     });
   };
   const decide = (importLocal: boolean) => {
@@ -192,7 +287,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     stats: userId ? query.data ?? DEFAULT_STATS : guest,
     loading: !initialized || (!!userId && query.isLoading),
     message: message || (query.isError ? 'تعذّر تحميل التقدّم السحابي. الأرقام قد لا تكون محدّثة. حاول مجددًا.' : ''),
-    pending, legacy, busy, refresh, save,
+    pending, legacy, busy, refresh, save, recovery, recoverOutbox,
     migrate: () => decide(true), keepCloud: () => decide(false),
     pauseForDeletion: async () => {
       deleting.current = true;

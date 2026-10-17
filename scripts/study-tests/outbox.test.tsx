@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { StudyProvider, useStudy } from '../../artifacts/yael-arabic-prep/lib/StudyProvider';
+import { finishLocalDeletion } from '../../artifacts/yael-arabic-prep/lib/deletionStorage';
 import { DEFAULT_STATS } from '../../artifacts/yael-arabic-prep/lib/study';
 import { auth, clerk, signIn } from './auth';
 import storage, { disk } from './storage';
@@ -25,6 +26,7 @@ function deferred() {
   return { promise, resolve };
 }
 const outbox = (user: string) => `yael-study-outbox-v1:${user}`;
+const recoveryPrefix = (user: string) => `yael-study-outbox-recovery-v1:${user}:`;
 const legacyKey = (user: string) => `yael-study-stats-v1:${user}`;
 const decisionKey = (user: string) => `yael-study-migration-v1:${user}`;
 const savedQueue = (user: string) => JSON.parse(disk.get(outbox(user)) ?? '[]');
@@ -109,6 +111,111 @@ test('pending lessons survive provider/process-state restart and drain exactly o
   expect(posts.map(p => p.body)).toEqual(durable);
   expect(savedQueue('restart')).toEqual([]);
   expect(await cloud('restart')).toMatchObject({ lessonsCompleted: 2, xp: 70, answeredQuestions: 10 });
+});
+
+test('malformed outbox JSON is preserved until the user archives it and chooses to continue', async () => {
+  const raw = '[{"eventId":';
+  disk.set(outbox('malformed-json'), raw);
+  await mount('malformed-json');
+  expect(state.recovery).toMatchObject({ validCount: 0, problem: 'invalid-json' });
+  expect(disk.get(outbox('malformed-json'))).toBe(raw);
+  expect(posts).toEqual([]);
+
+  await act(async () => { state.recoverOutbox(); });
+  await until(() => expect(state.recovery).toBeNull());
+  expect(disk.get(outbox('malformed-json'))).toBe('[]');
+  expect([...disk.entries()].find(([key]) => key.startsWith(recoveryPrefix('malformed-json')))?.[1]).toBe(raw);
+
+  await save(4);
+  await until(() => expect(state.stats.xp).toBe(40));
+  expect(posts).toHaveLength(1);
+});
+
+test('empty stored text is treated as damaged JSON rather than a missing queue', async () => {
+  disk.set(outbox('empty-string'), '');
+  await mount('empty-string');
+  expect(state.recovery).toMatchObject({ validCount: 0, problem: 'invalid-json' });
+  expect(disk.get(outbox('empty-string'))).toBe('');
+
+  await act(async () => { state.recoverOutbox(); });
+  await until(() => expect(state.recovery).toBeNull());
+  expect([...disk.entries()].find(([key]) => key.startsWith(recoveryPrefix('empty-string')))?.[1]).toBe('');
+  expect(disk.get(outbox('empty-string'))).toBe('[]');
+});
+
+test('invalid queued lessons stay in an exact recovery copy while valid lessons sync after confirmation', async () => {
+  const valid = [
+    { eventId: 'recovered-lesson-0001', correct: 2, total: 5, completedAt: '2026-10-17T10:00:00.000Z' },
+    { eventId: 'recovered-lesson-0002', correct: 4, total: 5 },
+  ];
+  const invalid = { eventId: 'bad-lesson-0000001', correct: 6, total: 5 };
+  const raw = JSON.stringify([valid[0], invalid, valid[1]]);
+  disk.set(outbox('invalid-events'), raw);
+  await mount('invalid-events');
+  expect(state.recovery).toMatchObject({ validCount: 2, invalidCount: 1, problem: 'invalid-events' });
+  expect(state.pending).toBe(2);
+  expect(posts).toEqual([]);
+  expect(disk.get(outbox('invalid-events'))).toBe(raw);
+
+  await act(async () => { state.recoverOutbox(); });
+  await until(() => { expect(state.recovery).toBeNull(); expect(state.pending).toBe(0); });
+  expect([...disk.entries()].find(([key]) => key.startsWith(recoveryPrefix('invalid-events')))?.[1]).toBe(raw);
+  expect(posts.map(post => post.body)).toEqual(valid);
+  expect(disk.get(outbox('invalid-events'))).toBe('[]');
+  expect(await cloud('invalid-events')).toMatchObject({ lessonsCompleted: 2, xp: 60 });
+});
+
+test('a failed recovery archive write leaves the damaged outbox and recovery choice intact', async () => {
+  const raw = JSON.stringify([{ eventId: 'damaged-event-00001', correct: 2, total: 5 }, null]);
+  disk.set(outbox('archive-failure'), raw);
+  await mount('archive-failure');
+  vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('Disk full'));
+  await act(async () => { state.recoverOutbox(); });
+  await until(() => expect(state.message).not.toBe(''));
+  expect(state.recovery).toMatchObject({ validCount: 1, invalidCount: 1 });
+  expect(disk.get(outbox('archive-failure'))).toBe(raw);
+  expect([...disk.keys()].some(key => key.startsWith(recoveryPrefix('archive-failure')))).toBe(false);
+  expect(posts).toEqual([]);
+});
+
+test('a failed active-queue replacement keeps both the original and its archived copy', async () => {
+  const raw = JSON.stringify([{ eventId: 'preserve-event-00001', correct: 3, total: 5 }, null]);
+  disk.set(outbox('replace-failure'), raw);
+  await mount('replace-failure');
+  const setItem = storage.setItem.bind(storage);
+  vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+    if (key === outbox('replace-failure')) throw new Error('Disk full');
+    await setItem(key, value);
+  });
+  await act(async () => { state.recoverOutbox(); });
+  await until(() => expect(state.message).not.toBe(''));
+  expect(state.recovery).toMatchObject({ validCount: 1, invalidCount: 1 });
+  expect(disk.get(outbox('replace-failure'))).toBe(raw);
+  expect([...disk.entries()].find(([key]) => key.startsWith(recoveryPrefix('replace-failure')))?.[1]).toBe(raw);
+  expect(posts).toEqual([]);
+});
+
+test('account deletion also removes that account’s archived damaged outboxes only', async () => {
+  const deletedArchive = 'yael-study-outbox-recovery-v1:deleted-user:1';
+  const otherArchive = 'yael-study-outbox-recovery-v1:other-user:1';
+  const disk = new Map([
+    [deletedArchive, '[damaged]'],
+    [otherArchive, '[other account]'],
+    ['yael-study-outbox-v1:deleted-user', '[]'],
+  ]);
+  const storage = {
+    getAllKeys: async () => [...disk.keys()],
+    getItem: async (key: string) => disk.get(key) ?? null,
+    setItem: async (key: string, value: string) => { disk.set(key, value); },
+    removeItem: async (key: string) => { disk.delete(key); },
+    multiRemove: async (keys: string[]) => { keys.forEach(key => disk.delete(key)); },
+  };
+  await finishLocalDeletion(storage, {
+    userId: 'deleted-user', sessionId: 'deleted-session', status: 'accepted',
+  }, async () => {});
+  expect(disk.has(deletedArchive)).toBe(false);
+  expect(disk.has('yael-study-outbox-v1:deleted-user')).toBe(false);
+  expect(disk.get(otherArchive)).toBe('[other account]');
 });
 
 test('lost server acknowledgment leaves the original event durable and restart retries it safely', async () => {

@@ -8,11 +8,14 @@ export type DeletionStorage = {
 };
 const PREFIX = 'yael-deletion-intent-v1:';
 export const deletionIntentKey = (userId: string) => `${PREFIX}${userId}`;
-export function accountStorageKeys(userId: string) {
+export async function accountStorageKeys(storage: Pick<DeletionStorage, 'getAllKeys'>, userId: string) {
+  const recoveryPrefix = `yael-study-outbox-recovery-v1:${userId}:`;
+  const recoveryKeys = (await storage.getAllKeys()).filter(key => key.startsWith(recoveryPrefix));
   return [
     `yael-theme:${userId}`, `yael-study-stats-v1:${userId}`,
     `yael-study-outbox-v1:${userId}`, `yael-study-migration-v1:${userId}`,
     `yael-exam:v1:${userId}`,
+    ...recoveryKeys,
   ];
 }
 export async function saveDeletionIntent(storage: DeletionStorage, intent: DeletionIntent) {
@@ -39,7 +42,7 @@ export async function finishLocalDeletion(
   intent: DeletionIntent,
   signOut: (intent: DeletionIntent) => Promise<void>,
 ) {
-  await storage.multiRemove(accountStorageKeys(intent.userId));
+  await storage.multiRemove(await accountStorageKeys(storage, intent.userId));
   await signOut(intent);
   if (intent.status === 'accepted') await storage.removeItem(deletionIntentKey(intent.userId));
 }

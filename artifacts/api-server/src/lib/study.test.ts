@@ -25,9 +25,12 @@ test("legacy imports must be internally consistent", () => {
   const valid = addLesson(emptyStats, 3, 5, new Date("2026-01-01T00:00:00Z"));
   assert.equal(validLegacyStats(valid), true);
   assert.equal(validLegacyStats(emptyStats), true);
+  const variableLength = addLesson(addLesson(emptyStats, 3, 10, new Date("2026-01-01T00:00:00Z")),
+    4, 20, new Date("2026-01-02T00:00:00Z"));
+  assert.equal(validLegacyStats(variableLength), true);
   for (const change of [
     { correctAnswers: 6 }, { xp: 31 }, { masteredWords: 4 },
-    { lessonsCompleted: 2 }, { streak: 2 }, { lastPracticeDate: null },
+    { lessonsCompleted: 2, answeredQuestions: 1 }, { streak: 2 }, { lastPracticeDate: null },
     { lastPracticeDate: "2026-02-30" }, { lastPracticeDate: "2999-01-01" },
   ]) assert.equal(validLegacyStats({ ...valid, ...change }), false);
 });

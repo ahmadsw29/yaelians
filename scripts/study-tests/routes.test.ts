@@ -35,6 +35,21 @@ test('lost acknowledgment and simultaneous retries apply an event exactly once',
   expect(events.find(e => e.userId === 'retry')?.practiceDate).toBe(event.completedAt.slice(0, 10));
 });
 
+test('variable-size lessons record their actual question totals and reject inconsistent scores', async () => {
+  const event = {
+    eventId: 'variable-total-lesson-0001',
+    correct: 12,
+    total: 20,
+    completedAt: new Date().toISOString(),
+  };
+  expect((await api.request('variable-total', 'lessons', event)).status).toBe(200);
+  expect(await (await api.request('variable-total')).json()).toMatchObject({
+    lessonsCompleted: 1, answeredQuestions: 20, correctAnswers: 12, xp: 120,
+  });
+  expect((await api.request('invalid-total', 'lessons', { ...event, eventId: 'invalid-total-lesson-0001', total: 0 })).status).toBe(400);
+  expect((await api.request('invalid-score', 'lessons', { ...event, eventId: 'invalid-score-lesson-0001', correct: 22 })).status).toBe(400);
+});
+
 test('guest reads/writes and forged owner fields cannot touch account progress', async () => {
   const before = await db.select().from(studyProgress);
   expect((await api.request(null)).status).toBe(401);
