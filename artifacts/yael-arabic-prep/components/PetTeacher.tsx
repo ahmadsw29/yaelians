@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, Text, View } from 'react-native';
 import Svg, { Path, Ellipse, Circle } from 'react-native-svg';
 import { useColors } from '@/hooks/useColors';
 
@@ -57,14 +57,30 @@ export function PetTeacherReaction({
 }) {
   const jump = useRef(new Animated.Value(0)).current;
   const squash = useRef(new Animated.Value(1)).current;
+  const previousJumpKey = useRef(jumpKey);
+  const [reduceMotion, setReduceMotion] = useState(true);
   useEffect(() => {
-    if (mood !== 'happy' || jumpKey === 0) {
+    let active = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(enabled => { if (active) setReduceMotion(enabled); })
+      .catch(() => { if (active) setReduceMotion(true); });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+  useEffect(() => {
+    if (mood !== 'happy' || jumpKey === 0 || reduceMotion) {
+      previousJumpKey.current = jumpKey;
       jump.stopAnimation();
       squash.stopAnimation();
       jump.setValue(0);
       squash.setValue(1);
       return;
     }
+    if (previousJumpKey.current === jumpKey) return;
+    previousJumpKey.current = jumpKey;
     const animation = Animated.sequence([
       Animated.parallel([
         Animated.timing(jump, { toValue: -13, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -77,7 +93,7 @@ export function PetTeacherReaction({
     ]);
     animation.start();
     return () => animation.stop();
-  }, [mood, jumpKey, jump, squash]);
+  }, [mood, jumpKey, jump, squash, reduceMotion]);
   return (
     <Animated.View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       testID={testID}
