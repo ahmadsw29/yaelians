@@ -119,26 +119,38 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
           <Text style={[styles.planBadgeText, { color: colors.secondaryForeground }]}>{plan === 'free' ? 'مجانية' : 'الخطط'}</Text>
         </View>
       </View>
-      <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+      <Text
+        accessibilityLabel={plan === 'free'
+          ? `استخدام اليوم: ${usage.vocabularyRounds} من جولة المفردات المجانية الواحدة، و${usage.timedSections} من جلسة الامتحان المحددة بوقت المتاحة اليوم.`
+          : 'اختر خطة تناسب طريقة دراستك.'}
+        style={[styles.caption, { color: colors.mutedForeground }]}
+      >
         {plan === 'free'
           ? `اليوم: مفردات ${usage.vocabularyRounds}/1 · جلسات موقّتة ${usage.timedSections}/1`
           : 'اختر خطة تناسب طريقة دراستك.'}
       </Text>
-      <Pressable testID="profile-upgrade-plan" accessibilityRole="button" onPress={() => router.push('/plans')}
+      <Pressable testID="profile-upgrade-plan" accessibilityRole="link"
+        accessibilityLabel="استكشف الخطة الكاملة، 50 شيكلًا شهريًا"
+        accessibilityHint="يفتح تفاصيل الخطط. الشراء عبر المتجر غير متاح حاليًا."
+        hitSlop={8} onPress={() => router.push('/plans')}
         style={({ pressed }) => [styles.upgradeCard, { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 }]}>
         <View style={styles.upgradeCopy}>
           <Text style={[styles.upgradeEyebrow, { color: colors.primaryForeground }]}>للمزيد من التعلّم</Text>
           <Text style={[styles.upgradeTitle, { color: colors.primaryForeground }]}>استكشف الخطة الكاملة</Text>
-          <Text style={[styles.upgradePrice, { color: colors.primaryForeground }]}>₪48.90 شهريًا</Text>
+          <Text style={[styles.upgradePrice, { color: colors.primaryForeground }]}>₪50 شهريًا</Text>
         </View>
         <Feather name="arrow-left" size={20} color={colors.primaryForeground} />
       </Pressable>
-      <Text style={[styles.setupNote, { color: colors.mutedForeground }]}>
+      <Text accessibilityLabel="الخطة الكاملة تشمل جميع الدورات والجلسات والنماذج. الشراء عبر المتجر غير متاح حاليًا."
+        style={[styles.setupNote, { color: colors.mutedForeground }]}>
         جميع الدورات والجلسات والنماذج؛ الشراء عبر المتجر غير متاح بعد.
       </Text>
     </View>
 
-    <Pressable testID="profile-edit-toggle" accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }}
+    <Pressable testID="profile-edit-toggle" accessibilityRole="button"
+      accessibilityLabel="بياناتك وشخصيتك، تعديل الاسم والصورة الكرتونية"
+      accessibilityHint={detailsOpen ? 'موسّع. اضغط لإخفاء بياناتك.' : 'مطوي. اضغط لعرض بياناتك.'}
+      accessibilityState={{ expanded: detailsOpen }}
       onPress={() => setDetailsOpen(open => !open)}
       style={[styles.editorToggle, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.editorCopy}>
@@ -197,7 +209,8 @@ function AccountMetric({ icon, value, unit, label, colors }: {
   label: string;
   colors: ReturnType<typeof useColors>;
 }) {
-  return <View accessible accessibilityLabel={`${label}: ${value}${unit ? ` ${unit}` : ''}`}
+  const spokenValue = value === '—' ? 'غير متاح حاليًا' : `${value}${unit ? ` ${unit}` : ''}`;
+  return <View accessible accessibilityRole="text" accessibilityLabel={`${label}، ${spokenValue}`}
     style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <Ionicons name={icon} size={18} color={colors.primary} />
     <Text style={[styles.metricValue, { color: colors.foreground }]}>{value} <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{unit}</Text></Text>

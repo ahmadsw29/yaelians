@@ -44,7 +44,7 @@ export default function PlansScreen() {
 
     <View testID="plan-free" style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
       <View style={styles.cardHeader}>
-        <View style={styles.priceCopy}><Text style={[styles.planName, { color: c.foreground }]}>الخطة المجانية</Text><Text style={[styles.price, { color: c.foreground }]}>₪0<Text style={[styles.period, { color: c.mutedForeground }]}> / دائمًا</Text></Text></View>
+        <View style={styles.priceCopy}><Text accessibilityRole="header" style={[styles.planName, { color: c.foreground }]}>الخطة المجانية</Text><Text accessibilityLabel="الخطة المجانية، صفر شيكل، دائمًا" style={[styles.price, { color: c.foreground }]}>₪0<Text style={[styles.period, { color: c.mutedForeground }]}> / دائمًا</Text></Text></View>
         <View style={[styles.badge, { backgroundColor: c.secondary }]}><Text style={[styles.badgeText, { color: c.primary }]}>ابدأ الآن</Text></View>
       </View>
       <View style={styles.benefitList}>{FREE_BENEFITS.map(item => <Benefit key={item} label={item} />)}</View>
@@ -56,15 +56,19 @@ export default function PlansScreen() {
 
     <View testID="plan-premium" style={[styles.card, styles.premiumCard, { backgroundColor: c.primary, borderColor: c.primary }]}>
       <View style={styles.cardHeader}>
-        <View style={styles.priceCopy}><Text style={[styles.planName, { color: c.primaryForeground }]}>الخطة الكاملة</Text><Text style={[styles.price, { color: c.primaryForeground }]}>₪48.90<Text style={[styles.period, { color: c.primaryForeground }]}> / شهريًا</Text></Text></View>
+        <View style={styles.priceCopy}><Text accessibilityRole="header" style={[styles.planName, { color: c.primaryForeground }]}>الخطة الكاملة</Text><Text accessibilityLabel="الخطة الكاملة، 50 شيكلًا شهريًا" style={[styles.price, { color: c.primaryForeground }]}>₪50<Text style={[styles.period, { color: c.primaryForeground }]}> / شهريًا</Text></Text></View>
         <View style={[styles.badge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}><Ionicons name="sparkles" size={14} color={c.primaryForeground} /><Text style={[styles.badgeText, { color: c.primaryForeground }]}>بلا حدود</Text></View>
       </View>
       <View style={styles.benefitList}>{PREMIUM_BENEFITS.map(item => <Benefit key={item} label={item} inverse />)}</View>
-      <View style={[styles.setupNote, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
+      <View accessible accessibilityLabel="الاشتراك غير متاح للشراء حاليًا. يلزم إعداد المنتجات وحساب المتجر قبل تفعيل الدفع."
+        style={[styles.setupNote, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
         <Feather name="info" size={17} color={c.primaryForeground} />
         <Text style={[styles.setupText, { color: c.primaryForeground }]}>الاشتراك غير متاح للشراء بعد. يلزم إعداد المنتجات وحساب المتجر قبل تفعيل الدفع.</Text>
       </View>
-      <Pressable testID="premium-unavailable" accessibilityRole="button" accessibilityState={{ disabled: true }} disabled
+      <Pressable testID="premium-unavailable" accessibilityRole="button"
+        accessibilityLabel="الشراء للخطة الكاملة غير متاح حاليًا"
+        accessibilityHint="سعر الخطة 50 شيكلًا شهريًا. الدفع غير مفعّل بعد."
+        accessibilityState={{ disabled: true }} disabled
         style={[styles.premiumButton, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
         <Text style={[styles.premiumButtonText, { color: c.primaryForeground }]}>قريبًا — إعداد الدفع مطلوب</Text>
       </Pressable>
@@ -75,7 +79,7 @@ export default function PlansScreen() {
 
 function Benefit({ label, inverse = false }: { label: string; inverse?: boolean }) {
   const c = useColors();
-  return <View style={styles.benefit}><Ionicons name="checkmark-circle" size={19} color={inverse ? c.primaryForeground : c.primary} /><Text style={[styles.benefitText, { color: inverse ? c.primaryForeground : c.foreground }]}>{label}</Text></View>;
+  return <View accessible accessibilityLabel={label} style={styles.benefit}><Ionicons name="checkmark-circle" size={19} color={inverse ? c.primaryForeground : c.primary} /><Text style={[styles.benefitText, { color: inverse ? c.primaryForeground : c.foreground }]}>{label}</Text></View>;
 }
 
 const styles = StyleSheet.create({
