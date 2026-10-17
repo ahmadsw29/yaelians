@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "YAEL Hebrew Prep"
+description = "A playful Arabic-guided mobile study app for Arabic-speaking learners preparing for the Hebrew YAEL exam, with short vocabulary and reading practice, quiz feedback, and locally saved progress."
+version = "1.0.0"
+id = "artifacts/yael-arabic-prep"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 25535
+
+[services.development]
+run = "pnpm --filter @workspace/yael-arabic-prep run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/yael-arabic-prep", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/yael-arabic-prep", "run", "serve" ]
+
+[services.env]
+PORT = "25535"
+BASE_PATH = "/"
