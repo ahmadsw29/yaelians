@@ -10,4 +10,4 @@
 - [Study content and waiting windows](study-course-access.md) — Show trial users locked study previews; gate lesson bodies on the server; use small waiting windows with rotating characters.
 - [Adaptive restatement learning](restatement-learning.md) — Six-question spaced-review rounds: 6:30, then 6:00 from Semi-Master; no model chooser or celebrations for empty attempts.
 - [Vocabulary review](vocabulary-learning.md) — Space correct words, revisit mistakes sooner, and omit algorithm explanations at the start of both practice modes.
-- [Rank pacing](progression-pacing.md) — Target Master in three weeks to a month and a half of regular practice; preserve earned XP and shared rank-based timers.
+- [Rank pacing](progression-pacing.md) — User doubled the harder rank ladder; preserve earned XP and shared rank-based timers, with no calendar locks.

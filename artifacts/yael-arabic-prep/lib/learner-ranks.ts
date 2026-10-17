@@ -1,12 +1,12 @@
-// At 10 XP per correct answer, 27–57 correct answers/day reach Master in ~22–45 days.
+// At 10 XP per correct answer, 27–57 correct answers/day reach Master in ~43–89 days.
 // These are progression targets, not calendar locks; earned XP is never reset.
-export const SEMI_MASTER_XP = 8000;
-export const MASTER_XP = 12000;
+export const SEMI_MASTER_XP = 16000;
+export const MASTER_XP = 24000;
 export const LEARNER_RANKS = [
   { id: 'rookie', title: 'Rookie', minXp: 0 },
-  { id: 'beginner', title: 'Beginner', minXp: 500 },
-  { id: 'amateur', title: 'Amateur', minXp: 2000 },
-  { id: 'real-student', title: 'Real Student', minXp: 4500 },
+  { id: 'beginner', title: 'Beginner', minXp: 1000 },
+  { id: 'amateur', title: 'Amateur', minXp: 4000 },
+  { id: 'real-student', title: 'Real Student', minXp: 9000 },
   { id: 'semi-master', title: 'Semi-Master', minXp: SEMI_MASTER_XP },
   { id: 'master', title: 'Master of YAEL', minXp: MASTER_XP },
 ] as const;
