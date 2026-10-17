@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/expo';
 import {
   AccessibilityInfo,
+  AppState,
   Platform,
   Pressable,
   ScrollView,
@@ -17,12 +18,16 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getPracticeScreenSpacing } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
-import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, READING_QUESTIONS } from '@/lib/study';
+import { READING_QUESTIONS } from '@/lib/study';
+import { VOCABULARY_BANK as WORD_BANK } from '@/lib/vocabulary-bank';
+import { reserveVocabularyReviewRound, saveVocabularyReviewAnswer } from '@/lib/vocabulary-deck';
+import { formatVocabularyTime, vocabularySecondsLeft } from '@/lib/vocabulary-selection';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { PetTeacherReaction } from '@/components/PetTeacher';
 import { ChunkyButton, ChunkyProgress, QuestionPrompt, usePlay } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
+import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import {
@@ -36,47 +41,54 @@ import {
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
-const WORD_BANK = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
 
 export default function PracticeScreen() {
   const { user } = useUser();
-  const { ready, plan, isPremium, claimActivity } = usePlanAccess();
+  const { ready, plan, isPremium, startVocabularyRound } = usePlanAccess();
   const router = useRouter();
   const activityKey = useRef<string | null>(null);
   if (!activityKey.current) activityKey.current = `vocabulary-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-  const [access, setAccess] = useState<'checking' | 'allowed' | 'continue' | 'untracked' | 'blocked'>('checking');
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'limit' | 'blocked'>('checking');
+  const [round, setRound] = useState<{ order: number[]; number: number; deadline: number | null } | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let active = true;
-    if (!ready || !plan) return;
-    if (isPremium) { setAccess('allowed'); return; }
-    void claimActivity('vocabulary', activityKey.current!).then(allowed => {
+    if (!ready || !plan || !user?.id) return;
+    setAccess('checking');
+    void (async () => {
+      const response = isPremium ? null : await startVocabularyRound(activityKey.current!);
       if (!active) return;
-      if (allowed) setAccess('allowed');
-      else setAccess('continue');
-    }).catch(() => { if (active) setAccess('blocked'); });
+      if (response && !response.allowed) { setAccess('limit'); return; }
+      if (!isPremium && !response?.vocabularyRound) throw new Error('Missing timed round');
+      const timer = response?.vocabularyRound;
+      const deadline = timer ? Date.now() + Math.max(0, Date.parse(timer.expiresAt) - Date.parse(timer.serverNow)) : null;
+      const reservation = await reserveVocabularyReviewRound(user.id, WORD_BANK.map(q => q.word!), timer?.number);
+      if (active) { setRound({ ...reservation, deadline }); setAccess('allowed'); }
+    })().catch(() => { if (active) setAccess('blocked'); });
     return () => { active = false; };
-  }, [activityKey, claimActivity, isPremium, plan, ready, router]);
+  }, [startVocabularyRound, isPremium, plan, ready, user?.id, retry]);
 
-  if (!ready || !plan || access === 'checking' || access === 'blocked') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>{access === 'blocked' ? 'تعذّر التحقق من خطتك. أعد المحاولة.' : 'جارٍ تجهيز التدريب…'}</Text></View>;
-  if (access === 'continue' && !isPremium) return <FreePracticePrompt onContinue={() => setAccess('untracked')} />;
-  return <PracticeSession key={`${user?.id ?? 'guest'}:${access}`} userId={user?.id} isPremium={isPremium} trackThisRound={access === 'allowed'} activityKey={activityKey.current} />;
+  if (!ready || !plan || access === 'checking' || access === 'blocked') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20 }}><Text>{access === 'blocked' ? 'تعذّر تجهيز الجولة. أعد المحاولة.' : 'جارٍ تجهيز التدريب…'}</Text>{access === 'blocked' && <Pressable accessibilityRole="button" onPress={() => setRetry(value => value + 1)}><Text>إعادة المحاولة</Text></Pressable>}</View>;
+  if (access === 'limit' && !isPremium) return <FreePracticePrompt />;
+  if (!round) return null;
+  return <PracticeSession key={user?.id} userId={user?.id} isPremium={isPremium} initialOrder={round.order} initialRoundNumber={round.number} deadline={round.deadline} activityKey={activityKey.current} />;
 }
 
-function FreePracticePrompt({ onContinue }: { onContinue: () => void }) {
+function FreePracticePrompt() {
   const c = useColors();
   const router = useRouter();
   return <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, gap: 15, backgroundColor: c.background }}>
     <View style={{ alignSelf: 'center', width: 58, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: c.secondary }}>
       <Ionicons name="sparkles" size={27} color={c.primary} />
     </View>
-    <Text style={{ color: c.foreground, fontSize: 24, fontWeight: '700', textAlign: 'center' }}>أنهيت جولتك المحفوظة اليوم</Text>
+    <Text style={{ color: c.foreground, fontSize: 24, fontWeight: '700', textAlign: 'center' }}>استخدمت جولة المفردات اليوم</Text>
     <Text style={{ color: c.mutedForeground, fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-      تقدر تواصل التدريب مجانًا. الجولات الإضافية لن تُضاف إلى تقدّمك اليومي.
+      تجربة مجانية تشمل جولة واحدة لمدة ٥ دقائق كل يوم. ارجع غدًا لجولة جديدة، أو استكشف الخطة الكاملة للتدرّب بلا حدود.
     </Text>
-    <Pressable testID="continue-free-practice" accessibilityRole="button" onPress={onContinue}
+    <Pressable testID="vocabulary-return-home" accessibilityRole="button" onPress={() => router.replace('/')}
       style={({ pressed }) => ({ minHeight: 52, borderRadius: 16, backgroundColor: c.primary, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9, opacity: pressed ? 0.82 : 1 })}>
-      <Text style={{ color: c.primaryForeground, fontWeight: '700', fontSize: 15 }}>واصل التدريب</Text><Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
+      <Text style={{ color: c.primaryForeground, fontWeight: '700', fontSize: 15 }}>العودة للرئيسية</Text><Ionicons name="arrow-back" size={18} color={c.primaryForeground} />
     </Pressable>
     <Pressable testID="vocabulary-see-plans" accessibilityRole="button" onPress={() => router.push('/plans')}
       style={({ pressed }) => ({ minHeight: 48, borderRadius: 16, backgroundColor: c.card, borderColor: c.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.78 : 1 })}>
@@ -85,7 +97,7 @@ function FreePracticePrompt({ onContinue }: { onContinue: () => void }) {
   </View>;
 }
 
-function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { userId?: string; isPremium: boolean; trackThisRound: boolean; activityKey: string | null }) {
+function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -105,8 +117,28 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const [saved, setSaved] = useState(false);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [mode, setMode] = useState<'words' | 'reading'>('words');
-  const [trackProgress, setTrackProgress] = useState(trackThisRound);
-  const [wordOrder, setWordOrder] = useState(() => WORD_BANK.map((_, i) => i));
+  const trackProgress = true;
+  const [wordOrder, setWordOrder] = useState(initialOrder);
+  const [reviewRound, setReviewRound] = useState(initialRoundNumber);
+  const [reviewError, setReviewError] = useState(false);
+  const [answerSaving, setAnswerSaving] = useState(false);
+  const selecting = useRef(false);
+  const [secondsLeft, setSecondsLeft] = useState(() => deadline ? vocabularySecondsLeft(deadline, Date.now()) : null);
+  const [completedTotal, setCompletedTotal] = useState<number | null>(null);
+  const finalTotal = useRef<number | null>(null);
+  const expire = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (!deadline || complete) return;
+    const tick = () => {
+      const remaining = vocabularySecondsLeft(deadline, Date.now());
+      setSecondsLeft(remaining);
+      if (!remaining) expire.current();
+    };
+    const timer = setInterval(tick, 250);
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') tick(); });
+    tick();
+    return () => { clearInterval(timer); listener.remove(); };
+  }, [deadline, complete]);
   const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
   const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
   const progressPosition = getProgressMarkerPosition(index, activeQuestions.length);
@@ -117,6 +149,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const isCorrect = answerFeedback?.isCorrect ?? false;
 
   const changeMode = (nextMode: 'words' | 'reading') => {
+    if (selecting.current) return;
     if (nextMode === mode) return;
     const reset = getPracticeModeReset(nextMode);
     setMode(reset.mode);
@@ -130,9 +163,26 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     setSaveError(false);
   };
 
-  const select = (answer: string) => {
+  const select = async (answer: string) => {
+    if (complete || selecting.current) return;
+    if (deadline && Date.now() >= deadline) { expire.current(); return; }
     const selection = selectPracticeAnswer({ choice, correct, celebrationKey }, answer, question.correctAnswer);
     if (!selection) return;
+    if (mode === 'words') {
+      selecting.current = true;
+      setAnswerSaving(true);
+      setReviewError(false);
+      try {
+        if (!userId || !question.word) throw new Error('Missing vocabulary identity');
+        await saveVocabularyReviewAnswer(userId, question.word, reviewRound, answer === question.correctAnswer);
+      } catch {
+        setReviewError(true);
+        return;
+      } finally {
+        selecting.current = false;
+        setAnswerSaving(false);
+      }
+    }
     const feedback = getPracticeAnswerFeedback(selection.choice, question.correctAnswer);
     setChoice(selection.choice);
     setCorrect(selection.correct);
@@ -147,28 +197,33 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     }
   };
 
-  const next = async () => {
-    if (index === activeQuestions.length - 1) {
+  const finishRound = async (total: number) => {
       if (saving.current || saved) return;
       saving.current = true;
+      finalTotal.current ??= total;
+      setCompletedTotal(finalTotal.current);
       if (!complete) setCompletionCelebration(nextPracticeCelebration());
       setComplete(true);
-      if (!trackProgress) {
+      if (finalTotal.current === 0) {
         setSaved(true);
         saving.current = false;
         return;
       }
       setSaveError(false);
       try {
-        await save(correct, activeQuestions.length, activityKey ?? undefined);
+        await save(correct, finalTotal.current, activityKey ?? undefined);
         setSaved(true);
       } catch {
         setSaveError(true);
       } finally {
         saving.current = false;
       }
-      return;
-    }
+  };
+  expire.current = () => { if (!selecting.current) void finishRound(index + (choice ? 1 : 0)); };
+  const next = async () => {
+    if (complete) { await finishRound(finalTotal.current ?? activeQuestions.length); return; }
+    if (deadline && Date.now() >= deadline) { expire.current(); return; }
+    if (index === activeQuestions.length - 1) { await finishRound(activeQuestions.length); return; }
     setIndex((value) => value + 1);
     setChoice(null);
   };
@@ -177,14 +232,16 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     router.push('/');
   };
 
-  const continuePractice = () => {
-    if (!isPremium) setTrackProgress(false);
-    const nextOrder = WORD_BANK.map((_, i) => i);
-    for (let i = nextOrder.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [nextOrder[i], nextOrder[j]] = [nextOrder[j], nextOrder[i]];
-    }
-    setWordOrder(nextOrder);
+  const continuePractice = async () => {
+    if (!isPremium || !userId || saving.current) return;
+    saving.current = true;
+    let reservation: { order: number[]; number: number };
+    try { reservation = await reserveVocabularyReviewRound(userId, WORD_BANK.map(q => q.word!)); }
+    catch { setSaveError(true); return; }
+    finally { saving.current = false; }
+    setWordOrder(reservation.order);
+    setReviewRound(reservation.number);
+    setReviewError(false);
     setIndex(0);
     setChoice(null);
     setCorrect(0);
@@ -193,21 +250,24 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     setSaved(false);
     setCompletionCelebration(null);
     setSaveError(false);
+    setCompletedTotal(null);
+    finalTotal.current = null;
   };
 
   if (complete) {
+    const feedback = completionFeedback(correct, completedTotal ?? 0, activeQuestions.length);
     return (
       <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.completionScreen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 112 }]}>
         <StudySyncStatus />
         {saveError && <Pressable onPress={next} accessibilityRole="button" style={styles.saveError}>
           <Text style={{ color: p.coralInk, fontWeight: '700', textAlign: 'center' }}>لم يُحفظ الدرس. اضغط لإعادة المحاولة قبل المغادرة.</Text>
         </Pressable>}
-        {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
-        <Text style={styles.completionEyebrow}>{trackProgress ? 'أحسنت! أنهيت جولتك المحفوظة اليوم' : 'تدريب إضافي بلا حفظ للتقدّم'}</Text>
-        <Text style={styles.completionTitle}>خطوة جديدة نحو{"\n"}هدفك</Text>
+        {completionCelebration && feedback === 'celebrate' && <PracticeCelebration variant={completionCelebration} />}
+        <Text style={styles.completionEyebrow}>{secondsLeft === 0 ? 'انتهت الدقائق الخمس لجولتك اليومية' : feedback === 'celebrate' ? 'أحسنت! أنهيت جولتك' : 'انتهت الجولة'}</Text>
+        <Text style={styles.completionTitle}>{feedback === 'celebrate' ? 'خطوة جديدة نحو\nهدفك' : feedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات' : feedback === 'review' ? 'جولة للمراجعة: راجع الأسئلة التي أخطأت فيها ثم حاول مجددًا' : 'تقدّم ثابت. راجع الأخطاء القليلة وواصل'}</Text>
         <View style={styles.resultRow}>
           <View style={[styles.resultTile, { borderColor: p.success, backgroundColor: p.successSoft }]}>
-            <Text style={[styles.resultValue, { color: p.successInk }]}>{correct} / {mode === 'words' ? wordQuestions.length : READING_QUESTIONS.length}</Text>
+            <Text style={[styles.resultValue, { color: p.successInk }]}>{correct} / {completedTotal ?? activeQuestions.length}</Text>
             <Text style={[styles.resultLabel, { color: p.successInk }]}>إجابات صحيحة</Text>
           </View>
           {trackProgress && <View style={[styles.resultTile, { borderColor: p.sun, backgroundColor: p.sunSoft }]}>
@@ -217,9 +277,10 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
         </View>
         {saved ? (
           <View style={{ width: '100%', maxWidth: 420, gap: 12, marginTop: 24 }}>
-            {mode === 'words' && <ChunkyButton tone="ghost" icon="refresh" onPress={continuePractice} testID="continue-vocabulary"
-              label={isPremium ? 'واصل التدريب بجولة جديدة' : 'واصل التدريب دون حفظ جولة إضافية'} />}
-            <ChunkyButton icon="arrow-back" onPress={finish} testID="finish-practice" label="العودة للرئيسية" />
+            <ChunkyButton tone="ghost" icon="arrow-back" onPress={finish} testID="finish-practice" label="العودة للرئيسية" />
+            {mode === 'words' && isPremium && <ChunkyButton tone="success" icon="refresh" onPress={() => void continuePractice()} testID="continue-vocabulary"
+              label="واصل التدريب بجولة جديدة" />}
+            {!isPremium && <Text style={{ color: c.mutedForeground, textAlign: 'center' }}>جولتك القادمة غدًا. تجربة مجانية تشمل جولة واحدة لخمس دقائق يوميًا.</Text>}
           </View>
         ) : null}
       </ScrollView>
@@ -245,6 +306,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
           <ChunkyProgress value={progressPosition.percent / 100} />
         </View>
         <Text style={styles.progressCount}>{index + 1}/{activeQuestions.length}</Text>
+        {secondsLeft !== null && <Text testID="vocabulary-countdown" accessibilityLabel={`الوقت المتبقي: ${Math.floor(secondsLeft / 60)} دقيقة و${secondsLeft % 60} ثانية`} style={[styles.progressCount, { minWidth: 44 }]}>{formatVocabularyTime(secondsLeft)}</Text>}
       </View>
 
       <View style={styles.modeSwitch}>
@@ -302,7 +364,8 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
               accessibilityRole="button"
               accessibilityState={{ selected }}
               testID={`answer-${optionIndex + 1}`}
-              onPress={() => select(option)}
+              disabled={answered || answerSaving}
+              onPress={() => void select(option)}
               style={({ pressed }) => [
                 styles.option,
                 answerState === 'correct' && { borderColor: p.success, backgroundColor: p.successSoft },
@@ -328,6 +391,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
     </ScrollView>
 
       <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: 8 }]}>
+        {reviewError && <Text accessibilityLiveRegion="polite" style={{ color: p.coralInk, textAlign: 'center' }}>تعذّر حفظ الإجابة. اضغط اختيارك مرة أخرى للمحاولة؛ لم نغيّر محفوظاتك السابقة.</Text>}
         {answerFeedback && <Text
           accessibilityLiveRegion="polite"
           importantForAccessibility="yes"
@@ -344,7 +408,7 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
         </View>}
         <ChunkyButton
           testID="next-question"
-          disabled={!choice || loading}
+          disabled={!choice || loading || answerSaving}
           onPress={next}
           tone={!answered || isCorrect ? 'success' : 'coral'}
           icon="arrow-back"

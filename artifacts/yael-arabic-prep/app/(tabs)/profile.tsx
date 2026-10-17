@@ -14,6 +14,11 @@ import { useStudy } from '@/lib/StudyProvider';
 import { getStudyStatsDisplay } from '@/lib/study-stats-display';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
+import { getLearnerRank } from '@/lib/learner-ranks';
+
+const RANK_TONES = ['#e8f1ff', '#e3f7ec', '#fff1d6', '#ffe4ec', '#efe6ff', '#ffe9c2'];
+const RANK_INK = ['#1d4f91', '#16623d', '#7a4a00', '#8f1d45', '#4b2a8f', '#6b3d00'];
+const RANK_ICONS = ['leaf', 'school', 'rocket', 'ribbon', 'diamond', 'trophy'] as const;
 
 function ThemeSettings() {
   const colors = useColors();
@@ -89,6 +94,22 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
           <Ionicons name="sparkles" size={15} color={colors.primary} />
           <Text style={[styles.xpText, { color: colors.foreground }]}>{displayedStats.xp} نقطة خبرة</Text>
         </View>
+        {!statsLoading && !statsUnavailable && stats ? (() => {
+          const info = getLearnerRank(stats.xp);
+          const i = Math.max(0, ['rookie','beginner','amateur','real-student','semi-master','master'].indexOf(info.rank.id));
+          return <View testID="profile-learner-rank" accessible accessibilityRole="text"
+            accessibilityLabel={`لقبك: ${info.rank.title}. ${info.nextRank ? `باقي ${info.remainingXp} نقطة خبرة حتى ${info.nextRank.title}` : 'وصلت إلى أعلى لقب'}`}
+            style={[styles.rankBadge, { backgroundColor: RANK_TONES[i], borderColor: RANK_INK[i] }]}>
+            <View style={styles.rankRow}>
+              <Ionicons name={RANK_ICONS[i]} size={15} color={RANK_INK[i]} />
+              <Text style={[styles.rankTitle, { color: RANK_INK[i] }]}>{info.rank.title}</Text>
+            </View>
+            <View style={[styles.rankTrack, { backgroundColor: '#ffffffaa' }]}>
+              <View style={[styles.rankFill, { backgroundColor: RANK_INK[i], width: `${Math.round(info.progress * 100)}%` }]} />
+            </View>
+            <Text style={[styles.rankNext, { color: RANK_INK[i] }]}>{info.nextRank ? `${info.remainingXp} نقطة حتى ${info.nextRank.title}` : 'أعلى لقب في YAEL'}</Text>
+          </View>;
+        })() : null}
       </View>
     </View>
 
@@ -109,40 +130,42 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
       </View>
     </View>
 
-    <View testID="profile-plan-overview" style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View testID="profile-plan-overview" style={[styles.planCard, isPremium ? { backgroundColor: colors.isDark ? '#3a2a12' : '#fff4dc', borderColor: '#d99a1e', borderWidth: 2 } : { backgroundColor: colors.isDark ? '#1f2440' : '#eef0ff', borderColor: colors.isDark ? '#5b63b8' : '#b9bff2' }]}>
       <View style={styles.planHeader}>
         <View style={styles.planTitleCopy}>
           <Text style={[styles.planEyebrow, { color: colors.mutedForeground }]}>خطتك الحالية</Text>
-          <Text style={[styles.planName, { color: colors.foreground }]}>{isPremium ? 'الخطة الكاملة' : plan === 'free' ? 'الخطة المجانية' : 'اختر خطتك'}</Text>
+          <Text style={[styles.planName, { color: colors.foreground }]}>{isPremium ? 'الخطة الكاملة مفعّلة' : plan === 'free' ? 'تجربة مجانية' : 'اختر خطتك'}</Text>
         </View>
-        <View style={[styles.planBadge, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.planBadgeText, { color: colors.secondaryForeground }]}>{isPremium ? 'بريميوم' : plan === 'free' ? 'مجانية' : 'الخطط'}</Text>
+        <View style={[styles.planBadge, styles.rankRow, { backgroundColor: isPremium ? '#8a5a00' : '#3d3fa8' }]}>
+          {isPremium && <Ionicons name="star" size={12} color="#fff6e0" />}
+          <Text style={[styles.planBadgeText, { color: isPremium ? '#fff6e0' : '#f1f1ff' }]}>{isPremium ? 'بريميوم نشط' : plan === 'free' ? 'تجربة مجانية' : 'الخطط'}</Text>
         </View>
       </View>
       <Text
         accessibilityLabel={isPremium ? 'جميع الدورات والجلسات والنماذج متاحة لك بلا حدود.' : plan === 'free'
-          ? `استخدام اليوم: ${usage.vocabularyRounds} من جولة المفردات المجانية الواحدة، و${usage.timedSections} من جلسة الامتحان المحددة بوقت المتاحة اليوم.`
+          ? `استخدام اليوم: ${usage.vocabularyRounds} من جولة المفردات الواحدة في التجربة المجانية، و${usage.timedSections} من جلسة الامتحان المحددة بوقت المتاحة اليوم.`
           : 'اختر خطة تناسب طريقة دراستك.'}
-        style={[styles.caption, { color: colors.mutedForeground }]}
+        style={[styles.caption, { color: colors.foreground }]}
       >
         {isPremium ? 'جميع الدورات والجلسات والنماذج متاحة لك بلا حدود.' : plan === 'free'
           ? `اليوم: مفردات ${usage.vocabularyRounds}/1 · جلسات موقّتة ${usage.timedSections}/1`
           : 'اختر خطة تناسب طريقة دراستك.'}
       </Text>
       {!isPremium && <><Pressable testID="profile-upgrade-plan" accessibilityRole="link"
-        accessibilityLabel="استكشف الخطة الكاملة، 50 شيكلًا شهريًا"
+        accessibilityLabel="استكشف الخطة الكاملة، 48.90 شيكلًا شهريًا"
         accessibilityHint="يفتح تفاصيل الخطط. الشراء عبر المتجر غير متاح حاليًا."
         hitSlop={8} onPress={() => router.push('/plans')}
-        style={({ pressed }) => [styles.upgradeCard, { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 }]}>
-        <View style={styles.upgradeCopy}>
-          <Text style={[styles.upgradeEyebrow, { color: colors.primaryForeground }]}>للمزيد من التعلّم</Text>
-          <Text style={[styles.upgradeTitle, { color: colors.primaryForeground }]}>استكشف الخطة الكاملة</Text>
-          <Text style={[styles.upgradePrice, { color: colors.primaryForeground }]}>₪50 شهريًا</Text>
+        style={({ pressed }) => [styles.upgradeCard, { backgroundColor: '#5a2ea6', borderColor: '#f2b632', opacity: pressed ? 0.86 : 1 }]}>
+        <View style={styles.upgradeIcon}><Ionicons name="rocket" size={22} color="#5a2ea6" /></View>
+        <View style={[styles.upgradeCopy, { flex: 1 }]}>
+          <Text style={[styles.upgradeEyebrow, { color: '#fff7e8' }]}>للمزيد من التعلّم</Text>
+          <Text style={[styles.upgradeTitle, { color: '#fff7e8' }]}>استكشف الخطة الكاملة</Text>
+          <View style={styles.pricePill}><Text style={styles.upgradePrice}>₪48.90 شهريًا</Text></View>
         </View>
-        <Feather name="arrow-left" size={20} color={colors.primaryForeground} />
+        <Feather name="arrow-left" size={20} color="#f2b632" />
       </Pressable>
       <Text accessibilityLabel="الخطة الكاملة تشمل جميع الدورات والجلسات والنماذج. الشراء عبر المتجر غير متاح حاليًا."
-        style={[styles.setupNote, { color: colors.mutedForeground }]}>
+        style={[styles.setupNote, { color: colors.foreground }]}>
         جميع الدورات والجلسات والنماذج؛ الشراء عبر المتجر غير متاح بعد.
       </Text>
       </>}
@@ -213,7 +236,7 @@ function AccountMetric({ icon, value, unit, label, colors }: {
   const spokenValue = value === '—' ? 'غير متاح حاليًا' : `${value}${unit ? ` ${unit}` : ''}`;
   return <View accessible accessibilityRole="text" accessibilityLabel={`${label}، ${spokenValue}`}
     style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-    <Ionicons name={icon} size={18} color={colors.primary} />
+    <View style={[styles.upgradeIcon, { width: 30, height: 30, backgroundColor: colors.secondary }]}><Ionicons name={icon} size={17} color={colors.primary} /></View>
     <Text style={[styles.metricValue, { color: colors.foreground }]}>{value} <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{unit}</Text></Text>
     <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>{label}</Text>
   </View>;
@@ -277,11 +300,19 @@ const styles = StyleSheet.create({
   planName: { fontSize: 17, fontWeight: '700' },
   planBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 13 },
   planBadgeText: { fontSize: 11, fontWeight: '700' },
-  upgradeCard: { minHeight: 76, borderRadius: 17, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  upgradeCard: { minHeight: 84, borderRadius: 18, borderWidth: 2, gap: 12, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
   upgradeCopy: { alignItems: 'flex-end', gap: 2 },
-  upgradeEyebrow: { fontSize: 10, opacity: 0.84 },
+  upgradeEyebrow: { fontSize: 11 },
   upgradeTitle: { fontSize: 15, fontWeight: '700' },
-  upgradePrice: { fontSize: 12 },
+  upgradePrice: { fontSize: 13, fontWeight: '800', color: '#3b2400' },
+  pricePill: { backgroundColor: '#f2b632', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3, marginTop: 4 },
+  upgradeIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ffe7a8', alignItems: 'center', justifyContent: 'center' },
+  rankBadge: { alignSelf: 'stretch', borderWidth: 1.5, borderRadius: 14, padding: 8, gap: 5, marginTop: 4 },
+  rankRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 5 },
+  rankTitle: { fontSize: 13, fontWeight: '800' },
+  rankTrack: { height: 6, borderRadius: 3, overflow: 'hidden', flexDirection: 'row-reverse' },
+  rankFill: { height: 6, borderRadius: 3 },
+  rankNext: { fontSize: 11, fontWeight: '600', textAlign: 'right' },
   setupNote: { fontSize: 11, lineHeight: 18, textAlign: 'right' },
   editorToggle: { minHeight: 70, padding: 16, borderRadius: 20, borderWidth: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
   editorCopy: { alignItems: 'flex-end', gap: 3 },

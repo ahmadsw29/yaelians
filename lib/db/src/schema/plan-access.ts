@@ -1,4 +1,4 @@
-import { pgTable, text, date, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, date, timestamp, primaryKey } from "drizzle-orm/pg-core";
 
 export const accountPlanAccess = pgTable("account_plan_access", {
   userId: text("user_id").primaryKey(),
@@ -11,4 +11,5 @@ export const planActivityClaims = pgTable("plan_activity_claims", {
   activity: text("activity").notNull(),
   activityDate: date("activity_date", { mode: "string" }).notNull(),
   lessonEventId: text("lesson_event_id"),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.userId, t.key] })]);

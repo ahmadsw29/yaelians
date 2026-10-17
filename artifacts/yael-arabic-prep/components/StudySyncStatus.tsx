@@ -5,14 +5,13 @@ import { useColors } from '@/hooks/useColors';
 export function StudySyncStatus() {
   const { loading, message, pending, legacy, busy, refresh, migrate, keepCloud, recovery, recoverOutbox } = useStudy();
   const c = useColors();
-  if (!loading && !message && !pending && !legacy && !recovery) return null;
+  if (!message && !pending && !legacy && !recovery) return null;
   const recoveryActionLabel = busy
     ? 'جارٍ حفظ النسخة والاستعادة…'
     : recovery?.validCount
       ? `حفظ النسخة الأصلية واستعادة ${recovery.validCount} درس سليم`
       : 'حفظ النسخة الأصلية والمتابعة';
   return <View style={{ padding: 14, gap: 10 }}>
-    {loading && <Text style={{ color: c.foreground, textAlign: 'right' }}>جارٍ تحميل التقدّم…</Text>}
     {!!message && <Text accessibilityRole="alert" style={{ color: c.foreground, textAlign: 'right' }}>{message}</Text>}
     {!!recovery && <>
       <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ color: c.foreground, textAlign: 'right' }}>

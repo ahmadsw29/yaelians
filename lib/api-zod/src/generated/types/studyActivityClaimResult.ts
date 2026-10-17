@@ -5,9 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudyActivityClaimResultVocabularyRound } from './studyActivityClaimResultVocabularyRound';
 import type { StudyPlanAccess } from './studyPlanAccess';
 
 export interface StudyActivityClaimResult {
   allowed: boolean;
   access: StudyPlanAccess;
+  /** @nullable */
+  vocabularyRound?: StudyActivityClaimResultVocabularyRound;
 }

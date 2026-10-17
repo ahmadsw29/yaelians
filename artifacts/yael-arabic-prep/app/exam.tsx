@@ -9,6 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import PetTeacher from '@/components/PetTeacher';
 import { QuestionPrompt } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
+import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
 import { EXAM_SECTIONS, ESSAY_PROMPT } from '@/lib/exam-content';
@@ -229,6 +230,7 @@ function ExamSession({ userId }: { userId?: string }) {
   const correct = session ? EXAM_SECTIONS.reduce((total, section, i) =>
     total + section.filter((q, j) => session.answers[i][j] === q.answer).length, 0) : 0;
   const skipped = session ? session.answers.flat().filter(answer => answer === null).length : 0;
+  const examFeedback = completionFeedback(correct, 66 - skipped, 66);
   const mistakes = session ? EXAM_SECTIONS.flatMap((section, i) => section.map((q, j) =>
     ({ q, section: i, index: j, selected: session.answers[i][j] })))
     .filter(item => item.selected !== item.q.answer) : [];
@@ -348,8 +350,8 @@ function ExamSession({ userId }: { userId?: string }) {
             </>}
           </> : <>
             <Text style={styles.eyebrow}>اكتملت المحاكاة</Text>
-            {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
-            <Text style={styles.hero}>خطوة أوضح{'\n'}نحو استعدادك.</Text>
+            {completionCelebration && examFeedback === 'celebrate' && <PracticeCelebration variant={completionCelebration} />}
+            <Text style={styles.hero}>{examFeedback === 'celebrate' ? `خطوة أوضح\nنحو استعدادك.` : examFeedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات' : examFeedback === 'review' ? 'جولة للمراجعة: راجع الأسئلة التي أخطأت فيها ثم حاول مجددًا' : 'تقدّم ثابت. راجع الأخطاء القليلة وواصل'}</Text>
             <View style={styles.card}>
               <Text style={styles.caption}>نتيجة الاختيار من متعدد في هذا التدريب</Text>
               <Text style={styles.score}>{correct} / 66</Text>

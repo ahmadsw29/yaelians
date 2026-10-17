@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { startServer } from './server';
-import { db, studyEvents, studyProgress, planActivityClaims, accountPlanAccess } from '@workspace/db';
+import { db, pool, studyEvents, studyProgress, planActivityClaims, accountPlanAccess } from '@workspace/db';
 import { emptyStats } from '../../artifacts/api-server/src/lib/study';
 
 let api: Awaited<ReturnType<typeof startServer>>;
@@ -11,6 +11,29 @@ const lesson = (eventId: string, correct = 3) => ({
 });
 const legacy = { ...emptyStats, xp: 40, correctAnswers: 4, answeredQuestions: 5,
   lessonsCompleted: 1, masteredWords: 4, streak: 1, lastPracticeDate: new Date().toISOString().slice(0, 10) };
+
+test('a free vocabulary claim has one non-resettable five-minute window and no replay after completion', async () => {
+  const user = 'five-minute-free';
+  const key = 'vocabulary-five-minute-first';
+  await api.request(user, 'plan-access', { plan: 'free' }, 'PUT');
+  const first = await (await api.request(user, 'plan-access/claims', { activity: 'vocabulary', key })).json();
+  expect(first).toMatchObject({ allowed: true, vocabularyRound: { number: 1 } });
+  const time = Date.parse(first.vocabularyRound.expiresAt) - Date.parse(first.vocabularyRound.serverNow);
+  expect(time).toBeGreaterThan(298_000);
+  expect(time).toBeLessThanOrEqual(300_000);
+  const retry = await (await api.request(user, 'plan-access/claims', { activity: 'vocabulary', key })).json();
+  expect(retry.vocabularyRound.expiresAt).toBe(first.vocabularyRound.expiresAt);
+  const attempts = await Promise.all(['second', 'third', 'fourth'].map(suffix =>
+    api.request(user, 'plan-access/claims', { activity: 'vocabulary', key: `vocabulary-five-minute-${suffix}` }).then(res => res.json())));
+  expect(attempts.every(value => !value.allowed)).toBe(true);
+  await api.request(user, 'lessons', { ...lesson('finished-five-minute'), activityKey: key });
+  expect(await (await api.request(user, 'plan-access/claims', { activity: 'vocabulary', key })).json()).toMatchObject({ allowed: false });
+  await api.request('expired-five-minute', 'plan-access', { plan: 'free' }, 'PUT');
+  await api.request('expired-five-minute', 'plan-access/claims', { activity: 'vocabulary', key });
+  await pool.query('UPDATE plan_activity_claims SET started_at = $1 WHERE user_id = $2 AND activity_key = $3',
+    [new Date(Date.now() - 301_000), 'expired-five-minute', key]);
+  expect(await (await api.request('expired-five-minute', 'plan-access/claims', { activity: 'vocabulary', key })).json()).toMatchObject({ allowed: false, vocabularyRound: null });
+});
 
 test('server-granted premium has unlimited claims and cannot be self-assigned or overwritten', async () => {
   await db.insert(accountPlanAccess).values({ userId: 'premium-owner', plan: 'premium' });

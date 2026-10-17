@@ -76,6 +76,28 @@ export default function HomeScreen() {
         <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
       </View>
 
+      <View style={styles.rHero}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroTitle}>قلها{"\n"}بطريقة أخرى</Text>
+          <Text style={styles.heroSub}>تدرّب على إعادة الصياغة فقط، قسمًا بقسم</Text>
+        </View>
+        <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View style={styles.heroHalo} />
+          <Creature kind="rami" mood="hype" size={124} />
+          <View style={styles.wordChip}><Text style={styles.wordChipText}>במילים אחרות</Text></View>
+        </View>
+        <ChunkyButton tone="sun" icon="arrow-back" label="إعادة صياغة" testID="start-restatement" onPress={() => router.push('/restatement')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
+      </View>
+
+      <Pressable testID="home-study" accessibilityRole="button" accessibilityLabel="ركن الدراسة، دروس مع معلّمين من عالم الخيال" onPress={() => router.push('/study')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
+        <View style={styles.studyArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind="ghaima" mood="happy" size={64} /></View>
+        <View style={styles.tipCopy}>
+          <Text style={styles.studyTitle}>ركن الدراسة</Text>
+          <Text style={styles.studyBody}>دروس من كتابك يشرحها لك معلّمون من عالم الخيال</Text>
+        </View>
+        <Ionicons name="chevron-back" size={20} color={p.skyInk} />
+      </Pressable>
+
       <ExamShortcuts />
 
       <View style={styles.sectionHeading}>
@@ -156,6 +178,7 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     title: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', textAlign: 'right', fontSize: 28, lineHeight: 38 },
     subtitle: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, textAlign: 'right', marginTop: 6 },
     hero: { backgroundColor: p.brand, borderRadius: 26, borderBottomWidth: 7, borderColor: p.brandShade, padding: 18, marginBottom: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    rHero: { backgroundColor: p.coral, borderRadius: 26, borderBottomWidth: 7, borderColor: p.coralShade, padding: 18, marginBottom: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
     heroCopy: { flex: 1, minWidth: 150, alignItems: 'flex-end' },
     lessonTag: { backgroundColor: 'rgba(255,253,247,0.22)', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, marginBottom: 9 },
     lessonTagText: { color: p.onBrand, fontSize: 11, fontFamily: BOLD, fontWeight: '800' },
@@ -171,6 +194,10 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     seeAll: { color: p.skyShade, fontSize: 13, fontFamily: BOLD, fontWeight: '800' },
     path: { marginBottom: 20, paddingHorizontal: 4 },
     statsRow: { flexDirection: 'row', gap: 9, marginBottom: 17 },
+    studyCard: { backgroundColor: p.skySoft, borderRadius: 22, borderWidth: 2, borderBottomWidth: 6, borderColor: p.sky, padding: 12, marginBottom: 22, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    studyArt: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
+    studyTitle: { color: p.skyInk, fontFamily: BOLD, fontWeight: '800', fontSize: 16 },
+    studyBody: { color: p.skyInk, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
     tipCard: { backgroundColor: p.sunSoft, borderRadius: 20, borderWidth: 2, borderBottomWidth: 5, borderColor: p.sun, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     tipIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center' },
     tipCopy: { flex: 1, alignItems: 'flex-end' },

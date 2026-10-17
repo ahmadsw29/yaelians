@@ -1,9 +1,10 @@
 import { Router } from "express";
+import studyCoursesRouter from "./study-courses";
 import { isDeepStrictEqual } from "node:util";
 import { clerkClient, getAuth } from "@clerk/express";
 import { lockAccount } from "./account";
 import { db, studyEvents, studyProgress, accountDeletions, accountPlanAccess, planActivityClaims } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import {
   ChooseStudyPlanBody, ClaimStudyActivityBody, ClaimStudyActivityResponse, GetStudyPlanAccessResponse,
   GetStudyStatsResponse, ImportStudyStatsBody, SaveStudyLessonBody, SaveStudyLessonResponse,
@@ -50,6 +51,8 @@ router.use("/study", async (req, res, next) => {
   }
   next();
 });
+
+router.use("/study", studyCoursesRouter);
 
 router.get("/study/stats", async (req, res) => {
   const userId = getAuth(req).userId!;
@@ -108,6 +111,10 @@ router.post("/study/plan-access/claims", async (req, res) => {
     let allowed = false;
     if (existing) {
       allowed = existing.activity === activity;
+      if (activity === "vocabulary" && planRow?.plan === "free") {
+        allowed = allowed && !existing.lessonEventId
+          && Date.now() < existing.startedAt.getTime() + 5 * 60 * 1000;
+      }
     } else if (planRow?.plan === "premium") {
       await tx.insert(planActivityClaims).values({ userId, key, activity, activityDate: date });
       allowed = true;
@@ -125,14 +132,29 @@ router.post("/study/plan-access/claims", async (req, res) => {
     const claims = await tx.select({ activity: planActivityClaims.activity, key: planActivityClaims.key })
       .from(planActivityClaims)
       .where(and(eq(planActivityClaims.userId, userId), eq(planActivityClaims.activityDate, date)));
+    let vocabularyRound = null;
+    if (allowed && activity === "vocabulary" && planRow?.plan === "free") {
+      const [round] = await tx.select().from(planActivityClaims).where(and(
+        eq(planActivityClaims.userId, userId), eq(planActivityClaims.key, key),
+      ));
+      const [history] = await tx.select({ count: count() }).from(planActivityClaims).where(and(
+        eq(planActivityClaims.userId, userId), eq(planActivityClaims.activity, "vocabulary"),
+      ));
+      vocabularyRound = {
+        expiresAt: new Date(round.startedAt.getTime() + 5 * 60 * 1000).toISOString(),
+        serverNow: new Date().toISOString(),
+        number: Math.max(1, history.count),
+      };
+    }
     return {
       status: 200 as const,
       allowed,
       access: planAccessResponse(planRow?.plan ?? null, date, claims),
+      vocabularyRound,
     };
   });
   if (result.status === 403) res.status(403).json({ error: "Account deletion is pending" });
-  else res.json(ClaimStudyActivityResponse.parse({ allowed: result.allowed, access: result.access }));
+  else res.json(ClaimStudyActivityResponse.parse({ allowed: result.allowed, access: result.access, vocabularyRound: result.vocabularyRound }));
 });
 
 for (const kind of ["lessons", "import"] as const) {

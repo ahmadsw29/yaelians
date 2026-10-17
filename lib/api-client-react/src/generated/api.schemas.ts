@@ -5,6 +5,68 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type StudyLessonPreviewTeacher = typeof StudyLessonPreviewTeacher[keyof typeof StudyLessonPreviewTeacher];
+
+
+export const StudyLessonPreviewTeacher = {
+  zizo: 'zizo',
+  lumi: 'lumi',
+  nuna: 'nuna',
+  ghaima: 'ghaima',
+} as const;
+
+export interface StudyLessonPreview {
+  id: string;
+  title: string;
+  summary: string;
+  /** @minimum 1 */
+  minutes: number;
+  teacher: StudyLessonPreviewTeacher;
+  sourceLabel: string;
+  requiresPremium: boolean;
+}
+
+export interface StudyCourseCatalog {
+  isPremium: boolean;
+  courseId: string;
+  title: string;
+  description: string;
+  lessons: StudyLessonPreview[];
+}
+
+export type StudyCourseLessonSectionsItemExamplesItem = {
+  hebrew: string;
+  arabic: string;
+};
+
+export type StudyCourseLessonSectionsItem = {
+  title: string;
+  body: string;
+  examples: StudyCourseLessonSectionsItemExamplesItem[];
+};
+
+export type StudyCourseLessonReferenceRowsItem = {
+  term: string;
+  meaning: string;
+};
+
+export type StudyCourseLessonQuizItem = {
+  id: string;
+  prompt: string;
+  /** @minItems 2 */
+  options: string[];
+  /** @minimum 0 */
+  correctIndex: number;
+  explanation: string;
+};
+
+export type StudyCourseLesson = StudyLessonPreview & {
+  sections: StudyCourseLessonSectionsItem[];
+  referenceTitle: string;
+  referenceRows: StudyCourseLessonReferenceRowsItem[];
+  quiz: StudyCourseLessonQuizItem[];
+};
+
 export interface StudyStats {
   /**
      * @minimum 0
@@ -99,9 +161,21 @@ export interface StudyActivityClaimInput {
   key: string;
 }
 
+/**
+ * @nullable
+ */
+export type StudyActivityClaimResultVocabularyRound = {
+  expiresAt: string;
+  serverNow: string;
+  /** @minimum 1 */
+  number: number;
+} | null;
+
 export interface StudyActivityClaimResult {
   allowed: boolean;
   access: StudyPlanAccess;
+  /** @nullable */
+  vocabularyRound?: StudyActivityClaimResultVocabularyRound;
 }
 
 export interface StudyLessonResult {

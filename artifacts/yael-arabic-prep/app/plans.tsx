@@ -9,7 +9,7 @@ import { usePlanAccess } from '@/lib/PlanAccess';
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
-const FREE_BENEFITS = ['جولة مفردات محفوظة واحدة كل يوم', 'قسم امتحان محدد بوقت واحد كل يوم', 'الوصول إلى نموذج B-17'];
+const FREE_BENEFITS = ['جولة مفردات واحدة لخمس دقائق كل يوم', 'قسم امتحان محدد بوقت واحد كل يوم', 'الوصول إلى نموذج B-17'];
 const PREMIUM_BENEFITS = ['جميع الدورات والمفردات', 'جلسات امتحان بلا حدود', 'مكتبة النماذج كاملة'];
 
 export default function PlansScreen() {
@@ -52,19 +52,19 @@ export default function PlansScreen() {
 
     <View testID="plan-free" style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
       <View style={styles.cardHeader}>
-        <View style={styles.priceCopy}><Text accessibilityRole="header" style={[styles.planName, { color: c.foreground }]}>الخطة المجانية</Text><Text accessibilityLabel="الخطة المجانية، صفر شيكل، دائمًا" style={[styles.price, { color: c.foreground }]}>₪0<Text style={[styles.period, { color: c.mutedForeground }]}> / دائمًا</Text></Text></View>
+        <View style={styles.priceCopy}><Text accessibilityRole="header" style={[styles.planName, { color: c.foreground }]}>تجربة مجانية</Text><Text accessibilityLabel="تجربة مجانية، صفر شيكل، بدون دفع" style={[styles.price, { color: c.foreground }]}>₪0<Text style={[styles.period, { color: c.mutedForeground }]}> / بدون دفع</Text></Text></View>
         <View style={[styles.badge, { backgroundColor: c.secondary }]}><Text style={[styles.badgeText, { color: c.primary }]}>ابدأ الآن</Text></View>
       </View>
       <View style={styles.benefitList}>{FREE_BENEFITS.map(item => <Benefit key={item} label={item} />)}</View>
       {!!error && <Text accessibilityRole="alert" style={{ color: c.destructive, textAlign: 'right', lineHeight: 22 }}>{error}</Text>}
       <Pressable testID="choose-free-plan" accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => void selectFree()} style={({ pressed }) => [styles.freeButton, { backgroundColor: c.secondary, opacity: pressed || saving ? 0.75 : 1 }]}>
-        <Text style={[styles.freeButtonText, { color: c.foreground }]}>{saving ? 'جارٍ حفظ الخطة…' : 'ابدأ بالخطة المجانية'}</Text><Ionicons name="arrow-back" size={19} color={c.foreground} />
+        <Text style={[styles.freeButtonText, { color: c.foreground }]}>{saving ? 'جارٍ حفظ الخطة…' : 'ابدأ تجربة مجانية'}</Text><Ionicons name="arrow-back" size={19} color={c.foreground} />
       </Pressable>
     </View>
 
     <View testID="plan-premium" style={[styles.card, styles.premiumCard, { backgroundColor: c.primary, borderColor: c.primary }]}>
       <View style={styles.cardHeader}>
-        <View style={styles.priceCopy}><Text accessibilityRole="header" style={[styles.planName, { color: c.primaryForeground }]}>الخطة الكاملة</Text><Text accessibilityLabel="الخطة الكاملة، 50 شيكلًا شهريًا" style={[styles.price, { color: c.primaryForeground }]}>₪50<Text style={[styles.period, { color: c.primaryForeground }]}> / شهريًا</Text></Text></View>
+        <View style={styles.priceCopy}><Text accessibilityRole="header" style={[styles.planName, { color: c.primaryForeground }]}>الخطة الكاملة</Text><Text accessibilityLabel="الخطة الكاملة، 48.90 شيكلًا شهريًا" style={[styles.price, { color: c.primaryForeground }]}>₪48.90<Text style={[styles.period, { color: c.primaryForeground }]}> / شهريًا</Text></Text></View>
         <View style={[styles.badge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}><Ionicons name="sparkles" size={14} color={c.primaryForeground} /><Text style={[styles.badgeText, { color: c.primaryForeground }]}>بلا حدود</Text></View>
       </View>
       <View style={styles.benefitList}>{PREMIUM_BENEFITS.map(item => <Benefit key={item} label={item} inverse />)}</View>
@@ -75,7 +75,7 @@ export default function PlansScreen() {
       </View>
       <Pressable testID="premium-unavailable" accessibilityRole="button"
         accessibilityLabel="الشراء للخطة الكاملة غير متاح حاليًا"
-        accessibilityHint="سعر الخطة 50 شيكلًا شهريًا. الدفع غير مفعّل بعد."
+        accessibilityHint="سعر الخطة 48.90 شيكلًا شهريًا. الدفع غير مفعّل بعد."
         accessibilityState={{ disabled: true }} disabled
         style={[styles.premiumButton, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
         <Text style={[styles.premiumButtonText, { color: c.primaryForeground }]}>قريبًا — إعداد الدفع مطلوب</Text>

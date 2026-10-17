@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   chooseStudyPlan, claimStudyActivity, getStudyPlanAccess, useGetStudyPlanAccess,
   type StudyPlanAccess,
+  type StudyActivityClaimResult,
 } from '@workspace/api-client-react';
 import { getStudyAuthOptions } from './study-auth';
 
@@ -17,6 +18,7 @@ type AccessContextValue = {
   usage: DailyUse;
   chooseFree: () => Promise<void>;
   claimActivity: (activity: Activity, key: string) => Promise<boolean>;
+  startVocabularyRound: (key: string) => Promise<StudyActivityClaimResult>;
 };
 
 const emptyUsage = (): DailyUse => ({
@@ -58,6 +60,12 @@ export function PlanAccessProvider({ children }: { children: React.ReactNode }) 
     client.setQueryData(queryKey, response.access);
     return response.allowed;
   }, [authOptions, client, userId]);
+  const startVocabularyRound = useCallback(async (key: string) => {
+    if (!userId) throw new Error('Sign in before starting practice.');
+    const response = await claimStudyActivity({ activity: 'vocabulary', key }, await authOptions());
+    client.setQueryData(queryKey, response.access);
+    return response;
+  }, [authOptions, client, userId]);
 
   const ready = isLoaded && (!userId || query.isSuccess || query.isError);
   const value = useMemo<AccessContextValue>(() => ({
@@ -67,7 +75,8 @@ export function PlanAccessProvider({ children }: { children: React.ReactNode }) 
     usage: query.data?.usage ?? emptyUsage(),
     chooseFree,
     claimActivity,
-  }), [ready, query.data, chooseFree, claimActivity]);
+    startVocabularyRound,
+  }), [ready, query.data, chooseFree, claimActivity, startVocabularyRound]);
 
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
 }

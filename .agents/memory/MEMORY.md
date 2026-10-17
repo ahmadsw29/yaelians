@@ -6,3 +6,7 @@
 - [Study sync testing](study-testing.md) — Keep concurrency tests on isolated real PostgreSQL; identity adapters do not test authentication.
 - [Expo native component test boundary](practice-marker-testing.md) — Exercise UI state transitions through pure helpers when Vitest cannot parse React Native Flow imports.
 - [Learner audience and tutor](learner-audience.md) — Ages 17–24; an energetic fantasy pet and question-presenting characters, no progress-bar mascot; masculine Arabic copy.
+- [Free and premium allowances](plan-allowances.md) — One five-minute vocabulary round daily; no replay bypass. Revisit mistakes without unnecessarily repeating correct words.
+- [Study content and waiting windows](study-course-access.md) — Show trial users locked study previews; gate lesson bodies on the server; use small waiting windows with rotating characters.
+- [Adaptive restatement learning](restatement-learning.md) — Six-question spaced-review rounds: 6:30, then 6:00 from Semi-Master; no model chooser or celebrations for empty attempts.
+- [Vocabulary review](vocabulary-learning.md) — Space correct words, revisit mistakes sooner, and omit algorithm explanations at the start of both practice modes.

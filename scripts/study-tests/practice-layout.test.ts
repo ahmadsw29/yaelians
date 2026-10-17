@@ -6,10 +6,10 @@ describe('practice safe areas', () => {
     expect(getPracticeScreenSpacing('ios', 62, 34, true).paddingTop).toBe(62);
   });
 
-  it('does not reserve the floating native tab area a second time', () => {
+  it('keeps Next above the floating native tab bar without the oversized old gap', () => {
     const spacing = getPracticeScreenSpacing('ios', 62, 34, true);
-    expect(spacing.paddingBottom).toBe(8);
-    expect(getPracticeScreenSpacing('ios', 62, 0, true).paddingBottom).toBe(8);
+    expect(spacing.paddingBottom).toBe(84);
+    expect(getPracticeScreenSpacing('ios', 62, 0, true).paddingBottom).toBe(84);
   });
 
   it('keeps classic tabs and Android navigation clear of Next', () => {

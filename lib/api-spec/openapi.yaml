@@ -11,6 +11,33 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /study/courses:
+    get:
+      operationId: getStudyCourses
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Course previews only, visible to all signed-in learners
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyCourseCatalog" }
+        "401": { description: Sign in required }
+  /study/courses/{courseId}/lessons/{lessonId}:
+    get:
+      operationId: getStudyCourseLesson
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: courseId, in: path, required: true, schema: { type: string } }
+        - { name: lessonId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Protected teaching content for premium accounts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyCourseLesson" }
+        "401": { description: Sign in required }
+        "403": { description: Full plan required; no lesson content is returned }
+        "404": { description: Lesson not found }
   /account:
     delete:
       operationId: deleteMyAccount
@@ -132,6 +159,70 @@ components:
       type: http
       scheme: bearer
   schemas:
+    StudyLessonPreview:
+      type: object
+      required: [id, title, summary, minutes, teacher, sourceLabel, requiresPremium]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        minutes: { type: integer, minimum: 1 }
+        teacher: { type: string, enum: [zizo, lumi, nuna, ghaima] }
+        sourceLabel: { type: string }
+        requiresPremium: { type: boolean }
+    StudyCourseCatalog:
+      type: object
+      required: [isPremium, courseId, title, description, lessons]
+      properties:
+        isPremium: { type: boolean }
+        courseId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        lessons:
+          type: array
+          items: { $ref: "#/components/schemas/StudyLessonPreview" }
+    StudyCourseLesson:
+      allOf:
+        - { $ref: "#/components/schemas/StudyLessonPreview" }
+        - type: object
+          required: [sections, referenceTitle, referenceRows, quiz]
+          properties:
+            sections:
+              type: array
+              items:
+                type: object
+                required: [title, body, examples]
+                properties:
+                  title: { type: string }
+                  body: { type: string }
+                  examples:
+                    type: array
+                    items:
+                      type: object
+                      required: [hebrew, arabic]
+                      properties:
+                        hebrew: { type: string }
+                        arabic: { type: string }
+            referenceTitle: { type: string }
+            referenceRows:
+              type: array
+              items:
+                type: object
+                required: [term, meaning]
+                properties:
+                  term: { type: string }
+                  meaning: { type: string }
+            quiz:
+              type: array
+              items:
+                type: object
+                required: [id, prompt, options, correctIndex, explanation]
+                properties:
+                  id: { type: string }
+                  prompt: { type: string }
+                  options: { type: array, minItems: 2, items: { type: string } }
+                  correctIndex: { type: integer, minimum: 0 }
+                  explanation: { type: string }
     StudyStats:
       type: object
       additionalProperties: false
@@ -181,6 +272,14 @@ components:
       properties:
         allowed: { type: boolean }
         access: { $ref: "#/components/schemas/StudyPlanAccess" }
+        vocabularyRound:
+          type: [object, "null"]
+          additionalProperties: false
+          required: [expiresAt, serverNow, number]
+          properties:
+            expiresAt: { type: string, format: date-time }
+            serverNow: { type: string, format: date-time }
+            number: { type: integer, minimum: 1 }
     StudyLessonResult:
       type: object
       additionalProperties: false

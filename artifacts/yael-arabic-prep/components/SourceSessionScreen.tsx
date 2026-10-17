@@ -8,11 +8,15 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import PetTeacher from '@/components/PetTeacher';
 import { QuestionPrompt } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
+import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import { IMPORTED_EXAMS } from '@/lib/solved-exams';
 import type { ImportedExam } from '@/lib/solved-exams';
+import { restatementExam, restatementSessionKey } from '@/lib/restatement-practice';
+import { ANSWER_REVIEW_LABELS, getAnswerReviewState, type AnswerReviewState } from '@/lib/answer-review';
+import { play } from '@/constants/colors';
 import {
   SourceMode, SourceSession, TYPE_LABEL, advance, catchUp, isDone, isEssayStage, loadSourceSession,
   newSourceSession, parseSourceSession, saveSourceSession, stageCount, storageKey,
@@ -29,21 +33,27 @@ export default function SourceSessionScreen() {
   const { ready: accessReady, plan, isPremium, claimActivity } = usePlanAccess();
   const c = useColors();
   const router = useRouter();
-  const params = useLocalSearchParams<{ exam?: string; mode?: string; section?: string }>();
+  const params = useLocalSearchParams<{ exam?: string; mode?: string; section?: string; focus?: string }>();
   const examId = one(params.exam);
   const mode = one(params.mode);
   const sectionRaw = one(params.section);
+  const focusRaw = one(params.focus);
+  const focused = focusRaw === 'restatement';
   const activityKey = useMemo(
     () => `timed-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
-    [examId, mode, sectionRaw],
+    [examId, mode, sectionRaw, focusRaw],
   );
-  const exam = (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).find(e => e.id === examId);
+  const sourceExam = (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).find(e => e.id === examId);
+  const exam = useMemo(() => sourceExam && focused ? restatementExam(sourceExam) : sourceExam, [sourceExam, focused]);
   const section = sectionRaw !== undefined && /^\d+$/.test(sectionRaw) ? Number(sectionRaw) : null;
   let problem = '';
-  if (!exam) problem = 'لم نجد هذا النموذج في المكتبة.';
+  if (focusRaw !== undefined && !focused) problem = 'نوع التركيز غير معروف.';
+  else if (!exam) problem = 'لم نجد هذا النموذج في المكتبة.';
   else if (mode !== 'training' && mode !== 'full') problem = 'نوع الجلسة غير معروف.';
   else if (mode === 'training' && (section === null || section >= exam.sections.length)) problem = 'رقم القسم غير صالح لهذا النموذج.';
-  else if (exam.sections.length === 0 || exam.sections.some(s => s.length === 0)) problem = 'محتوى هذا النموذج غير مكتمل.';
+  else if (focused && mode !== 'training') problem = 'تدريب إعادة الصياغة متاح لقسم واحد فقط.';
+  else if (focused && exam.sections[section ?? 0].length === 0) problem = 'لا توجد أسئلة إعادة صياغة في هذا القسم.';
+  else if (exam.sections.length === 0 || (!focused && exam.sections.some(s => s.length === 0))) problem = 'محتوى هذا النموذج غير مكتمل.';
 
   const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
   useEffect(() => {
@@ -73,7 +83,7 @@ export default function SourceSessionScreen() {
   if (!plan || access !== 'allowed') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   const m = mode as SourceMode;
   const sec = m === 'training' ? section : null;
-  return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}`} userId={user?.id} exam={exam} mode={m} section={sec} />;
+  return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}:${focused ? 'restatement' : 'mixed'}`} userId={user?.id} exam={exam} mode={m} section={sec} focused={focused} />;
 }
 
 function Header({ title, caption, clock }: { title: string; caption: string; clock?: React.ReactNode }) {
@@ -112,11 +122,13 @@ function InvalidScreen({ message }: { message: string }) {
   </View>;
 }
 
-function Session({ userId, exam, mode, section }: { userId?: string; exam: ImportedExam; mode: SourceMode; section: number | null }) {
+function Session({ userId, exam, mode, section, focused }: { userId?: string; exam: ImportedExam; mode: SourceMode; section: number | null; focused: boolean }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const s = makeStyles(c);
-  const key = storageKey(userId, exam.id, mode, section);
+  const key = restatementSessionKey(storageKey(userId, exam.id, mode, section), focused);
+  const pl = c.isDark ? play.dark : play.light;
+  const [filter, setFilter] = useState<AnswerReviewState | 'all'>('all');
   const current = useRef<SourceSession | null>(null);
   const mounted = useRef(true);
   const revision = useRef(0);
@@ -212,7 +224,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
     }
   }
 
-  const sectionLabel = mode === 'training' ? `تدريب القسم ${(section ?? 0) + 1}` : 'النموذج كاملًا';
+  const sectionLabel = focused ? 'تدريب إعادة صياغة' : mode === 'training' ? `تدريب القسم ${(section ?? 0) + 1}` : 'النموذج كاملًا';
   const done = session ? isDone(session) : false;
   const essayStage = session ? isEssayStage(session) : false;
   const active = !!session && !done;
@@ -229,8 +241,21 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
   const review = session ? session.sections.flatMap((sectionIndex, si) =>
     exam.sections[sectionIndex].map((question, qi) => ({ question, selected: session.answers[si][qi] }))) : [];
   const graded = review.filter(({ question }) => question.answer !== null);
-  const correct = graded.filter(({ question, selected }) => selected === question.answer).length;
+  const correct = graded.filter(({ question, selected }) => selected !== null && selected === question.answer).length;
+  const reviewCounts = review.reduce((acc, { question, selected }) => {
+    const st = getAnswerReviewState(selected, question.answer);
+    acc[st] += 1; return acc;
+  }, { correct: 0, wrong: 0, unanswered: 0, ungraded: 0 } as Record<AnswerReviewState, number>);
+  const tone: Record<AnswerReviewState, { fg: string; bg: string; border: string; icon: keyof typeof Ionicons.glyphMap }> = {
+    correct: { fg: pl.successInk, bg: pl.successSoft, border: pl.success, icon: 'checkmark-circle' },
+    wrong: { fg: pl.coralInk, bg: pl.coralSoft, border: c.destructive, icon: 'close-circle' },
+    unanswered: { fg: c.mutedForeground, bg: c.muted, border: c.mutedForeground, icon: 'remove-circle-outline' },
+    ungraded: { fg: pl.sunInk, bg: pl.sunSoft, border: pl.sunShade, icon: 'help-circle' },
+  };
   const ungraded = review.length - graded.length;
+  const srcAnswered = review.filter(r => r.selected !== null).length;
+  const srcFeedbackRaw = completionFeedback(correct, srcAnswered, review.length);
+  const srcFeedback = srcFeedbackRaw === 'celebrate' && graded.length === 0 ? 'steady' : srcFeedbackRaw;
   const lastQ = questions.length - 1;
   const isLastStage = session ? session.stage === stageCount(session) - 1 : false;
 
@@ -241,7 +266,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
     </Pressable>;
   }
 
-  const headerTitle = active ? (essayStage ? `${exam.title} • التعبير الكتابي` : `${exam.title} • القسم ${(srcSection ?? 0) + 1}`) : `نموذج ${exam.title}`;
+  const headerTitle = focused ? 'إعادة صياغة' : active ? (essayStage ? `${exam.title} • التعبير الكتابي` : `${exam.title} • القسم ${(srcSection ?? 0) + 1}`) : `نموذج ${exam.title}`;
   const clock = active ? <View accessible accessibilityLabel={`الوقت المتبقي ${Math.floor(seconds / 60)} دقيقة و${seconds % 60} ثانية`}
     style={[s.clock, seconds <= 60 && { borderColor: c.destructive }]}>
     <Ionicons name="time-outline" color={seconds <= 60 ? c.destructive : c.primary} size={18} />
@@ -250,7 +275,7 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
 
   return (
     <View style={s.screen}>
-      <Header title={headerTitle} caption={`${sectionLabel} • من نماذجك المرفوعة`} clock={clock} />
+      <Header title={headerTitle} caption={focused ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={clock} />
       <KeyboardAwareScrollViewCompat bottomOffset={24} keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
         {loading ? <View style={{ gap: 12 }}>
@@ -272,12 +297,12 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
 
           {!session ? <>
             <PetTeacher />
-            <Text style={s.eyebrow}>{exam.title} • {exam.sourceFilename}</Text>
-            <Text style={s.hero}>{mode === 'training' ? `قسم واحد،\n20 دقيقة.` : `النموذج كاملًا،\nبإيقاعه الحقيقي.`}</Text>
+            <Text style={s.eyebrow}>{focused ? 'تدريب إعادة صياغة' : `${exam.title} • ${exam.sourceFilename}`}</Text>
+            <Text style={s.hero}>{mode === 'training' ? (focused ? `إعادة صياغة،\n20 دقيقة.` : `قسم واحد،\n20 دقيقة.`) : `النموذج كاملًا،\nبإيقاعه الحقيقي.`}</Text>
             <View style={s.card}>
               <Text style={s.title}>قبل أن تبدأ</Text>
               {mode === 'training'
-                ? <Text style={s.body}>القسم {(section ?? 0) + 1} من النموذج: {exam.sections[section ?? 0].length} سؤالًا خلال 20 دقيقة. ينتهي التدريب بعد هذا القسم، دون تعبير كتابي.</Text>
+                ? <Text style={s.body}>{focused ? `${exam.sections[section ?? 0].length} سؤال إعادة صياغة من نماذج حقيقية خلال 20 دقيقة. دون تعبير كتابي.` : `القسم ${(section ?? 0) + 1} من النموذج: ${exam.sections[section ?? 0].length} سؤالًا خلال 20 دقيقة. ينتهي التدريب بعد هذا القسم، دون تعبير كتابي.`}</Text>
                 : <Text style={s.body}>{exam.sections.length} أقسام بالترتيب الأصلي، 20 دقيقة لكل قسم، ثم 15 دقيقة لموضوع التعبير.</Text>}
               <Text style={s.body}>يمكنك التنقّل وتغيير اختيارك داخل القسم الحالي. التسليم أو انتهاء الوقت يغلق القسم نهائيًا.</Text>
               <Text style={s.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة. الحفظ محلي لهذا الحساب أو للضيف.</Text>
@@ -343,9 +368,9 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
               {button('تسليم التعبير وإنهاء النموذج', () => setConfirmation({ kind: 'submit', stage: session.stage }), 'source-submit')}
             </> : null}
           </> : <>
-            <Text style={s.eyebrow}>انتهت الجلسة • {exam.title}</Text>
-            {completionCelebration && <PracticeCelebration variant={completionCelebration} />}
-            <Text style={s.hero}>أنهيت التدريب.{'\n'}وقت المراجعة.</Text>
+            <Text style={s.eyebrow}>{focused ? 'انتهى تدريب إعادة صياغة' : `انتهت الجلسة • ${exam.title}`}</Text>
+            {completionCelebration && srcFeedback === 'celebrate' && <PracticeCelebration variant={completionCelebration} />}
+            <Text style={s.hero}>{srcFeedback === 'celebrate' ? `أنهيت التدريب.\nوقت المراجعة.` : srcFeedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات' : srcFeedback === 'review' ? 'جولة للمراجعة: راجع الأسئلة التي أخطأت فيها ثم حاول مجددًا' : 'تقدّم ثابت. راجع الأخطاء القليلة وواصل'}</Text>
             <View style={s.card}>
               <Text style={s.title}>نتيجتك التدريبية</Text>
               <Text testID="source-score" style={s.score}>{correct} / {graded.length}</Text>
@@ -358,19 +383,54 @@ function Session({ userId, exam, mode, section }: { userId?: string; exam: Impor
               {!!ungraded && <Text style={s.body}>{ungraded} سؤالًا يحتاج مراجعة، مستبعد من النتيجة.</Text>}
               <Text style={s.body}>تصحيح بحلول مولّدة بالذكاء الاصطناعي مع شرح بالعربية، وليست مفتاحًا رسميًا. هذه نسبة تدريبية، وليست علامة YAEL أو YAELNET ولا تقديرًا لها.</Text>
             </View>
-            {button('محاولة جديدة', () => setConfirmation({ kind: 'reset' }), 'source-retake')}
+            {button(focused ? 'محاولة مرة أخرى' : 'محاولة جديدة', () => setConfirmation({ kind: 'reset' }), 'source-retake')}
+            <View style={s.card}>
+              <Text style={s.title}>تفاصيل المراجعة</Text>
+              <Text style={s.caption}>اضغط على حالة لعرض أسئلتها فقط. اللون يرافقه دائمًا رمز ونص.</Text>
+              <View style={s.filterRow}>
+                {(['all', 'correct', 'wrong', 'unanswered', 'ungraded'] as const).map(k => {
+                  const on = filter === k;
+                  const t = k === 'all' ? null : tone[k];
+                  const n = k === 'all' ? review.length : reviewCounts[k];
+                  return <Pressable key={k} testID={`source-filter-${k}`} accessibilityRole="button" accessibilityState={{ selected: on }}
+                    accessibilityLabel={`${k === 'all' ? 'الكل' : ANSWER_REVIEW_LABELS[k]}: ${n}`} onPress={() => setFilter(k)}
+                    style={[s.filterChip, { borderColor: t ? t.border : c.border, backgroundColor: t ? t.bg : c.card }, on && { borderWidth: 3 }]}>
+                    <Ionicons name={t ? t.icon : 'list'} size={16} color={t ? t.fg : c.foreground} />
+                    <Text style={[s.filterText, { color: t ? t.fg : c.foreground }]}>{k === 'all' ? 'الكل' : ANSWER_REVIEW_LABELS[k]} · {n}</Text>
+                  </Pressable>;
+                })}
+              </View>
+            </View>
             {session.sections.map((secIdx, si) => <View key={secIdx} style={{ gap: 12 }}>
-              <Text style={s.title}>القسم {secIdx + 1} • مراجعة اختياراتك</Text>
+              <Text style={s.title}>{focused ? 'مراجعة اختياراتك' : `القسم ${secIdx + 1} • مراجعة اختياراتك`}</Text>
               {exam.sections[secIdx].map((qq, qi) => {
                 const sel = session.answers[si][qi];
-                return <View key={qq.id} style={s.card}>
-                  <Text style={s.eyebrow}>السؤال {qi + 1} • صفحة {qq.sourcePage} • {qq.answer === null ? 'يحتاج مراجعة' : sel === null ? 'بلا إجابة' : sel === qq.answer ? 'إجابة صحيحة' : 'إجابة غير صحيحة'}</Text>
+                const st: AnswerReviewState = getAnswerReviewState(sel, qq.answer);
+                const t = tone[st];
+                if (filter !== 'all' && filter !== st) return null;
+                return <View key={qq.id} testID={`source-review-${st}`} style={[s.card, { borderWidth: 2, borderRightWidth: 6, borderColor: t.border }]}>
+                  <View style={[s.statusPill, { backgroundColor: t.bg, borderColor: t.border }]} accessible accessibilityLabel={ANSWER_REVIEW_LABELS[st]}>
+                    <Ionicons name={t.icon} size={18} color={t.fg} />
+                    <Text style={[s.statusText, { color: t.fg }]}>{ANSWER_REVIEW_LABELS[st]}</Text>
+                  </View>
+                  <Text style={s.eyebrow}>السؤال {qi + 1} • صفحة {qq.sourcePage}{focused ? '' : ` • ${exam.title}`}</Text>
                   {!!qq.passage && qi > 0 && exam.sections[secIdx][qi - 1].passage === qq.passage ? null : !!qq.passage && <Text selectable style={s.hebrewSmall}>{qq.passage}</Text>}
                   <Text selectable style={s.hebrew}>{qq.number}. {qq.prompt}</Text>
-                  {qq.options.map((o, oi) => <View key={oi} style={[s.reviewOption, sel === oi && { borderColor: c.primary, backgroundColor: c.secondary }]}>
-                    <Text style={s.optionTextSmall}>{o}</Text>
-                    <Text style={s.numberText}>{oi + 1}</Text>
-                  </View>)}
+                  {qq.options.map((o, oi) => {
+                    const isKey = qq.answer !== null && qq.answer === oi;
+                    const isWrongPick = sel === oi && !isKey && qq.answer !== null;
+                    const ot = isKey ? tone.correct : isWrongPick ? tone.wrong : sel === oi ? tone.ungraded : null;
+                    const tag = isKey ? (sel === oi ? 'اختيارك • الإجابة الصحيحة' : 'الإجابة الصحيحة') : sel === oi ? 'اختيارك' : '';
+                    return <View key={oi} accessible accessibilityLabel={`${oi + 1}. ${o}${tag ? `، ${tag}` : ''}`}
+                      style={[s.reviewOption, ot && { borderColor: ot.border, backgroundColor: ot.bg, borderWidth: 2 }]}>
+                      {ot ? <Ionicons name={ot.icon} size={18} color={ot.fg} /> : null}
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={s.optionTextSmall}>{o}</Text>
+                        {!!tag && <Text style={[s.statusText, { color: ot ? ot.fg : c.foreground, textAlign: 'right' }]}>{tag}</Text>}
+                      </View>
+                      <Text style={s.numberText}>{oi + 1}</Text>
+                    </View>;
+                  })}
                   <Text style={s.caption}>{sel === null ? 'لم تختر إجابة.' : `اختيارك: ${sel + 1}`}</Text>
                   {qq.answer !== null && <Text style={s.title}>الإجابة وفق الحل: {qq.answer + 1} — {qq.options[qq.answer]}</Text>}
                   <Text style={s.body}>{qq.explanation}</Text>
@@ -438,6 +498,11 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     chip: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontFamily: BOLD, fontSize: 14, color: c.foreground },
     essayInput: { minHeight: 320, padding: 18, borderRadius: c.radius, borderWidth: 1, borderColor: c.input, backgroundColor: c.card, color: c.foreground, fontSize: 19, lineHeight: 32, textAlign: 'right', writingDirection: 'rtl' },
+    filterRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
+    filterChip: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 2 },
+    filterText: { fontFamily: BOLD, fontSize: 13 },
+    statusPill: { alignSelf: 'flex-end', flexDirection: 'row-reverse', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, borderWidth: 1.5 },
+    statusText: { fontFamily: BOLD, fontSize: 13, writingDirection: 'rtl' },
     statRow: { flexDirection: 'row-reverse', gap: 10 },
     stat: { flex: 1, alignItems: 'center', padding: 10, borderRadius: 14, backgroundColor: c.secondary },
     score: { fontFamily: BOLD, fontSize: 30, color: c.primary },

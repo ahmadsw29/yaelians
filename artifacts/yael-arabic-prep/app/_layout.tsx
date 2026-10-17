@@ -20,6 +20,7 @@ import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ThemeProvider, useColors } from '@/hooks/useColors';
 import { StudyProvider } from '@/lib/StudyProvider';
+import { StudyLoadingScreen } from '@/components/StudyLoadingScreen';
 import { AccountDeletionProvider } from '@/lib/AccountDeletion';
 import { PlanAccessProvider, usePlanAccess } from '@/lib/PlanAccess';
 
@@ -45,7 +46,7 @@ function StartupMessage() {
 
 function ReadyNavigation() {
   const { isLoaded } = useAuth();
-  return isLoaded ? <StudyProvider><PlanAccessProvider><RootLayoutNav /></PlanAccessProvider></StudyProvider> : <StartupMessage />;
+  return isLoaded ? <StudyProvider><PlanAccessProvider><RootLayoutNav /><StudyLoadingScreen /></PlanAccessProvider></StudyProvider> : <StartupMessage />;
 }
 
 function RootLayoutNav() {
@@ -101,6 +102,8 @@ function RootLayoutNav() {
       <Stack.Screen name="exam" options={{ headerShown: false }} />
       <Stack.Screen name="exam-library" options={{ headerShown: false }} />
       <Stack.Screen name="source-session" options={{ headerShown: false }} />
+      <Stack.Screen name="study" options={{ headerShown: false }} />
+      <Stack.Screen name="restatement" options={{ headerShown: false }} />
     </Stack>
     {redirectTo && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={palette.primary} />

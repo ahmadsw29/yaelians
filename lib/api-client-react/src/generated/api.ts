@@ -24,6 +24,8 @@ import type {
   HealthStatus,
   StudyActivityClaimInput,
   StudyActivityClaimResult,
+  StudyCourseCatalog,
+  StudyCourseLesson,
   StudyImportInput,
   StudyLessonInput,
   StudyLessonResult,
@@ -57,6 +59,153 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetStudyCoursesUrl = () => {
+
+
+
+
+  return `/api/study/courses`
+}
+
+export const getStudyCourses = async ( options?: Parameters<typeof customFetch>[1]): Promise<StudyCourseCatalog> => {
+
+  return customFetch<StudyCourseCatalog>(getGetStudyCoursesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudyCoursesQueryKey = () => {
+    return [
+    `/api/study/courses`
+    ] as const;
+    }
+
+
+export const getGetStudyCoursesQueryOptions = <TData = Awaited<ReturnType<typeof getStudyCourses>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyCourses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudyCoursesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudyCourses>>> = ({ signal }) => getStudyCourses({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudyCourses>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudyCoursesQueryResult = NonNullable<Awaited<ReturnType<typeof getStudyCourses>>>
+export type GetStudyCoursesQueryError = ErrorType<void>
+
+
+
+export function useGetStudyCourses<TData = Awaited<ReturnType<typeof getStudyCourses>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyCourses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudyCoursesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStudyCourseLessonUrl = (courseId: string,
+    lessonId: string,) => {
+
+
+
+
+  return `/api/study/courses/${courseId}/lessons/${lessonId}`
+}
+
+export const getStudyCourseLesson = async (courseId: string,
+    lessonId: string, options?: Parameters<typeof customFetch>[1]): Promise<StudyCourseLesson> => {
+
+  return customFetch<StudyCourseLesson>(getGetStudyCourseLessonUrl(courseId,lessonId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudyCourseLessonQueryKey = (courseId: string,
+    lessonId: string,) => {
+    return [
+    `/api/study/courses/${courseId}/lessons/${lessonId}`
+    ] as const;
+    }
+
+
+export const getGetStudyCourseLessonQueryOptions = <TData = Awaited<ReturnType<typeof getStudyCourseLesson>>, TError = ErrorType<void>>(courseId: string,
+    lessonId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyCourseLesson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudyCourseLessonQueryKey(courseId,lessonId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudyCourseLesson>>> = ({ signal }) => getStudyCourseLesson(courseId,lessonId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: courseId !== null && courseId !== undefined && lessonId !== null && lessonId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudyCourseLesson>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudyCourseLessonQueryResult = NonNullable<Awaited<ReturnType<typeof getStudyCourseLesson>>>
+export type GetStudyCourseLessonQueryError = ErrorType<void>
+
+
+
+export function useGetStudyCourseLesson<TData = Awaited<ReturnType<typeof getStudyCourseLesson>>, TError = ErrorType<void>>(
+ courseId: string,
+    lessonId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudyCourseLesson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudyCourseLessonQueryOptions(courseId,lessonId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getDeleteMyAccountUrl = () => {
 

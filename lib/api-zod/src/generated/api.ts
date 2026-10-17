@@ -8,6 +8,70 @@
 import * as zod from 'zod';
 
 
+
+
+
+export const GetStudyCoursesResponse = zod.object({
+  "isPremium": zod.boolean(),
+  "courseId": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "lessons": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "minutes": zod.number().int().min(1),
+  "teacher": zod.enum(['zizo', 'lumi', 'nuna', 'ghaima']),
+  "sourceLabel": zod.string(),
+  "requiresPremium": zod.boolean()
+}))
+})
+
+
+export const GetStudyCourseLessonParams = zod.object({
+  "courseId": zod.coerce.string(),
+  "lessonId": zod.coerce.string()
+})
+
+
+export const getStudyCourseLessonResponseTwoQuizItemOptionsMin = 2;
+
+export const getStudyCourseLessonResponseTwoQuizItemCorrectIndexMin = 0;
+
+
+
+export const GetStudyCourseLessonResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "minutes": zod.number().int().min(1),
+  "teacher": zod.enum(['zizo', 'lumi', 'nuna', 'ghaima']),
+  "sourceLabel": zod.string(),
+  "requiresPremium": zod.boolean()
+}).and(zod.object({
+  "sections": zod.array(zod.object({
+  "title": zod.string(),
+  "body": zod.string(),
+  "examples": zod.array(zod.object({
+  "hebrew": zod.string(),
+  "arabic": zod.string()
+}))
+})),
+  "referenceTitle": zod.string(),
+  "referenceRows": zod.array(zod.object({
+  "term": zod.string(),
+  "meaning": zod.string()
+})),
+  "quiz": zod.array(zod.object({
+  "id": zod.string(),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()).min(getStudyCourseLessonResponseTwoQuizItemOptionsMin),
+  "correctIndex": zod.number().int().min(getStudyCourseLessonResponseTwoQuizItemCorrectIndexMin),
+  "explanation": zod.string()
+}))
+}))
+
+
 /**
  * Irrevocably request deletion of the authenticated account and cloud progress. Requires recent multi-factor verification. Cleanup retries automatically if the identity provider is unavailable.
  */
@@ -105,6 +169,7 @@ export const claimStudyActivityResponseAccessUsageTimedSectionsMin = 0;
 
 
 
+
 export const ClaimStudyActivityResponse = zod.object({
   "allowed": zod.boolean(),
   "access": zod.object({
@@ -115,7 +180,12 @@ export const ClaimStudyActivityResponse = zod.object({
   "timedSections": zod.number().int().min(claimStudyActivityResponseAccessUsageTimedSectionsMin),
   "timedKeys": zod.array(zod.string())
 })
-})
+}),
+  "vocabularyRound": zod.object({
+  "expiresAt": zod.coerce.date(),
+  "serverNow": zod.coerce.date(),
+  "number": zod.number().int().min(1)
+}).nullish()
 })
 
 

@@ -11,9 +11,13 @@ Always show loading UI while authentication initializes instead of rendering not
 **How to apply:** Retain explicit font and authentication loading states; do not mistake a successful bundle for completed UI startup.
 
 Phone-sized web previews do not validate native iOS safe areas or floating-tab clearance.
-**Why:** Web checks passed while the user's native screenshot showed progress under the status bar and Next crowded by floating tabs. Adding a full extra tab-bar reservation then left a large unwanted gap beneath Next.
-**How to apply:** Distinguish NativeTabs screen-frame space from classic absolute tab overlays; do not add a guessed native bar height on top of already-reserved space. Avoid double automatic/manual scroll insets, and do not describe a web viewport check as native-device verification.
+**Why:** Web checks passed while the user's native screenshot showed progress under the status bar and Next crowded by floating tabs. Excessive clearance left a large unwanted gap; removing native clearance let the bar cover Next again.
+**How to apply:** In this practice screen, the floating iOS bar can overlay the fixed footer. Retain one bottom clearance above it, without stacking duplicate bar and safe-area reservations. Avoid double automatic/manual scroll insets, and do not describe a web viewport check as native-device verification.
 
 The preview test browser may expose speech synthesis but have no installed voices.
 **Why:** Pronunciation checks found an empty real voice list; controlled speech events verified the UI lifecycle but could not verify audible Hebrew.
 **How to apply:** Distinguish simulated speech checks from actual audio verification. Do not substitute a non-Hebrew voice or claim phone pronunciation was heard based on a browser simulation.
+
+Do not insert a transient progress-loading row above the practice question.
+**Why:** The user reported that “جاري تحميل التقدم” moved every question element downward and asked for a loading screen instead when waiting is necessary.
+**How to apply:** Keep cached background progress refreshes silent and question geometry stable. Use one full-screen loader for genuinely blocking initial loading, without hiding actionable errors or saved-lesson recovery notices.
