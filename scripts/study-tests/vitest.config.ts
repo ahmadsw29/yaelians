@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       // Native/Clerk adapters are mocked; all React consumers must share a runtime.
       react: dirname(require.resolve('react/package.json')),
+      '@': new URL('../../artifacts/yael-arabic-prep', import.meta.url).pathname,
       '@clerk/express': require.resolve('./server-auth.ts'),
       'react-native': require.resolve('./native.ts'),
       '@react-native-async-storage/async-storage': require.resolve('./storage.ts'),

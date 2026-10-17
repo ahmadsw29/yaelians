@@ -4,11 +4,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { StudyProvider, useStudy } from '../../artifacts/yael-arabic-prep/lib/StudyProvider';
+import { StudySyncStatus } from '../../artifacts/yael-arabic-prep/components/StudySyncStatus';
 import { finishLocalDeletion } from '../../artifacts/yael-arabic-prep/lib/deletionStorage';
 import { DEFAULT_STATS } from '../../artifacts/yael-arabic-prep/lib/study';
 import { auth, clerk, signIn } from './auth';
 import storage, { disk } from './storage';
 import { startServer } from './server';
+
+vi.mock('@/hooks/useColors', () => ({
+  useColors: () => ({ foreground: '#111', primary: '#06c' }),
+}));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let api: Awaited<ReturnType<typeof startServer>>;
@@ -34,8 +39,8 @@ const legacy = { ...DEFAULT_STATS, lessonsCompleted: 1, answeredQuestions: 5,
   correctAnswers: 4, masteredWords: 4, xp: 40, streak: 1,
   lastPracticeDate: new Date().toISOString().slice(0, 10) };
 function Probe() { state = useStudy(); return null; }
-function view() {
-  return <QueryClientProvider client={client}><StudyProvider><Probe /></StudyProvider></QueryClientProvider>;
+function view(showStatus = false) {
+  return <QueryClientProvider client={client}><StudyProvider><Probe />{showStatus && <StudySyncStatus />}</StudyProvider></QueryClientProvider>;
 }
 async function until(check: () => void) {
   const deadline = Date.now() + 5000;
@@ -44,10 +49,10 @@ async function until(check: () => void) {
     try { check(); return; } catch (error) { if (Date.now() > deadline) throw error; }
   }
 }
-async function mount(user: string | null) {
+async function mount(user: string | null, showStatus = false) {
   signIn(user);
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
-  await act(async () => { tree = create(view()); });
+  await act(async () => { tree = create(view(showStatus)); });
   await until(() => expect(state.loading).toBe(false));
 }
 async function unmount() {
@@ -163,6 +168,34 @@ test('invalid queued lessons stay in an exact recovery copy while valid lessons 
   expect(posts.map(post => post.body)).toEqual(valid);
   expect(disk.get(outbox('invalid-events'))).toBe('[]');
   expect(await cloud('invalid-events')).toMatchObject({ lessonsCompleted: 2, xp: 60 });
+});
+
+test('saved-lesson recovery notice and action are clearly exposed to accessibility controls', async () => {
+  const valid = [
+    { eventId: 'accessible-lesson-0001', correct: 2, total: 5 },
+    { eventId: 'accessible-lesson-0002', correct: 4, total: 5 },
+  ];
+  const raw = JSON.stringify([...valid, { eventId: 'damaged-lesson-00001', correct: 6, total: 5 }]);
+  disk.set(outbox('accessible-recovery'), raw);
+  await mount('accessible-recovery', true);
+
+  const alert = tree!.root.find(node => node.props.accessibilityRole === 'alert');
+  const notice = alert.children.join('');
+  expect(alert.props.accessibilityLiveRegion).toBe('assertive');
+  expect(notice).toContain('بيانات غير صالحة');
+  expect(notice).toContain('استعادة 2 من الدروس السليمة');
+
+  const actionLabel = 'حفظ النسخة الأصلية واستعادة 2 درس سليم';
+  const action = tree!.root.find(node => node.props.accessibilityRole === 'button'
+    && node.props.accessibilityLabel === actionLabel);
+  expect(action.props.accessible).toBe(true);
+  expect(action.props.accessibilityState).toEqual({ disabled: false });
+  expect(action.findAll(node => node.type === 'Text').map(node => node.children.join('')).join('')).toBe(actionLabel);
+
+  await act(async () => { action.props.onPress(); });
+  await until(() => expect(state.recovery).toBeNull());
+  expect([...disk.entries()].find(([key]) => key.startsWith(recoveryPrefix('accessible-recovery')))?.[1]).toBe(raw);
+  expect(await cloud('accessible-recovery')).toMatchObject({ lessonsCompleted: 2, xp: 60 });
 });
 
 test('a failed recovery archive write leaves the damaged outbox and recovery choice intact', async () => {

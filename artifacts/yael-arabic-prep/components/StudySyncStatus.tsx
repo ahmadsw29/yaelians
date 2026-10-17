@@ -6,20 +6,30 @@ export function StudySyncStatus() {
   const { loading, message, pending, legacy, busy, refresh, migrate, keepCloud, recovery, recoverOutbox } = useStudy();
   const c = useColors();
   if (!loading && !message && !pending && !legacy && !recovery) return null;
+  const recoveryActionLabel = busy
+    ? 'جارٍ حفظ النسخة والاستعادة…'
+    : recovery?.validCount
+      ? `حفظ النسخة الأصلية واستعادة ${recovery.validCount} درس سليم`
+      : 'حفظ النسخة الأصلية والمتابعة';
   return <View style={{ padding: 14, gap: 10 }}>
     {loading && <Text style={{ color: c.foreground, textAlign: 'right' }}>جارٍ تحميل التقدّم…</Text>}
     {!!message && <Text accessibilityRole="alert" style={{ color: c.foreground, textAlign: 'right' }}>{message}</Text>}
     {!!recovery && <>
-      <Text accessibilityRole="alert" style={{ color: c.foreground, textAlign: 'right' }}>
+      <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ color: c.foreground, textAlign: 'right' }}>
         {recovery.problem === 'invalid-events'
           ? `وجدنا بيانات غير صالحة في قائمة الدروس المحفوظة. يمكن استعادة ${recovery.validCount} من الدروس السليمة. الدروس غير الصالحة (${recovery.invalidCount}) ستبقى في نسخة أصلية محفوظة على هذا الجهاز، ولن تُرسل.`
           : 'تعذّرت قراءة قائمة الدروس المحفوظة. لم نحذفها؛ لا يمكن استعادة دروس منها تلقائيًا. يمكنك حفظ نسخة أصلية على هذا الجهاز والمتابعة دون استعادة دروس.'}
       </Text>
-      <Pressable disabled={busy} accessibilityRole="button" onPress={recoverOutbox}>
+      <Pressable
+        accessible
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel={recoveryActionLabel}
+        accessibilityState={{ disabled: busy }}
+        onPress={recoverOutbox}
+      >
         <Text style={{ color: c.primary, textAlign: 'right' }}>
-          {busy ? 'جارٍ حفظ النسخة والاستعادة…' : recovery.validCount
-            ? `حفظ النسخة الأصلية واستعادة ${recovery.validCount} درس سليم`
-            : 'حفظ النسخة الأصلية والمتابعة'}
+          {recoveryActionLabel}
         </Text>
       </Pressable>
     </>}
