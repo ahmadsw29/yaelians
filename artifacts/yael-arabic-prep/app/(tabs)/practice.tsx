@@ -264,24 +264,16 @@ function PracticeSession({ userId, isPremium, trackThisRound }: { userId?: strin
                 answerState === 'correct' && styles.correctText,
                 answerState === 'wrong' && styles.wrongText,
               ]}>{option}</Text>
-              {answerState === 'correct' && <Ionicons name="checkmark-circle" size={20} color="#28755f" />}
-              {answerState === 'wrong' && <Ionicons name="close-circle" size={20} color="#bb584b" />}
+              {answerState !== 'default' && <View style={styles.answerReaction}>
+                {answerState === 'correct' && <Ionicons name="checkmark-circle" size={20} color="#28755f" />}
+                {answerState === 'wrong' && <Ionicons name="close-circle" size={20} color="#bb584b" />}
+                {selected && <PetTeacherReaction mood={answerState === 'correct' ? 'happy' : 'sad'} size={42} />}
+              </View>}
               {answerState === 'default' && <View style={styles.optionDot}><Text style={styles.optionLetter}>{['أ', 'ب', 'ج', 'د'][optionIndex]}</Text></View>}
             </Pressable>
           );
         })}
       </View>
-
-      {choice ? (
-        <View style={[styles.feedback, isCorrect ? styles.feedbackGood : styles.feedbackTry]}>
-          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} />
-          <View style={styles.feedbackCopy}>
-            <Text style={[styles.feedbackTitle, { color: isCorrect ? '#28755f' : '#a85e45' }]}>{isCorrect ? 'إجابة رائعة!' : 'لا بأس، ستتعلّم من الخطأ.'}</Text>
-            {!isCorrect && <Text style={styles.feedbackSub}>المعنى الصحيح: {question.meaning}</Text>}
-          </View>
-          <Ionicons name={isCorrect ? 'sparkles' : 'heart-outline'} size={19} color={isCorrect ? '#28755f' : '#b66a4f'} />
-        </View>
-      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -337,12 +329,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
     wrongOption: { borderColor: '#d9988d', backgroundColor: '#fff0eb' },
     correctText: { color: '#28755f' },
     wrongText: { color: '#ad5347' },
-    feedback: { minHeight: 78, borderRadius: 16, paddingHorizontal: 10, marginTop: 14, flexDirection: 'row', direction: 'ltr', alignItems: 'center', gap: 8 },
-    feedbackGood: { backgroundColor: '#e7f1e7' },
-    feedbackTry: { backgroundColor: '#fbebe2' },
-    feedbackCopy: { flex: 1, alignItems: 'flex-end' },
-    feedbackTitle: { fontFamily: BOLD, fontSize: 13 },
-    feedbackSub: { color: '#8f6757', fontFamily: FONT, fontSize: 11, marginTop: 2 },
+    answerReaction: { flexDirection: 'row', direction: 'ltr', alignItems: 'center', gap: 3 },
     nextButton: { minHeight: 53, borderRadius: 17, marginTop: 16, backgroundColor: c.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
     nextDisabled: { opacity: 0.4 },
     nextText: { color: c.primaryForeground, fontFamily: BOLD, fontSize: 14 },

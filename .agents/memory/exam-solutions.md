@@ -10,6 +10,6 @@ Short training should remain directly accessible from the homepage and contain 2
 **Why:** The user explicitly requested these interactions.
 **How to apply:** Preserve these requirements when revising exam navigation or question controls.
 
-Address this app's Arabic learner copy to the learner in masculine forms. Free access tracks one vocabulary round per day, but must still offer more vocabulary practice without daily progress credit; Premium tracks unlimited rounds. Keep Mashmash's answer-specific reactions.
-**Why:** The user explicitly requested masculine address and continued vocabulary practice, then chose one tracked free round per day and unlimited paid sessions.
-**How to apply:** Preserve the extra-round path after the daily tracked round, without granting another daily progress bonus. Keep the cat's distinctly positive response for correct answers and gentle, hopeful response for incorrect ones.
+Address this app's Arabic learner copy to the learner in masculine forms. Free access tracks one vocabulary round per day, but must still offer more vocabulary practice without daily progress credit; Premium tracks unlimited rounds. After an answer, show only Mashmash beside the answer's check or cross, with the cat on the mark's right.
+**Why:** The user explicitly requested masculine address, continued vocabulary practice, and this answer-feedback layout.
+**How to apply:** Preserve the extra-round path after the daily tracked round, without granting another daily progress bonus. Keep the cat happy and bouncy for correct answers and mildly disappointed but hopeful for incorrect ones.

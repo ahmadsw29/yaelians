@@ -12,7 +12,7 @@ const tips = [
 // Illustration pigments remain warm in both themes.
 const ink = { fur: '#efb879', inner: '#e29383', outline: '#493a30', paper: '#fff3da' };
 
-export function PetTeacherReaction({ mood }: { mood: 'happy' | 'sad' }) {
+export function PetTeacherReaction({ mood, size = 64 }: { mood: 'happy' | 'sad'; size?: number }) {
   const jump = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (mood !== 'happy') { jump.stopAnimation(); jump.setValue(0); return; }
@@ -26,8 +26,8 @@ export function PetTeacherReaction({ mood }: { mood: 'happy' | 'sad' }) {
   }, [mood, jump]);
   return (
     <Animated.View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
-      style={{ width: 64, height: 68, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: jump }] }}>
-      <Svg width={60} height={66} viewBox="0 0 100 110">
+      style={{ width: size, height: size * 1.06, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: jump }] }}>
+      <Svg width={size * 0.94} height={size * 1.03} viewBox="0 0 100 110">
         <Path d="M78 84 Q102 60 89 55" fill="none" stroke={ink.fur} strokeWidth="9" strokeLinecap="round" />
         <Ellipse cx="49" cy="82" rx="27" ry="23" fill={ink.fur} />
         <Path d="M18 48 L15 13 L39 27 Q51 22 65 27 L87 13 L83 49Z" fill={ink.fur} />
