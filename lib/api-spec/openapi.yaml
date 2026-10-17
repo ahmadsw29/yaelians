@@ -108,6 +108,11 @@ components:
         eventId: { type: string, minLength: 16, maxLength: 100, pattern: '^[a-zA-Z0-9-]+$' }
         correct: { type: integer, minimum: 0, maximum: 5 }
         total: { type: integer, enum: [5] }
+        completedAt:
+          type: string
+          maxLength: 24
+          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$'
+          description: Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.
     StudyImportInput:
       type: object
       additionalProperties: false

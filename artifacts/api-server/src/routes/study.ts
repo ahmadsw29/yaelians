@@ -5,7 +5,7 @@ import { lockAccount } from "./account";
 import { db, studyEvents, studyProgress, accountDeletions } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { GetStudyStatsResponse, ImportStudyStatsBody, SaveStudyLessonBody } from "@workspace/api-zod";
-import { addLesson, emptyStats, validLegacyStats } from "../lib/study";
+import { addLesson, addPracticeDay, emptyStats, lessonPracticeTime, seedPracticeRanges, validLegacyStats } from "../lib/study";
 
 const router = Router();
 router.use("/study", async (req, res, next) => {
@@ -37,6 +37,14 @@ for (const kind of ["lessons", "import"] as const) {
       return;
     }
     const data = parsed.data;
+    const receivedAt = new Date();
+    let practiceTime = receivedAt;
+    try {
+      if ("correct" in data) practiceTime = lessonPracticeTime(data.completedAt, receivedAt);
+    } catch {
+      res.status(400).json({ error: "Invalid completion timestamp" });
+      return;
+    }
     if (("stats" in data && !validLegacyStats(data.stats))
       || ("correct" in data && data.correct > data.total)) {
       res.status(400).json({ error: "Inconsistent study data" });
@@ -62,10 +70,15 @@ for (const kind of ["lessons", "import"] as const) {
         return { status: same ? 200 : 409, stats: previous };
       }
       if ("stats" in data && previous.lessonsCompleted !== 0) return { status: 409, stats: previous };
-      const next = "stats" in data ? data.stats : addLesson(previous, data.correct, data.total);
+      const practiceRanges = "stats" in data ? seedPracticeRanges(data.stats)
+        : addPracticeDay(row.practiceRanges ?? seedPracticeRanges(previous), practiceTime);
+      const next = "stats" in data ? data.stats : addLesson(previous, data.correct, data.total, practiceTime, practiceRanges);
       GetStudyStatsResponse.parse(next);
-      await tx.insert(studyEvents).values({ userId, eventId: data.eventId, payload });
-      await tx.update(studyProgress).set({ stats: next }).where(eq(studyProgress.userId, userId));
+      await tx.insert(studyEvents).values({
+        userId, eventId: data.eventId, payload,
+        practiceDate: "stats" in data ? null : practiceTime.toISOString().slice(0, 10),
+      });
+      await tx.update(studyProgress).set({ stats: next, practiceRanges }).where(eq(studyProgress.userId, userId));
       return { status: 200, stats: next };
     });
     if (result.status === 403) {

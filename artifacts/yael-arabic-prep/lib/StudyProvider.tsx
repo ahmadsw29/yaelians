@@ -94,7 +94,7 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
       }
       if (alive.current) setMessage('');
     } catch {
-      if (alive.current) setMessage('تعذّرت المزامنة. الدروس محفوظة على هذا الجهاز لهذا الحساب وسنحاول مجددًا. يُحسب يوم النشاط عند المزامنة.');
+      if (alive.current) setMessage('تعذّرت المزامنة. الدروس محفوظة على هذا الجهاز لهذا الحساب وسنحاول مجددًا. يُحسب النشاط بتاريخ إكمال الدرس بتوقيت UTC خلال آخر 30 يومًا؛ الدروس الأقدم أو ذات وقت جهاز غير صحيح تُحسب يوم المزامنة.');
     } finally {
       if (alive.current) setBusy(false);
     }
@@ -148,21 +148,25 @@ function AccountStudy({ userId, children }: { userId: string | null; children: R
     return () => { clearInterval(timer); subscription.remove(); };
   });
 
-  const save = (correct: number) => run(async () => {
+  const save = (correct: number) => {
+    // Capture at completion, before waiting behind an in-flight sync operation.
+    const completedAt = new Date().toISOString();
+    return run(async () => {
     if (deleting.current || !ready.current || !alive.current) throw new Error('Progress is not ready');
     if (!userId) {
       const stats = await recordLesson(correct, 5);
       if (alive.current) setGuest(stats);
       return;
     }
-    const event: StudyLessonInput = { eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`, correct, total: 5 };
+    const event: StudyLessonInput = { eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`, correct, total: 5, completedAt };
     const next = [...queue.current, event];
     await AsyncStorage.setItem(storageKey, JSON.stringify(next));
     queue.current = next;
     if (alive.current) setPending(next.length);
     // Completion means durable on-device storage, not an unconfirmed cloud save.
     void run(flush);
-  });
+    });
+  };
   const decide = (importLocal: boolean) => {
     void run(async () => {
       if (deleting.current || !alive.current || !userId || !ready.current) return;

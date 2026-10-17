@@ -54,12 +54,17 @@ export const saveStudyLessonBodyEventIdRegExp = new RegExp('^[a-zA-Z0-9-]+$');
 export const saveStudyLessonBodyCorrectMin = 0;
 export const saveStudyLessonBodyCorrectMax = 5;
 
+export const saveStudyLessonBodyCompletedAtMax = 24;
+
+
+export const saveStudyLessonBodyCompletedAtRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$');
 
 
 export const SaveStudyLessonBody = zod.object({
   "eventId": zod.string().min(saveStudyLessonBodyEventIdMin).max(saveStudyLessonBodyEventIdMax).regex(saveStudyLessonBodyEventIdRegExp),
   "correct": zod.number().int().min(saveStudyLessonBodyCorrectMin).max(saveStudyLessonBodyCorrectMax),
-  "total": zod.literal(5)
+  "total": zod.literal(5),
+  "completedAt": zod.string().max(saveStudyLessonBodyCompletedAtMax).regex(saveStudyLessonBodyCompletedAtRegExp).optional().describe('Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.')
 })
 
 export const saveStudyLessonResponseXpMin = 0;

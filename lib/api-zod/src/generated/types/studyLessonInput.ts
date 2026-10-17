@@ -20,4 +20,10 @@ export interface StudyLessonInput {
      */
   correct: number;
   total: StudyLessonInputTotal;
+  /**
+     * Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.
+     * @maxLength 24
+     * @pattern ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$
+     */
+  completedAt?: string;
 }
