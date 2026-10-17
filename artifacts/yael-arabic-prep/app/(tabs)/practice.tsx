@@ -18,6 +18,18 @@ import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { PetTeacherReaction } from '@/components/PetTeacher';
 import { usePlanAccess } from '@/lib/PlanAccess';
+import {
+  PROGRESS_COUNT_MAX_WIDTH,
+  PROGRESS_MASCOT_SIZE,
+  PROGRESS_LINE_HEIGHT,
+  PROGRESS_RANGE_INSET,
+  PROGRESS_ROW_BOTTOM_SPACE,
+  PROGRESS_ROW_GAP,
+  PRACTICE_HORIZONTAL_PADDING,
+  getPracticeModeReset,
+  getProgressMarkerPosition,
+  selectPracticeAnswer,
+} from '@/lib/progress-marker';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -89,28 +101,30 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
   const [wordOrder, setWordOrder] = useState(() => WORD_BANK.map((_, i) => i));
   const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
   const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
-  const progressPercent = ((index + 1) / activeQuestions.length) * 100;
+  const progressPosition = getProgressMarkerPosition(index, activeQuestions.length);
   const question = mode === 'words'
     ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
     : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
   const isCorrect = choice === question.correctAnswer;
 
   const changeMode = (nextMode: 'words' | 'reading') => {
-    setMode(nextMode);
-    setIndex(0);
-    setChoice(null);
-    setCorrect(0);
-    setCelebrationKey(0);
-    setComplete(false);
-    setSaved(false);
+    const reset = getPracticeModeReset(nextMode);
+    setMode(reset.mode);
+    setIndex(reset.index);
+    setChoice(reset.choice);
+    setCorrect(reset.correct);
+    setCelebrationKey(reset.celebrationKey);
+    setComplete(reset.complete);
+    setSaved(reset.saved);
   };
 
   const select = (answer: string) => {
-    if (choice) return;
-    setChoice(answer);
+    const selection = selectPracticeAnswer({ choice, correct, celebrationKey }, answer, question.correctAnswer);
+    if (!selection) return;
+    setChoice(selection.choice);
+    setCorrect(selection.correct);
+    setCelebrationKey(selection.celebrationKey);
     if (answer === question.correctAnswer) {
-      setCorrect((value) => value + 1);
-      setCelebrationKey((value) => value + 1);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -215,10 +229,10 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
         >
           <View style={styles.progressRange}>
             <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+              <View style={[styles.progressFill, { width: progressPosition.fillWidth }]} />
             </View>
-            <View style={[styles.progressMascot, { left: `${progressPercent}%` }]}>
-              <PetTeacherReaction mood="happy" size={40} jumpKey={celebrationKey} testID="progress-mascot" />
+            <View style={[styles.progressMascot, { left: progressPosition.mascotLeft }]}>
+              <PetTeacherReaction mood="happy" size={PROGRESS_MASCOT_SIZE} jumpKey={celebrationKey} testID="progress-mascot" />
             </View>
           </View>
         </View>
@@ -309,18 +323,18 @@ function PracticeSession({ userId, isPremium, trackThisRound, activityKey }: { u
 function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    content: { paddingHorizontal: 21, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 14, paddingBottom: Platform.OS === 'web' ? 118 : 32, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    content: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 14, paddingBottom: Platform.OS === 'web' ? 118 : 32, maxWidth: 600, width: '100%', alignSelf: 'center' },
     header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 24 },
     backButton: { width: 42, height: 42, borderRadius: 15, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.border },
     headerCopy: { flex: 1, alignItems: 'flex-end' },
     headerLabel: { color: c.foreground, fontFamily: BOLD, fontSize: 18 },
-    progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 18 },
-    progressCount: { color: c.primary, fontSize: 12, fontFamily: BOLD },
-    progressLine: { flex: 1, height: 46, position: 'relative', justifyContent: 'center', overflow: 'visible' },
-    progressRange: { position: 'absolute', left: 20, right: 20, top: 0, bottom: 0 },
+    progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: PROGRESS_ROW_GAP, marginBottom: PROGRESS_ROW_BOTTOM_SPACE },
+    progressCount: { color: c.primary, fontSize: 12, fontFamily: BOLD, maxWidth: PROGRESS_COUNT_MAX_WIDTH },
+    progressLine: { flex: 1, minWidth: PROGRESS_MASCOT_SIZE + PROGRESS_RANGE_INSET * 2, height: PROGRESS_LINE_HEIGHT, position: 'relative', justifyContent: 'center', overflow: 'visible' },
+    progressRange: { position: 'absolute', left: PROGRESS_RANGE_INSET, right: PROGRESS_RANGE_INSET, top: 0, bottom: 0 },
     progressTrack: { position: 'absolute', left: 0, right: 0, bottom: 10, height: 7, borderRadius: 4, backgroundColor: '#e6e7db' },
     progressFill: { height: '100%', backgroundColor: '#e88c67', borderRadius: 4 },
-    progressMascot: { position: 'absolute', top: 0, width: 40, height: 40, transform: [{ translateX: -20 }] },
+    progressMascot: { position: 'absolute', top: 0, width: PROGRESS_MASCOT_SIZE, height: PROGRESS_MASCOT_SIZE, transform: [{ translateX: -PROGRESS_MASCOT_SIZE / 2 }] },
     modeSwitch: { flexDirection: 'row-reverse', backgroundColor: '#eeece4', borderRadius: 14, padding: 4, marginBottom: 14 },
     modeButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 11 },
     modeButtonActive: { backgroundColor: c.card },

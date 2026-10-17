@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, Text, View } from 'react-native';
 import Svg, { Path, Ellipse, Circle } from 'react-native-svg';
 import { useColors } from '@/hooks/useColors';
+import { PROGRESS_MAX_HOP } from '@/lib/progress-marker';
 
 const tips = [
   'أنا مِشمِش، رفيقك في التعلّم. خطوة صغيرة كل مرة!',
@@ -83,7 +84,7 @@ export function PetTeacherReaction({
     previousJumpKey.current = jumpKey;
     const animation = Animated.sequence([
       Animated.parallel([
-        Animated.timing(jump, { toValue: -13, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(jump, { toValue: -PROGRESS_MAX_HOP, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         Animated.timing(squash, { toValue: 1.12, duration: 130, useNativeDriver: true }),
       ]),
       Animated.parallel([

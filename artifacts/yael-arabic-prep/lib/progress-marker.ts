@@ -1,0 +1,53 @@
+export const PRACTICE_HORIZONTAL_PADDING = 21;
+export const PROGRESS_ROW_GAP = 12;
+export const PROGRESS_RANGE_INSET = 20;
+export const PROGRESS_MASCOT_SIZE = 40;
+export const PROGRESS_COUNT_MAX_WIDTH = 72;
+export const PROGRESS_LINE_HEIGHT = 46;
+export const PROGRESS_ROW_BOTTOM_SPACE = 18;
+export const PROGRESS_MAX_HOP = 13;
+
+export function getProgressPercent(questionIndex: number, questionCount: number): number {
+  if (questionCount <= 0) return 0;
+  return ((questionIndex + 1) / questionCount) * 100;
+}
+
+export function getProgressMarkerPosition(questionIndex: number, questionCount: number) {
+  const percent = getProgressPercent(questionIndex, questionCount);
+  const position = `${percent}%` as `${number}%`;
+  return { percent, fillWidth: position, mascotLeft: position };
+}
+
+export type PracticeMode = 'words' | 'reading';
+
+export function getPracticeModeReset(mode: PracticeMode) {
+  return {
+    mode,
+    index: 0,
+    choice: null,
+    correct: 0,
+    celebrationKey: 0,
+    complete: false,
+    saved: false,
+  };
+}
+
+export type PracticeAnswerSelection = {
+  choice: string | null;
+  correct: number;
+  celebrationKey: number;
+};
+
+export function selectPracticeAnswer(
+  current: PracticeAnswerSelection,
+  answer: string,
+  correctAnswer: string,
+): PracticeAnswerSelection | null {
+  if (current.choice !== null) return null;
+  const isCorrect = answer === correctAnswer;
+  return {
+    choice: answer,
+    correct: current.correct + Number(isCorrect),
+    celebrationKey: current.celebrationKey + Number(isCorrect),
+  };
+}

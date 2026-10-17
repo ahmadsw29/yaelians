@@ -18,7 +18,7 @@ export default defineConfig({
   test: {
     include: process.env.STUDY_RESTART_PHASE
       ? ['study-tests/restart-process.test.tsx']
-      : ['study-tests/routes.test.ts', 'study-tests/outbox.test.tsx'],
+      : ['study-tests/routes.test.ts', 'study-tests/outbox.test.tsx', 'study-tests/progress-marker.test.ts'],
     fileParallelism: false,
     testTimeout: 10000,
     hookTimeout: 30000,
