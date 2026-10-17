@@ -9,5 +9,4 @@
 export * from './healthStatus';
 export * from './studyImportInput';
 export * from './studyLessonInput';
-export * from './studyLessonInputTotal';
 export * from './studyStats';

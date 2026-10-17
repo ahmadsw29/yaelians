@@ -43,13 +43,6 @@ export interface StudyStats {
   lastPracticeDate: string | null;
 }
 
-export type StudyLessonInputTotal = typeof StudyLessonInputTotal[keyof typeof StudyLessonInputTotal];
-
-
-export const StudyLessonInputTotal = {
-  NUMBER_5: 5,
-} as const;
-
 export interface StudyLessonInput {
   /**
      * @minLength 16
@@ -59,10 +52,14 @@ export interface StudyLessonInput {
   eventId: string;
   /**
      * @minimum 0
-     * @maximum 5
+     * @maximum 20
      */
   correct: number;
-  total: StudyLessonInputTotal;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  total: number;
   /**
      * Completion instant in canonical UTC ISO format (Date.toISOString). Optional for older clients. Valid instants within 30 days before receipt retain their UTC day. Up to 5 minutes of future clock skew is accepted but capped at receipt time. Missing, older, or further-future instants use the receipt day without losing lesson credit. Invalid calendar instants are rejected. Retries retain the first accepted day.
      * @maxLength 24

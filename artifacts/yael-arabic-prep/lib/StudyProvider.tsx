@@ -12,7 +12,7 @@ import { DEFAULT_STATS, readStudyStats, recordLesson, type StudyStats } from './
 type StudyContext = {
   stats: StudyStats; loading: boolean; message: string; pending: number;
   legacy: StudyStats | null; busy: boolean;
-  refresh: () => void; save: (correct: number) => Promise<void>;
+  refresh: () => void; save: (correct: number, total?: number) => Promise<void>;
   migrate: () => void; keepCloud: () => void;
   pauseForDeletion: () => Promise<() => void>;
 };
