@@ -1,3 +1,8 @@
+/** Reflow the question and feedback instead of reducing accessible text sizes. */
+export function usesExpandedQuestionLayout(fontScale: number) {
+  return fontScale >= 1.5;
+}
+
 /**
  * Keep fixed controls above the floating native bar and the home indicator.
  * Reserve one bar area, not a second full bar plus another safe-area margin.

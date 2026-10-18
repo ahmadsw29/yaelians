@@ -4,7 +4,7 @@
 - [Offline outbox recovery](offline-outbox-recovery.md) — Archive the exact damaged queue before replacing it; recover only individually validated lessons after an explicit choice.
 - [Uploaded exam solutions](exam-solutions.md) — User wants us to solve uploaded questions; distinguish generated solutions from official keys.
 - [Study sync testing](study-testing.md) — Keep concurrency tests on isolated real PostgreSQL; identity adapters do not test authentication.
-- [Expo native component test boundary](practice-marker-testing.md) — Exercise UI state transitions through pure helpers when Vitest cannot parse React Native Flow imports.
+- [Expo native component test boundary](practice-marker-testing.md) — Pure behavior and mocked prop tests are not native layout evidence; browser font-scale checks need explicit text enlargement.
 - [Learner audience and tutor](learner-audience.md) — Ages 17–24; an energetic fantasy pet and question-presenting characters, no progress-bar mascot; masculine Arabic copy.
 - [Free and premium allowances](plan-allowances.md) — One five-minute vocabulary round daily; no replay bypass. Revisit mistakes without unnecessarily repeating correct words.
 - [Study content and waiting windows](study-course-access.md) — Show trial users locked study previews; gate lesson bodies on the server; use small waiting windows with rotating characters.

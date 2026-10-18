@@ -1,5 +1,51 @@
 # Study sync regression suite
 
+## Question bubbles and enlarged text
+
+`question-bubbles.test.tsx` renders the actual prompt/button with native host
+adapters at a 375px window and `fontScale` 1, 1.5, and 2. It checks all five
+presenter names, long Arabic/Hebrew prompts, normal/compact variants, uncapped
+text scaling, RTL props, stacked bubble sizing, and wrapping Next labels.
+These are component-prop checks, not native text measurements.
+
+For a visual/interaction check, run from the workspace root:
+
+```sh
+node scripts/study-tests/question-bubbles-fixture.mjs
+```
+
+With the existing Component Preview Server workflow running, open
+`/__mockup/@fs/<absolute-workspace-path>/generated-artifacts/question-bubbles/index.html`.
+Use a **375×812** viewport and query parameters
+`?scale=1|1.5|2&mode=words|reading|source|exam&presenter=0..4`.
+The generated fixture imports the actual prompt/button, extracts screen style
+factories, and substitutes only native text scaling, theme/auth/speech hooks,
+and decorative teacher/icon graphics. It makes no API calls or learner writes.
+Generated bundles stay in the ignored `generated-artifacts/` directory.
+
+### Verified 2026-10-18
+
+| Text scale | Vocabulary | Reading | Source exam | Generated exam |
+| --- | --- | --- | --- | --- |
+| 1.0 | Pass | Pass | Pass | Pass |
+| 1.5 | Pass | Pass | Pass | Pass |
+| 2.0 | Pass | Pass | Pass | Pass |
+
+In each cell, long Arabic instructions/options and Hebrew passages were checked
+for horizontal overflow and clipping; all four choices were scrolled into view,
+an answer was selected, and Next was activated. Long correction text remained
+within bounds. All five names were also checked at 2× in both prompt variants.
+At 2×, very long exam answer cards can exceed the viewport height, but their
+entire contents and following controls remain reachable by vertical scrolling.
+
+**Boundary:** React Native Web does not apply native font scaling itself. This
+fixture explicitly multiplies text size/line-height and supplies the same scale
+to the layout hook. It is not a native Dynamic Type certification. No native
+runtime was available for this check. Physical iOS/Android verification remains
+necessary for OS text shaping, Android font padding, platform RTL behavior, and
+signed-in full-screen behavior. Repeat the matrix using actual system text
+settings on each platform; do not substitute browser zoom or device pixel ratio.
+
 Run `pnpm test:study` from the repository root. Requires Node 24+, pnpm,
 and PostgreSQL's `initdb`, `pg_ctl` and `postgres` on PATH (available in this workspace).
 

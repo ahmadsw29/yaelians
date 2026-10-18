@@ -518,7 +518,7 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     optionText: { flex: 1, fontSize: 18, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
     optionTextSmall: { flex: 1, fontSize: 16, lineHeight: 26, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
     reviewOption: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: c.border },
-    optionNumber: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: c.muted },
+    optionNumber: { minWidth: 30, minHeight: 30, flexShrink: 0, padding: 2, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: c.muted },
     numberText: { fontFamily: BOLD, color: c.foreground, fontSize: 13 },
     navigation: { flexDirection: 'row-reverse', gap: 12 },
     grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },

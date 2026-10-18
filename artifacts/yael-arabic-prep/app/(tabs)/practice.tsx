@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
-import { getPracticeScreenSpacing } from '@/lib/practice-layout';
+import { getPracticeScreenSpacing, usesExpandedQuestionLayout } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
 import { READING_QUESTIONS } from '@/lib/study';
 import { VOCABULARY_BANK as WORD_BANK } from '@/lib/vocabulary-bank';
@@ -106,6 +107,8 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = makeStyles(p, insets.top);
+  const { fontScale } = useWindowDimensions();
+  const expanded = usesExpandedQuestionLayout(fontScale);
   const screenSpacing = getPracticeScreenSpacing(Platform.OS, insets.top, insets.bottom, isLiquidGlassAvailable());
   const [bodyHeight, setBodyHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
@@ -292,6 +295,27 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
   }
 
   const answered = choice !== null;
+  const footer = (
+    <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: 8 }]}>
+      {reviewError && <Text accessibilityLiveRegion="polite" style={{ color: p.coralInk, textAlign: 'center' }}>تعذّر حفظ الإجابة. اضغط اختيارك مرة أخرى للمحاولة؛ لم نغيّر محفوظاتك السابقة.</Text>}
+      {answerFeedback && <Text accessibilityLiveRegion="polite" importantForAccessibility="yes"
+        style={styles.accessibilityAnnouncement}>{answerFeedback.announcement}</Text>}
+      <View style={mode === 'words' ? styles.compactFooterRow : undefined}>
+        {answered && <View style={[styles.feedbackRow, mode === 'words' && { width: 68, gap: 4 }]}>
+          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={mode === 'words' ? 34 : 62} jumpKey={celebrationKey} />
+          <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28}
+            color={isCorrect ? p.successInk : p.coralInk} accessibilityLabel={isCorrect ? 'إجابة صحيحة' : 'إجابة غير صحيحة'} />
+          {mode !== 'words' && <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-end' }}>
+            {!isCorrect && <Text style={[styles.feedbackBody, { color: p.coralInk }]}>الإجابة الصحيحة: {question.correctAnswer}</Text>}
+          </View>}
+        </View>}
+        <ChunkyButton testID="next-question" disabled={!choice || loading || answerSaving}
+          onPress={next} tone={!answered || isCorrect ? 'success' : 'coral'} icon="arrow-back"
+          label={index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}
+          style={mode === 'words' ? { flex: 1 } : undefined} />
+      </View>
+    </View>
+  );
   return (
     <View style={[styles.screen, screenSpacing]}>
     <View testID="practice-top-bar" style={styles.topBar}>
@@ -336,7 +360,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
 
       {mode === 'words' ? (
         <QuestionPrompt key={`word-${index}`} index={index} text={question.prompt} spokenWord={question.word} compact>
-          <View style={styles.wordStage}>
+          <View style={[styles.wordStage, expanded && { paddingLeft: 0 }]}>
             <Text style={styles.hebrew}>{question.word}</Text>
             <Text style={styles.transliteration}>{question.transliteration}</Text>
           </View>
@@ -392,35 +416,9 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
           );
         })}
       </View>
+      {expanded && footer}
     </ScrollView>
-
-      <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: 8 }]}>
-        {reviewError && <Text accessibilityLiveRegion="polite" style={{ color: p.coralInk, textAlign: 'center' }}>تعذّر حفظ الإجابة. اضغط اختيارك مرة أخرى للمحاولة؛ لم نغيّر محفوظاتك السابقة.</Text>}
-        {answerFeedback && <Text
-          accessibilityLiveRegion="polite"
-          importantForAccessibility="yes"
-          style={styles.accessibilityAnnouncement}
-        >{answerFeedback.announcement}</Text>}
-        <View style={mode === 'words' ? styles.compactFooterRow : undefined}>
-        {answered && <View style={[styles.feedbackRow, mode === 'words' && { width: 68, gap: 4 }]}>
-          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={mode === 'words' ? 34 : 62} jumpKey={celebrationKey} />
-          <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28}
-            color={isCorrect ? p.successInk : p.coralInk} accessibilityLabel={isCorrect ? 'إجابة صحيحة' : 'إجابة غير صحيحة'} />
-          {mode !== 'words' && <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            {!isCorrect && <Text style={[styles.feedbackBody, { color: p.coralInk }]}>الإجابة الصحيحة: {question.correctAnswer}</Text>}
-          </View>}
-        </View>}
-        <ChunkyButton
-          testID="next-question"
-          disabled={!choice || loading || answerSaving}
-          onPress={next}
-          tone={!answered || isCorrect ? 'success' : 'coral'}
-          icon="arrow-back"
-          label={index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}
-          style={mode === 'words' ? { flex: 1 } : undefined}
-        />
-        </View>
-      </View>
+    {!expanded && footer}
     </View>
   );
 }
@@ -437,7 +435,7 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     modeSwitch: { flexDirection: 'row-reverse', backgroundColor: c.muted, borderRadius: 16, padding: 3, marginBottom: 8, gap: 4 },
     modeButton: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 5, borderRadius: 12 },
     modeButtonActive: { backgroundColor: p.skySoft, borderWidth: 2, borderColor: p.sky, borderBottomWidth: 4 },
-    modeText: { color: c.mutedForeground, fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22 },
+    modeText: { flexShrink: 1, minWidth: 0, textAlign: 'right', writingDirection: 'rtl', color: c.mutedForeground, fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22 },
     lessonKicker: { color: p.coralShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, textAlign: 'right', marginBottom: 10, letterSpacing: 0.3 },
     wordStage: { alignItems: 'center', backgroundColor: p.brandSoft, borderRadius: 14, paddingVertical: 4, paddingLeft: 44 },
     hebrew: { color: c.foreground, fontSize: 28, lineHeight: 36, fontFamily: BOLD, fontWeight: '800', textAlign: 'center', writingDirection: 'rtl' },
@@ -448,12 +446,12 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     readingCard: { backgroundColor: c.card, borderRadius: 20, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, padding: 16, marginBottom: 14, alignItems: 'flex-end', gap: 8 },
     readingHebrew: { color: c.foreground, fontSize: 19, lineHeight: 32, fontFamily: BOLD, textAlign: 'right', writingDirection: 'rtl' },
     readingHint: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, backgroundColor: p.skySoft, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 5 },
-    readingHintText: { color: p.skyInk, fontSize: 11, fontFamily: BOLD, fontWeight: '700' },
+    readingHintText: { flexShrink: 1, minWidth: 0, textAlign: 'right', writingDirection: 'rtl', color: p.skyInk, fontSize: 11, fontFamily: BOLD, fontWeight: '700' },
     options: { gap: 6 },
     option: { minHeight: 48, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     pressedOption: { transform: [{ translateY: 3 }], borderBottomWidth: 2, borderColor: p.sky, backgroundColor: p.skySoft },
     optionText: { flex: 1, textAlign: 'right', color: c.foreground, fontSize: 16, lineHeight: 24, includeFontPadding: true, fontFamily: BOLD, fontWeight: '800', writingDirection: 'rtl' },
-    optionDot: { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: c.border, backgroundColor: c.muted, alignItems: 'center', justifyContent: 'center' },
+    optionDot: { minWidth: 30, minHeight: 30, flexShrink: 0, padding: 2, borderRadius: 10, borderWidth: 2, borderColor: c.border, backgroundColor: c.muted, alignItems: 'center', justifyContent: 'center' },
     optionLetter: { color: c.mutedForeground, fontSize: 12, fontFamily: BOLD, fontWeight: '800' },
     footer: { borderTopWidth: 2, borderTopColor: c.border, backgroundColor: c.background, paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 8, gap: 6, width: '100%', alignSelf: 'center' },
     compactFooterRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, maxWidth: 600, width: '100%', alignSelf: 'center' },

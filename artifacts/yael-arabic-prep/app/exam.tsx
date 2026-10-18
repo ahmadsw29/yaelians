@@ -458,7 +458,7 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     progressFill: { height: 14, borderRadius: 7, alignSelf: 'flex-end', backgroundColor: c.primary },
     option: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderRadius: c.radius, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border, backgroundColor: c.card },
     optionText: { flex: 1, fontSize: 18, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
-    optionNumber: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: c.muted },
+    optionNumber: { minWidth: 30, minHeight: 30, flexShrink: 0, padding: 2, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: c.muted },
     numberText: { fontFamily: BOLD, color: c.foreground, fontSize: 13 },
     navigation: { flexDirection: 'row-reverse', gap: 12 },
     questionGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
