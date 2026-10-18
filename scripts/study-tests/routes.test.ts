@@ -12,6 +12,59 @@ const lesson = (eventId: string, correct = 3) => ({
 const legacy = { ...emptyStats, xp: 40, correctAnswers: 4, answeredQuestions: 5,
   lessonsCompleted: 1, masteredWords: 4, masteredWordIds: undefined, streak: 1, lastPracticeDate: new Date().toISOString().slice(0, 10) };
 
+test('timed backups recover across devices without mixing accounts or learning stats', async () => {
+  const slot = 'b17:training:0:mixed';
+  const owner = 'timed-backup-owner';
+  const before = await (await api.request(owner)).json();
+  expect((await api.request(null, `timed-sessions/${slot}`)).status).toBe(401);
+  expect(await (await api.request(owner, `timed-sessions/${slot}`)).json())
+    .toEqual({ revision: 0, savedAt: null, session: null });
+  const session = JSON.stringify({
+    version: 1, examId: 'b17', mode: 'training', sections: [0],
+    stage: 1, question: 0, deadline: null, answers: [[2, null, 1]], essay: '',
+  });
+  const saved = await api.request(owner, `timed-sessions/${slot}`, { revision: 0, session }, 'PUT');
+  expect(saved.status).toBe(200);
+  const cloud = await saved.json();
+  expect(cloud).toMatchObject({ revision: 1, session });
+  expect(Number.isFinite(Date.parse(cloud.savedAt))).toBe(true);
+  // A new device needs only its verified account identity and the slot.
+  expect(await (await api.request(owner, `timed-sessions/${slot}`)).json()).toEqual(cloud);
+  expect(await (await api.request('timed-other-owner', `timed-sessions/${slot}`)).json())
+    .toEqual({ revision: 0, savedAt: null, session: null });
+  expect(await (await api.request(owner, 'timed-sessions/b17:training:0:restatement')).json())
+    .toEqual({ revision: 0, savedAt: null, session: null });
+  expect(await (await api.request(owner)).json()).toEqual(before);
+  const racing = await Promise.all([0, 1].map(() =>
+    api.request(owner, `timed-sessions/${slot}`, { revision: 1, session }, 'PUT')));
+  expect(racing.map(r => r.status).sort()).toEqual([200, 409]);
+  expect((await api.request(owner, `timed-sessions/${slot}`, { revision: 0, session }, 'PUT')).status).toBe(409);
+});
+
+test('timed backups validate payloads, preserve original deadlines, and honor account deletion', async () => {
+  const slot = 'builtin:full:all:mixed';
+  const user = 'timed-active-owner';
+  const value = { version: 1, examId: 'builtin', mode: 'full', sections: [0, 1, 2],
+    stage: 3, deadline: Date.now() + 80000, question: 0,
+    answers: [[0], [null], [2]], essay: 'מסה בעברית' };
+  const session = JSON.stringify(value);
+  expect((await api.request(null, `timed-sessions/${slot}`, { revision: 0, session }, 'PUT')).status).toBe(401);
+  for (const invalid of [
+    { revision: -1, session }, { revision: 0, session: '{' },
+    { revision: 0, session, userId: 'another-user' },
+    { revision: 0, session: JSON.stringify({ ...value, examId: 'b17' }) },
+    { revision: 0, session: JSON.stringify({ ...value, stage: 5 }) },
+    { revision: 0, session: JSON.stringify({ ...value, deadline: null }) },
+    { revision: 0, session: JSON.stringify({ ...value, essay: 'x'.repeat(20001) }) },
+  ]) expect((await api.request(user, `timed-sessions/${slot}`, invalid, 'PUT')).status).toBe(400);
+  expect((await api.request(user, 'timed-sessions/invalid-slot', { revision: 0, session }, 'PUT')).status).toBe(400);
+  const saved = await (await api.request(user, `timed-sessions/${slot}`, { revision: 0, session }, 'PUT')).json();
+  expect(JSON.parse(saved.session)).toEqual(value);
+  await pool.query('INSERT INTO account_deletions (user_id) VALUES ($1)', [user]);
+  expect((await api.request(user, `timed-sessions/${slot}`)).status).toBe(403);
+  expect((await api.request(user, `timed-sessions/${slot}`, { revision: 1, session }, 'PUT')).status).toBe(403);
+});
+
 test('a free vocabulary claim has one non-resettable five-minute window and no replay after completion', async () => {
   const user = 'five-minute-free';
   const key = 'vocabulary-five-minute-first';

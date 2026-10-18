@@ -19,3 +19,9 @@ Never preserve a score-derived legacy mastered-word total as an offset to unique
 **Why:** Old scores cannot identify distinct words. Retaining their total as a baseline would count an unknown overlap again when those words are practiced, recreating the inflated vocabulary total.
 
 **How to apply:** Old snapshots, legacy imports, and pending lessons without word identities retain points and lesson history but cannot establish vocabulary mastery. Reading answers are not evidence of vocabulary mastery either.
+
+Timed practice results must remain separate from account learning statistics unless a later feature deliberately includes them.
+
+**Why:** The requested recovery feature is for moving attempts between devices, not granting additional XP, mastery, streaks, or completed lessons. Restoring the same result repeatedly must not count as new learning.
+
+**How to apply:** Backup, restore, and explicit guest transfer must not submit lesson events or merge result-derived counters into account learning stats.

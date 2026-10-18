@@ -48,6 +48,42 @@ paths:
         "401": { description: Authentication required }
         "403": { description: Recent verification required }
         "503": { description: Deletion could not be completed; retry }
+  /study/timed-sessions/{slot}:
+    parameters:
+      - in: path
+        name: slot
+        required: true
+        schema: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-zA-Z0-9_-]+:(training:[0-9]+|full:all):(mixed|restatement)$' }
+    get:
+      operationId: getTimedSession
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Account backup for this practice slot, or an empty record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimedSessionBackup" }
+        "401": { description: Authentication required }
+        "403": { description: Account deletion pending }
+        "400": { description: Invalid practice slot }
+    put:
+      operationId: saveTimedSession
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TimedSessionInput" }
+      responses:
+        "200":
+          description: Saved account backup
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimedSessionBackup" }
+        "400": { description: Invalid session }
+        "401": { description: Authentication required }
+        "403": { description: Account deletion pending }
+        "409": { description: Backup changed on another device; refresh before replacing }
   /study/stats:
     get:
       operationId: getStudyStats
@@ -159,6 +195,19 @@ components:
       type: http
       scheme: bearer
   schemas:
+    TimedSessionBackup:
+      type: object
+      required: [revision, savedAt, session]
+      properties:
+        revision: { type: integer, minimum: 0 }
+        savedAt: { type: [string, "null"] }
+        session: { type: [string, "null"], maxLength: 60000 }
+    TimedSessionInput:
+      type: object
+      required: [revision, session]
+      properties:
+        revision: { type: integer, minimum: 0, maximum: 2147483646 }
+        session: { type: string, minLength: 1, maxLength: 60000 }
     StudyLessonPreview:
       type: object
       required: [id, title, summary, minutes, teacher, sourceLabel, requiresPremium]

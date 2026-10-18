@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ImportedExam } from '@/lib/imported-exams';
+export type SourceSessionExam = { id: string; sections: { options: string[] }[][] };
 
 export const SECTION_MS = 20 * 60 * 1000;
 export const ESSAY_MS = 15 * 60 * 1000;
@@ -28,7 +28,7 @@ export function storageKey(userId: string | undefined, examId: string, mode: Sou
   return `yael-source:v1:${userId ?? 'guest'}:${examId}:${mode}:${mode === 'training' ? section : 'all'}`;
 }
 
-export function newSourceSession(exam: ImportedExam, mode: SourceMode, section: number | null): SourceSession {
+export function newSourceSession(exam: SourceSessionExam, mode: SourceMode, section: number | null): SourceSession {
   const sections = mode === 'training' ? [section ?? 0] : exam.sections.map((_, i) => i);
   return {
     version: 1, examId: exam.id, mode, sections, stage: 0, question: 0,
@@ -51,7 +51,7 @@ export function catchUp(s: SourceSession, now: number): SourceSession {
   return next;
 }
 
-export function parseSourceSession(raw: string, exam: ImportedExam, mode: SourceMode, section: number | null): SourceSession {
+export function parseSourceSession(raw: string, exam: SourceSessionExam, mode: SourceMode, section: number | null): SourceSession {
   const v: unknown = JSON.parse(raw);
   if (!v || typeof v !== 'object') throw new Error('invalid');
   const s = v as SourceSession;

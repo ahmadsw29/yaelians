@@ -20,6 +20,7 @@ export default defineConfig({
       ? ['study-tests/restart-process.test.tsx']
       : [
           'study-tests/routes.test.ts',
+          'study-tests/source-session.test.ts',
           'study-tests/outbox.test.tsx',
           'study-tests/study-stats-display.test.ts',
           'study-tests/progress-marker.test.ts',

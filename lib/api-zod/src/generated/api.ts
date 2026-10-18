@@ -78,6 +78,64 @@ export const GetStudyCourseLessonResponse = zod.object({
 export const DeleteMyAccountResponse = zod.void()
 
 
+export const getTimedSessionPathSlotMax = 120;
+
+
+export const getTimedSessionPathSlotRegExp = new RegExp('^[a-zA-Z0-9_-]+:(training:[0-9]+|full:all):(mixed|restatement)$');
+
+
+export const GetTimedSessionParams = zod.object({
+  "slot": zod.coerce.string().min(1).max(getTimedSessionPathSlotMax).regex(getTimedSessionPathSlotRegExp)
+})
+
+export const getTimedSessionResponseRevisionMin = 0;
+
+export const getTimedSessionResponseSessionMax = 60000;
+
+
+
+export const GetTimedSessionResponse = zod.object({
+  "revision": zod.number().int().min(getTimedSessionResponseRevisionMin),
+  "savedAt": zod.string().nullable(),
+  "session": zod.string().max(getTimedSessionResponseSessionMax).nullable()
+})
+
+
+export const saveTimedSessionPathSlotMax = 120;
+
+
+export const saveTimedSessionPathSlotRegExp = new RegExp('^[a-zA-Z0-9_-]+:(training:[0-9]+|full:all):(mixed|restatement)$');
+
+
+export const SaveTimedSessionParams = zod.object({
+  "slot": zod.coerce.string().min(1).max(saveTimedSessionPathSlotMax).regex(saveTimedSessionPathSlotRegExp)
+})
+
+export const saveTimedSessionBodyRevisionMin = 0;
+export const saveTimedSessionBodyRevisionMax = 2147483646;
+
+export const saveTimedSessionBodySessionMax = 60000;
+
+
+
+export const SaveTimedSessionBody = zod.object({
+  "revision": zod.number().int().min(saveTimedSessionBodyRevisionMin).max(saveTimedSessionBodyRevisionMax),
+  "session": zod.string().min(1).max(saveTimedSessionBodySessionMax)
+})
+
+export const saveTimedSessionResponseRevisionMin = 0;
+
+export const saveTimedSessionResponseSessionMax = 60000;
+
+
+
+export const SaveTimedSessionResponse = zod.object({
+  "revision": zod.number().int().min(saveTimedSessionResponseRevisionMin),
+  "savedAt": zod.string().nullable(),
+  "session": zod.string().max(saveTimedSessionResponseSessionMax).nullable()
+})
+
+
 export const getStudyStatsResponseXpMin = 0;
 export const getStudyStatsResponseXpMax = 1000000000;
 

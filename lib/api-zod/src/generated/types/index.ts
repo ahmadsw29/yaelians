@@ -28,3 +28,5 @@ export * from './studyPlanAccess';
 export * from './studyPlanAccessPlan';
 export * from './studyPlanAccessUsage';
 export * from './studyStats';
+export * from './timedSessionBackup';
+export * from './timedSessionInput';

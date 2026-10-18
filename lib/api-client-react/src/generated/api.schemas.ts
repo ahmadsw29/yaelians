@@ -5,6 +5,31 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface TimedSessionBackup {
+  /** @minimum 0 */
+  revision: number;
+  /** @nullable */
+  savedAt: string | null;
+  /**
+     * @maxLength 60000
+     * @nullable
+     */
+  session: string | null;
+}
+
+export interface TimedSessionInput {
+  /**
+     * @minimum 0
+     * @maximum 2147483646
+     */
+  revision: number;
+  /**
+     * @minLength 1
+     * @maxLength 60000
+     */
+  session: string;
+}
+
 export type StudyLessonPreviewTeacher = typeof StudyLessonPreviewTeacher[keyof typeof StudyLessonPreviewTeacher];
 
 

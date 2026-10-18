@@ -13,6 +13,19 @@ import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
 import { EXAM_SECTIONS, ESSAY_PROMPT } from '@/lib/exam-content';
+import SourceSessionBackup from '@/components/SourceSessionBackup';
+import type { SourceSession } from '@/lib/source-session';
+
+const BACKUP_EXAM = { id: 'builtin', sections: EXAM_SECTIONS };
+function forBackup(session: Session): SourceSession {
+  return { ...session, examId: BACKUP_EXAM.id, mode: 'full', sections: EXAM_SECTIONS.map((_, i) => i) };
+}
+async function loadGuestBackup() {
+  const key = 'yael-exam:v1:guest';
+  await storageQueues.get(key)?.catch(() => {});
+  const raw = await AsyncStorage.getItem(key);
+  return raw ? JSON.stringify(forBackup(parseSession(raw))) : null;
+}
 
 const SECTION_MS = 20 * 60 * 1000;
 const ESSAY_MS = 15 * 60 * 1000;
@@ -102,6 +115,7 @@ function ExamSession({ userId }: { userId?: string }) {
   const current = useRef<Session | null>(null);
   const mounted = useRef(true);
   const writeRevision = useRef(0);
+  const restoring = useRef(false);
   const [session, setSession] = useState<Session | null>(null);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +145,7 @@ function ExamSession({ userId }: { userId?: string }) {
   }
 
   function commit(next: Session | null) {
+    if (restoring.current) return;
     const oldStage = current.current?.stage;
     if (next?.stage === 4 && oldStage !== undefined && oldStage < 4) {
       setCompletionCelebration(nextPracticeCelebration());
@@ -144,6 +159,23 @@ function ExamSession({ userId }: { userId?: string }) {
       setNow(Date.now());
     }
     persist(next);
+  }
+
+  async function restoreBackup(next: SourceSession) {
+    const restored = parseSession(JSON.stringify(next));
+    restoring.current = true;
+    try {
+      await saveSession(key, restored);
+      if (!mounted.current) return;
+      current.current = restored;
+      setSession(restored);
+      setCompletionCelebration(null);
+      setConfirmation(null);
+      setNow(Date.now());
+      setNotice('');
+      setSaveError(false);
+      setLoadError(false);
+    } finally { restoring.current = false; }
   }
 
   useEffect(() => {
@@ -177,6 +209,7 @@ function ExamSession({ userId }: { userId?: string }) {
 
   useEffect(() => {
     function tick() {
+      if (restoring.current) return;
       const time = Date.now();
       setNow(time);
       const previous = current.current;
@@ -194,6 +227,7 @@ function ExamSession({ userId }: { userId?: string }) {
 
   // Every user action rechecks the deadline synchronously, before applying input.
   function edit(update: (s: Session) => Session): boolean {
+    if (restoring.current) return false;
     const previous = current.current;
     if (!previous || previous.stage === 4 || previous.stage !== session?.stage) return false;
     const next = catchUp(previous, Date.now());
@@ -262,6 +296,8 @@ function ExamSession({ userId }: { userId?: string }) {
 
       <KeyboardAwareScrollViewCompat bottomOffset={24} keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
+        {!loading && validContent && <SourceSessionBackup userId={userId} exam={BACKUP_EXAM} mode="full" section={null} focused={false}
+          session={session ? forBackup(session) : null} onRestore={restoreBackup} loadGuest={loadGuestBackup} />}
         {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 40 }} /> : !validContent ? (
           <View style={styles.card}><Text style={styles.title}>تعذّر تحميل أسئلة المحاكاة</Text><Text style={styles.body}>يجب توفير ثلاثة أقسام، في كل منها 22 سؤالًا. ارجع وحاول لاحقًا.</Text></View>
         ) : loadError ? (
@@ -276,7 +312,7 @@ function ExamSession({ userId }: { userId?: string }) {
           {saveError ? <View style={styles.error}>
             <Text accessibilityRole="alert" style={styles.body}>تعذّر حفظ آخر التغييرات على هذا الجهاز. إجاباتك الحالية باقية هنا فقط؛ لا تغادر قبل إعادة الحفظ.</Text>
             {button('إعادة الحفظ', () => persist(current.current), 'exam-retry-save', true)}
-          </View> : session && <Text style={styles.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ على هذا الجهاز فقط • منفصل عن إحصاءات التعلّم'}</Text>}
+          </View> : session && <Text style={styles.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ محليًا • استخدم النسخ إلى الحساب لحفظه على أجهزتك الأخرى'}</Text>}
 
           {!session ? <>
             <PetTeacher />
@@ -287,7 +323,7 @@ function ExamSession({ userId }: { userId?: string }) {
               <Text style={styles.title}>قبل أن تبدأ</Text>
               <Text style={styles.body}>٣ أقسام اختيار من متعدد: ٢٢ سؤالًا لكل قسم، و٢٠ دقيقة لكل قسم. بعدها ١٥ دقيقة لكتابة موضوع باللغة العبرية.</Text>
               <Text style={styles.body}>يمكنك التنقّل وتغيير إجاباتك داخل القسم الحالي فقط. التسليم أو انتهاء الوقت يغلق القسم نهائيًا؛ لا تُعرض الحلول حتى نهاية المحاولة.</Text>
-              <Text style={styles.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة. عند العودة ننتقل وفق المواعيد الأصلية، حتى لو انتهت عدة مراحل. الحفظ محلي لهذا الحساب أو للضيف، ولا ينتقل بين الأجهزة.</Text>
+              <Text style={styles.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة، وننتقل وفق المواعيد الأصلية. الحفظ التلقائي محلي؛ استخدم «نسخ إلى الحساب» ثم «استعادة من الحساب» لنقل المحاولة بين أجهزتك.</Text>
             </View>
             <View style={styles.notice}>
               <Text style={styles.title}>YAEL ليس YAELNET</Text>

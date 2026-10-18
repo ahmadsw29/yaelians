@@ -30,7 +30,9 @@ import type {
   StudyLessonInput,
   StudyLessonResult,
   StudyPlanAccess,
-  StudyStats
+  StudyStats,
+  TimedSessionBackup,
+  TimedSessionInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -276,6 +278,160 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteMyAccountMutationOptions(options));
+    }
+
+export const getGetTimedSessionUrl = (slot: string,) => {
+
+
+
+
+  return `/api/study/timed-sessions/${slot}`
+}
+
+export const getTimedSession = async (slot: string, options?: Parameters<typeof customFetch>[1]): Promise<TimedSessionBackup> => {
+
+  return customFetch<TimedSessionBackup>(getGetTimedSessionUrl(slot),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTimedSessionQueryKey = (slot: string,) => {
+    return [
+    `/api/study/timed-sessions/${slot}`
+    ] as const;
+    }
+
+
+export const getGetTimedSessionQueryOptions = <TData = Awaited<ReturnType<typeof getTimedSession>>, TError = ErrorType<void>>(slot: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTimedSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTimedSessionQueryKey(slot);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTimedSession>>> = ({ signal }) => getTimedSession(slot, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slot !== null && slot !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTimedSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTimedSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getTimedSession>>>
+export type GetTimedSessionQueryError = ErrorType<void>
+
+
+
+export function useGetTimedSession<TData = Awaited<ReturnType<typeof getTimedSession>>, TError = ErrorType<void>>(
+ slot: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTimedSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTimedSessionQueryOptions(slot,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveTimedSessionUrl = (slot: string,) => {
+
+
+
+
+  return `/api/study/timed-sessions/${slot}`
+}
+
+export const saveTimedSession = async (slot: string,
+    timedSessionInput: TimedSessionInput, options?: Parameters<typeof customFetch>[1]): Promise<TimedSessionBackup> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<TimedSessionBackup>(getSaveTimedSessionUrl(slot),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(timedSessionInput)
+  }
+);}
+
+
+
+
+
+export const getSaveTimedSessionMutationKey = () => ['saveTimedSession'] as const;
+
+export const getSaveTimedSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveTimedSession>>, TError,SaveTimedSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveTimedSession>>, TError,SaveTimedSessionMutationVariables, TContext> => {
+
+const mutationKey = getSaveTimedSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveTimedSession>>, SaveTimedSessionMutationVariables> = (props) => {
+          const {slot,data} = props ?? {};
+
+          return  saveTimedSession(slot,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveTimedSessionMutationResult = NonNullable<Awaited<ReturnType<typeof saveTimedSession>>>
+    export type SaveTimedSessionMutationBody = BodyType<TimedSessionInput>
+    export type SaveTimedSessionMutationError = ErrorType<void>
+    export type SaveTimedSessionMutationVariables = {slot: string;data: BodyType<TimedSessionInput>}
+
+    export const useSaveTimedSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveTimedSession>>, TError,SaveTimedSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveTimedSession>>,
+        TError,
+        SaveTimedSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveTimedSessionMutationOptions(options));
     }
 
 export const getGetStudyStatsUrl = () => {

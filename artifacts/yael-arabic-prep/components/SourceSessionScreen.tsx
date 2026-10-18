@@ -8,6 +8,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import PetTeacher from '@/components/PetTeacher';
 import { QuestionPrompt } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
+import SourceSessionBackup from '@/components/SourceSessionBackup';
 import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
@@ -70,7 +71,6 @@ export default function SourceSessionScreen() {
       if (allowed) setAccess('allowed');
       else {
         setAccess('blocked');
-        router.replace('/plans?reason=daily-timed-limit');
       }
     }).catch(() => {
       if (active) setAccess('blocked');
@@ -80,10 +80,10 @@ export default function SourceSessionScreen() {
 
   if (!isLoaded || !accessReady || access === 'checking') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   if (problem || !exam) return <InvalidScreen message={problem} />;
-  if (!plan || access !== 'allowed') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
+  if (!plan || (access !== 'allowed' && (exam.id !== 'b17' || mode !== 'training'))) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   const m = mode as SourceMode;
   const sec = m === 'training' ? section : null;
-  return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}:${focused ? 'restatement' : 'mixed'}`} userId={user?.id} exam={exam} mode={m} section={sec} focused={focused} />;
+  return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}:${focused ? 'restatement' : 'mixed'}`} userId={user?.id} exam={exam} mode={m} section={sec} focused={focused} canPractice={access === 'allowed'} />;
 }
 
 function Header({ title, caption, clock }: { title: string; caption: string; clock?: React.ReactNode }) {
@@ -122,7 +122,7 @@ function InvalidScreen({ message }: { message: string }) {
   </View>;
 }
 
-function Session({ userId, exam, mode, section, focused }: { userId?: string; exam: ImportedExam; mode: SourceMode; section: number | null; focused: boolean }) {
+function Session({ userId, exam, mode, section, focused, canPractice }: { userId?: string; exam: ImportedExam; mode: SourceMode; section: number | null; focused: boolean; canPractice: boolean }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const s = makeStyles(c);
@@ -132,6 +132,7 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
   const current = useRef<SourceSession | null>(null);
   const mounted = useRef(true);
   const revision = useRef(0);
+  const restoring = useRef(false);
   const [session, setSession] = useState<SourceSession | null>(null);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,6 +154,7 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
     });
   }
   function commit(next: SourceSession | null) {
+    if (restoring.current) return;
     const old = current.current?.stage;
     if (current.current && !isDone(current.current) && next && isDone(next)) {
       setCompletionCelebration(nextPracticeCelebration());
@@ -163,6 +165,23 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
     setSession(next);
     if (old !== next?.stage) { setConfirmation(null); setNow(Date.now()); }
     persist(next);
+  }
+
+  async function restoreBackup(next: SourceSession) {
+    // Save first: a failed disk write must not replace the displayed attempt.
+    restoring.current = true;
+    try {
+      await saveSourceSession(key, next);
+      if (!mounted.current) return;
+      current.current = next;
+      setSession(next);
+      setCompletionCelebration(null);
+      setConfirmation(null);
+      setNow(Date.now());
+      setNotice('');
+      setSaveError(false);
+      setLoadError(false);
+    } finally { restoring.current = false; }
   }
 
   useEffect(() => {
@@ -193,6 +212,7 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
 
   useEffect(() => {
     function tick() {
+      if (restoring.current) return;
       const t = Date.now();
       setNow(t);
       const prev = current.current;
@@ -206,6 +226,7 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
   }, []);
 
   function edit(update: (x: SourceSession) => SourceSession): boolean {
+    if (restoring.current || !canPractice) return false;
     const prev = current.current;
     if (!prev || isDone(prev) || prev.stage !== session?.stage) return false;
     const next = catchUp(prev, Date.now());
@@ -278,6 +299,8 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
       <Header title={headerTitle} caption={focused ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={clock} />
       <KeyboardAwareScrollViewCompat bottomOffset={24} keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
+        {!loading && <SourceSessionBackup userId={userId} exam={exam} mode={mode} section={section} focused={focused}
+          session={session} onRestore={restoreBackup} />}
         {loading ? <View style={{ gap: 12 }}>
           {[120, 64, 64, 64].map((h, i) => <View key={i} style={[s.skeleton, { height: h }]} />)}
           <Text style={s.caption}>جارٍ استعادة محاولتك…</Text>
@@ -293,9 +316,10 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
           {saveError ? <View style={s.error}>
             <Text accessibilityRole="alert" style={s.body}>تعذّر حفظ آخر التغييرات على هذا الجهاز. لا تغادر قبل إعادة الحفظ.</Text>
             {button('إعادة الحفظ', () => persist(current.current), 'source-retry-save', true)}
-          </View> : session && <Text style={s.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ على هذا الجهاز فقط • منفصل عن إحصاءات التعلّم'}</Text>}
+          </View> : session && <Text style={s.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ محليًا • استخدم النسخ إلى الحساب لحفظه على أجهزتك الأخرى'}</Text>}
 
           {!session ? <>
+            {!canPractice && <Text style={s.body}>التدريب غير متاح الآن: ربما استُخدم القسم اليومي أو تعذّر التحقق من الاتصال. يمكنك استعادة نتيجتك ومراجعتها؛ لا تبدأ محاولة جديدة.</Text>}
             <PetTeacher />
             <Text style={s.eyebrow}>{focused ? 'تدريب إعادة صياغة' : `${exam.title} • ${exam.sourceFilename}`}</Text>
             <Text style={s.hero}>{mode === 'training' ? (focused ? `إعادة صياغة،\n20 دقيقة.` : `قسم واحد،\n20 دقيقة.`) : `النموذج كاملًا،\nبإيقاعه الحقيقي.`}</Text>
@@ -305,15 +329,18 @@ function Session({ userId, exam, mode, section, focused }: { userId?: string; ex
                 ? <Text style={s.body}>{focused ? `${exam.sections[section ?? 0].length} سؤال إعادة صياغة من نماذج حقيقية خلال 20 دقيقة. دون تعبير كتابي.` : `القسم ${(section ?? 0) + 1} من النموذج: ${exam.sections[section ?? 0].length} سؤالًا خلال 20 دقيقة. ينتهي التدريب بعد هذا القسم، دون تعبير كتابي.`}</Text>
                 : <Text style={s.body}>{exam.sections.length} أقسام بالترتيب الأصلي، 20 دقيقة لكل قسم، ثم 15 دقيقة لموضوع التعبير.</Text>}
               <Text style={s.body}>يمكنك التنقّل وتغيير اختيارك داخل القسم الحالي. التسليم أو انتهاء الوقت يغلق القسم نهائيًا.</Text>
-              <Text style={s.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة. الحفظ محلي لهذا الحساب أو للضيف.</Text>
+              <Text style={s.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة. الحفظ تلقائي على الجهاز فقط؛ يمكنك نسخ المحاولة إلى حسابك واستعادتها يدويًا على جهاز آخر.</Text>
             </View>
             <View style={s.notice}>
               <Text style={s.title}>مستند تدريب مرفوع</Text>
               <Text style={s.body}>الأسئلة من ملفك المرفوع وبترتيبها الأصلي. هذا تدريب على المحتوى، وليس واجهة امتحان YAELNET الفعلي. أعددنا حلولًا وشروحات بالعربية للتصحيح بعد التسليم؛ هي حلول مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا وقد تحتاج مراجعة معلّم.</Text>
               <Text style={s.caption}>لا تدخل الأسئلة المعلّمة «تحتاج مراجعة» في النتيجة. لا تُمنح علامة آلية للتعبير.</Text>
             </View>
-            {button('ابدأ • يبدأ الوقت الآن', () => { setNotice(''); setNow(Date.now()); commit(newSourceSession(exam, mode, section)); }, 'source-start')}
-          </> : active ? <>
+            {button('ابدأ • يبدأ الوقت الآن', () => { if (!canPractice) return; setNotice(''); setNow(Date.now()); commit(newSourceSession(exam, mode, section)); }, 'source-start', false, !canPractice)}
+          </> : active && !canPractice ? <View style={s.card}>
+            <Text style={s.title}>محاولتك محفوظة</Text>
+            <Text style={s.body}>التدريب غير متاح الآن. الوقت الأصلي يستمر؛ يمكنك حفظ النسخة أو استعادة النتائج دون بدء تدريب إضافي. حاول لاحقًا أو راجع خطتك.</Text>
+          </View> : active ? <>
             {q ? <>
               <View style={s.row}>
                 <Text style={s.caption}>{questions.length - unanswered} / {questions.length} إجابة</Text>
