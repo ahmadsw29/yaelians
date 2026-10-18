@@ -19,6 +19,7 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getPracticeScreenSpacing, usesExpandedQuestionLayout } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
+import { usePracticeCompletionAnnouncement } from '@/hooks/usePracticeCompletionAnnouncement';
 import { READING_QUESTIONS } from '@/lib/study';
 import { VOCABULARY_BANK as WORD_BANK } from '@/lib/vocabulary-bank';
 import { reserveVocabularyReviewRound, saveVocabularyReviewAnswer } from '@/lib/vocabulary-deck';
@@ -35,6 +36,7 @@ import {
   PRACTICE_HORIZONTAL_PADDING,
   getPracticeAnswerFeedback,
   getPracticeAnswerState,
+  getPracticeCompletionAnnouncement,
   getPracticeModeReset,
   getProgressMarkerPosition,
   selectPracticeAnswer,
@@ -151,6 +153,10 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
   const answerFeedback = getPracticeAnswerFeedback(choice, question.correctAnswer);
   const isCorrect = answerFeedback?.isCorrect ?? false;
+  const completionAnnouncement = getPracticeCompletionAnnouncement(
+    correct, completedTotal ?? activeQuestions.length, secondsLeft === 0,
+  );
+  usePracticeCompletionAnnouncement(complete, completionAnnouncement);
 
   const changeMode = (nextMode: 'words' | 'reading') => {
     if (selecting.current) return;
@@ -265,6 +271,9 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     const feedback = completionFeedback(correct, completedTotal ?? 0, activeQuestions.length);
     return (
       <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.completionScreen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 112 }]}>
+        {Platform.OS === 'web' && <Text accessibilityLiveRegion="polite" style={styles.accessibilityAnnouncement}>
+          {completionAnnouncement}
+        </Text>}
         <StudySyncStatus />
         {saveError && <Pressable onPress={next} accessibilityRole="button" style={styles.saveError}>
           <Text style={{ color: p.coralInk, fontWeight: '700', textAlign: 'center' }}>لم يُحفظ الدرس. اضغط لإعادة المحاولة قبل المغادرة.</Text>

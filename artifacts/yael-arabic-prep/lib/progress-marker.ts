@@ -20,6 +20,11 @@ export function getProgressMarkerPosition(questionIndex: number, questionCount: 
 
 export type PracticeMode = 'words' | 'reading';
 
+export function getPracticeCompletionAnnouncement(correct: number, total: number, timedOut: boolean): string {
+  const status = timedOut ? 'انتهت الدقائق الخمس لجولتك اليومية.' : 'انتهت الجولة.';
+  return `${status} إجابات صحيحة: ${correct} من ${total}.${total === 0 ? ' لم تُجب عن أي سؤال.' : ''}`;
+}
+
 export function getPracticeModeReset(mode: PracticeMode) {
   return {
     mode,

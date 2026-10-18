@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { createElement, StrictMode } from 'react';
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { describe, expect, it, vi } from 'vitest';
+import { usePracticeCompletionAnnouncement } from '../../artifacts/yael-arabic-prep/hooks/usePracticeCompletionAnnouncement';
 import { QUESTIONS, READING_QUESTIONS, YAEL_VOCABULARY_QUESTIONS } from '../../artifacts/yael-arabic-prep/lib/study';
 import {
   PRACTICE_HORIZONTAL_PADDING,
@@ -11,6 +14,7 @@ import {
   PROGRESS_ROW_GAP,
   getPracticeAnswerFeedback,
   getPracticeAnswerState,
+  getPracticeCompletionAnnouncement,
   getPracticeModeReset,
   getProgressMarkerPosition,
   getProgressPercent,
@@ -18,6 +22,74 @@ import {
 } from '../../artifacts/yael-arabic-prep/lib/progress-marker';
 
 const wordQuestions = [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS];
+
+const accessibility = vi.hoisted(() => ({
+  announceForAccessibility: vi.fn(),
+  platform: { OS: 'ios' },
+}));
+vi.mock('react-native', () => ({
+  AccessibilityInfo: accessibility,
+  Platform: accessibility.platform,
+}));
+
+describe('practice completion announcements', () => {
+  it('includes completion status and the score for vocabulary and reading rounds', () => {
+    for (const questions of [wordQuestions, READING_QUESTIONS]) {
+      expect(getPracticeCompletionAnnouncement(3, questions.length, false))
+        .toBe(`انتهت الجولة. إجابات صحيحة: 3 من ${questions.length}.`);
+      expect(getPracticeCompletionAnnouncement(0, questions.length, false))
+        .toBe(`انتهت الجولة. إجابات صحيحة: 0 من ${questions.length}.`);
+      expect(getPracticeCompletionAnnouncement(questions.length, questions.length, false))
+        .toBe(`انتهت الجولة. إجابات صحيحة: ${questions.length} من ${questions.length}.`);
+    }
+  });
+
+  it('uses the answered total for timed rounds, including no answers', () => {
+    expect(getPracticeCompletionAnnouncement(2, 4, true))
+      .toBe('انتهت الدقائق الخمس لجولتك اليومية. إجابات صحيحة: 2 من 4.');
+    expect(getPracticeCompletionAnnouncement(0, 0, true))
+      .toBe('انتهت الدقائق الخمس لجولتك اليومية. إجابات صحيحة: 0 من 0. لم تُجب عن أي سؤال.');
+  });
+
+  it.each(['ios', 'android'])('announces only once per completed round on %s', async platform => {
+    accessibility.platform.OS = platform;
+    accessibility.announceForAccessibility.mockClear();
+    const announcement = getPracticeCompletionAnnouncement(2, 4, false);
+    function Results({ complete, saved }: { complete: boolean; saved: boolean }) {
+      usePracticeCompletionAnnouncement(complete, announcement);
+      return createElement('Results', { saved });
+    }
+    let renderer!: ReactTestRenderer;
+    const render = (complete: boolean, saved: boolean) =>
+      createElement(StrictMode, null, createElement(Results, { complete, saved }));
+    await act(async () => { renderer = create(render(false, false)); });
+    expect(accessibility.announceForAccessibility).not.toHaveBeenCalled();
+    await act(async () => { renderer.update(render(true, false)); });
+    expect(accessibility.announceForAccessibility).toHaveBeenCalledExactlyOnceWith(announcement);
+    // Save success/failure, retry, and result-control re-renders are not new rounds.
+    await act(async () => { renderer.update(render(true, true)); });
+    await act(async () => { renderer.update(render(true, false)); });
+    expect(accessibility.announceForAccessibility).toHaveBeenCalledTimes(1);
+    await act(async () => { renderer.update(render(false, false)); });
+    await act(async () => { renderer.update(render(true, true)); });
+    expect(accessibility.announceForAccessibility).toHaveBeenCalledTimes(2);
+    await act(async () => { renderer.unmount(); });
+  });
+
+  it('does not repeat a native announcement during Strict Mode effect replay', async () => {
+    accessibility.platform.OS = 'ios';
+    accessibility.announceForAccessibility.mockClear();
+    const announcement = getPracticeCompletionAnnouncement(0, 0, true);
+    function Results() {
+      usePracticeCompletionAnnouncement(true, announcement);
+      return null;
+    }
+    let renderer!: ReactTestRenderer;
+    await act(async () => { renderer = create(createElement(StrictMode, null, createElement(Results))); });
+    expect(accessibility.announceForAccessibility).toHaveBeenCalledExactlyOnceWith(announcement);
+    await act(async () => { renderer.unmount(); });
+  });
+});
 
 describe('practice progress marker regressions', () => {
   it('aligns the first and last progress positions for vocabulary and reading session lengths', () => {
