@@ -9,3 +9,7 @@ Do not frequently repeat vocabulary the learner answers correctly. Use the resta
 Do not explain the selection/repetition algorithm when starting vocabulary or restatement rounds; let it work in the background.
 **Why:** The user explicitly said there is no need to write this at the beginning of either kind of round.
 **How to apply:** Omit algorithm-introduction copy without removing necessary allowance disclosures, solution provenance or actionable teaching feedback.
+
+Grow the learner-facing vocabulary bank toward roughly one thousand distinct, useful Hebrew words with clear Arabic meanings and contextual Hebrew examples. Do not label authored additions as extracted from official YAEL exams unless individually verified against those files.
+**Why:** The user asked for a much larger, approximately thousand-word YAEL vocabulary collection; accuracy and provenance should remain clear as it grows.
+**How to apply:** Keep entries deduplicated and contextually testable, and distinguish curated practice content from verified exam-source words.
