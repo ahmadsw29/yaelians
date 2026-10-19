@@ -371,7 +371,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
         <QuestionPrompt key={`word-${index}`} index={index} text={question.prompt} spokenWord={question.word} compact>
           <View style={[styles.wordStage, expanded && { paddingLeft: 0 }]}>
             <Text style={styles.hebrew}>{question.word}</Text>
-            <Text style={styles.transliteration}>{question.transliteration}</Text>
+            {!!question.transliteration && <Text style={styles.transliteration}>{question.transliteration}</Text>}
           </View>
           <View style={styles.sentenceBox}>
             <Text style={styles.sentenceLabel}>مثال بالعبرية</Text>

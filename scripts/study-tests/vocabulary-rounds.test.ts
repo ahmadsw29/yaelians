@@ -5,7 +5,8 @@ import { formatVocabularyTime, vocabularyRoundOrder, vocabularySecondsLeft } fro
 
 describe('rotating vocabulary rounds', () => {
   test('has enough unique words for three distinct daily rounds', () => {
-    expect(VOCABULARY_BANK.length).toBeGreaterThanOrEqual(60);
+    expect(VOCABULARY_BANK.length).toBeGreaterThanOrEqual(1000);
+    expect(VOCABULARY_BANK.length).toBeLessThanOrEqual(1050);
     const threeRounds = [1, 2, 3].flatMap(round => vocabularyRoundOrder(VOCABULARY_BANK.length, 'rotation-user', round));
     expect(threeRounds).toHaveLength(60);
     expect(new Set(threeRounds).size).toBe(60);

@@ -1,4 +1,9 @@
 import { QUESTIONS, YAEL_VOCABULARY_QUESTIONS, type Question } from './study';
+import { ACADEMIC_ROWS } from './vocabulary/academic';
+import { EVERYDAY_ROWS } from './vocabulary/everyday';
+import { SOCIETY_ROWS } from './vocabulary/society';
+import { VERB_ROWS } from './vocabulary/verbs';
+import { WORLD_ROWS } from './vocabulary/world';
 
 // Additional academic Hebrew practice, with authored Arabic meanings and examples.
 const entries = [
@@ -56,6 +61,43 @@ const extra: Question[] = entries.map(([word, transliteration, meaning, sentence
   return { word, transliteration, meaning, sentence, prompt: 'اختر المعنى الصحيح:',
     options: [...options.slice(offset), ...options.slice(0, offset)], correctAnswer: meaning };
 });
+
+const expandedRows = [
+  ...VERB_ROWS.trim().split('\n').slice(0, 190),
+  ...ACADEMIC_ROWS.trim().split('\n').slice(0, 190),
+  ...SOCIETY_ROWS.trim().split('\n').slice(0, 190),
+  ...WORLD_ROWS.trim().split('\n').slice(0, 190),
+  ...EVERYDAY_ROWS.trim().split('\n').slice(0, 190),
+].map((row) => {
+  const [word, meaning, sentence] = row.split('|');
+  if (!word?.trim() || !meaning?.trim() || !sentence?.trim()) {
+    throw new Error(`Invalid vocabulary row: ${row}`);
+  }
+  return { word: word.trim(), meaning: meaning.trim(), sentence: sentence.trim() };
+});
+
+// Keep every distractor distinct from the answer and from each other.
+// The bank rotates its distractor starting point per word to avoid a fixed pattern.
+const expanded: Question[] = expandedRows.map((entry, index) => {
+  const choices = [entry.meaning];
+  for (let offset = 13; choices.length < 4 && offset < expandedRows.length; offset += 1) {
+    const candidate = expandedRows[(index + offset) % expandedRows.length].meaning;
+    if (!choices.includes(candidate)) choices.push(candidate);
+  }
+  if (choices.length !== 4) throw new Error(`Not enough unique choices for ${entry.word}`);
+  const shift = index % 4;
+  const options = [...choices.slice(shift), ...choices.slice(0, shift)];
+  return {
+    word: entry.word,
+    transliteration: '',
+    meaning: entry.meaning,
+    prompt: 'ما معنى الكلمة في هذا المثال؟',
+    options,
+    correctAnswer: entry.meaning,
+    sentence: entry.sentence,
+  };
+});
+
 export const VOCABULARY_BANK = [...new Map(
-  [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS, ...extra].map(question => [question.word, question]),
+  [...QUESTIONS, ...YAEL_VOCABULARY_QUESTIONS, ...extra, ...expanded].map(question => [question.word, question]),
 ).values()];
