@@ -98,6 +98,15 @@ export default function HomeScreen() {
         <Ionicons name="chevron-back" size={20} color={p.skyInk} />
       </Pressable>
 
+      <Pressable testID="home-flashcards" accessibilityRole="button" accessibilityLabel="بطاقات الكلمات، اقلب البطاقة وتذكّر المعنى" onPress={() => router.push('/flashcards')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
+        <View style={styles.studyArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind="lumi" mood="happy" size={64} /></View>
+        <View style={styles.tipCopy}>
+          <Text style={styles.studyTitle}>بطاقات الكلمات</Text>
+          <Text style={styles.studyBody}>اقلب البطاقة، اسمع النطق، وقيّم تذكّرك</Text>
+        </View>
+        <Ionicons name="chevron-back" size={20} color={p.skyInk} />
+      </Pressable>
+
       <ExamShortcuts />
 
       <View style={styles.sectionHeading}>

@@ -28,6 +28,7 @@ export default defineConfig({
           'study-tests/practice-layout.test.ts',
           'study-tests/question-bubbles.test.tsx',
           'study-tests/vocabulary-rounds.test.ts',
+          'study-tests/flashcards.test.ts',
           'study-tests/learner-ranks.test.ts',
           'study-tests/study-loading.test.ts',
           'study-tests/restatement-practice.test.ts',

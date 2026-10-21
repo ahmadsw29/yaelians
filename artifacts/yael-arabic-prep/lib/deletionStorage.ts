@@ -17,6 +17,7 @@ export async function accountStorageKeys(storage: Pick<DeletionStorage, 'getAllK
     `yael-theme:${userId}`, `yael-study-stats-v1:${userId}`,
     `yael-study-outbox-v1:${userId}`, `yael-study-migration-v1:${userId}`,
     `yael-exam:v1:${userId}`,
+    `yael-flashcards-v1:${userId}`,
     ...recoveryKeys,
     ...sourceKeys,
   ];

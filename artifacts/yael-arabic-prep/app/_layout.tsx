@@ -104,6 +104,7 @@ function RootLayoutNav() {
       <Stack.Screen name="source-session" options={{ headerShown: false }} />
       <Stack.Screen name="study" options={{ headerShown: false }} />
       <Stack.Screen name="restatement" options={{ headerShown: false }} />
+      <Stack.Screen name="flashcards" options={{ headerShown: false }} />
     </Stack>
     {redirectTo && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={palette.primary} />
