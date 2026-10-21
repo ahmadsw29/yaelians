@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AccessibilityInfo, ActivityIndicator, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
+  AccessibilityInfo, ActivityIndicator, Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,11 +12,15 @@ import { TranslatorPet } from '@/components/TranslatorPet';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getStudyAuthOptions } from '@/lib/study-auth';
 import { listenForReduceMotionChanges } from '@/lib/pet-teacher-motion';
+import { loadTranslatorVisibility, saveTranslatorVisibility, type TranslatorVisibility } from '@/lib/translator-visibility';
 
 const PET = 60;
 const MARGIN = 8;
 const MAX_CHARS = 1000;
 const DRAG_THRESHOLD = 6;
+const HIDE_HIT = 44; // touch target for the hide control, stacked above the pet (never over it)
+const TAB_W = 44;
+const TAB_H = 56;
 type Direction = TranslatorInput['direction'];
 type Phase =
   | { kind: 'idle' }
@@ -50,12 +54,48 @@ export function FloatingTranslator({ userId }: { userId: string }) {
   const controller = useRef<AbortController | null>(null);
   const requestId = useRef(0);
 
+  // ---------- visibility (account-scoped, persisted) ----------
+  // 'loading' renders nothing so the wrong state never flashes.
+  const [visibility, setVisibility] = useState<TranslatorVisibility | 'loading'>('loading');
+  const userRef = useRef(userId);
+  userRef.current = userId;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const isCurrent = (uid: string) => mounted.current && userRef.current === uid;
+  useEffect(() => {
+    let cancelled = false;
+    const uid = userId;
+    setVisibility('loading');
+    loadTranslatorVisibility(uid).then(
+      v => { if (!cancelled && isCurrent(uid)) setVisibility(v); },
+      () => {
+        if (cancelled || !isCurrent(uid)) return;
+        setVisibility('visible');
+        Alert.alert('المترجم', 'تعذّرت قراءة إعداد إظهار المترجم، فأظهرناه الآن.');
+      },
+    );
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+  const persistVisibility = useCallback((v: TranslatorVisibility) => {
+    const uid = userRef.current;
+    setVisibility(v);
+    let saving: Promise<void>;
+    try { saving = saveTranslatorVisibility(uid, v); } catch (e) { saving = Promise.reject(e); }
+    saving.catch(() => {
+      if (!mounted.current || userRef.current !== uid) return;
+      Alert.alert('المترجم', v === 'hidden'
+        ? 'أخفينا المترجم الآن، لكن تعذّر حفظ اختيارك، فقد يظهر عند فتح التطبيق من جديد.'
+        : 'أظهرنا المترجم الآن، لكن تعذّر حفظ اختيارك، فقد يبقى مخفيًا عند فتح التطبيق من جديد.');
+    });
+  }, []);
+
   // ---------- position / drag ----------
   const bounds = useMemo(() => ({
     minX: insets.left + MARGIN,
     maxX: Math.max(insets.left + MARGIN, width - insets.right - PET - MARGIN),
-    minY: insets.top + MARGIN,
-    maxY: Math.max(insets.top + MARGIN, height - insets.bottom - PET - 96),
+    minY: insets.top + MARGIN + HIDE_HIT,
+    maxY: Math.max(insets.top + MARGIN + HIDE_HIT, height - insets.bottom - PET - 96),
   }), [insets, width, height]);
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
@@ -125,6 +165,11 @@ export function FloatingTranslator({ userId }: { userId: string }) {
   const clear = () => { setText(''); resetOutput(); };
   const close = () => { resetOutput(); setOpen(false); };
   openRef.current = () => setOpen(true);
+  const hideAssistant = () => { resetOutput(); setOpen(false); persistVisibility('hidden'); };
+  const restoreAndOpen = () => { persistVisibility('visible'); setOpen(true); };
+  // Edge tab snaps to whichever horizontal edge the pet was nearest to.
+  const tabOnLeft = pos.current.x + PET / 2 < width / 2;
+  const tabY = Math.min(Math.max(pos.current.y, insets.top + MARGIN), Math.max(insets.top + MARGIN, height - insets.bottom - TAB_H - 96));
 
   const fromHe = direction === 'he-ar';
   const fromLabel = fromHe ? 'العبرية' : 'العربية';
@@ -134,11 +179,21 @@ export function FloatingTranslator({ userId }: { userId: string }) {
 
   return (
     <>
-      {!open && (
-        <Animated.View
-          style={[styles.pet, { transform: anim.getTranslateTransform() }]}
-          {...pan.panHandlers}
-        >
+      {!open && visibility === 'visible' && (
+        <Animated.View pointerEvents="box-none" style={[styles.pet, { transform: anim.getTranslateTransform() }]}>
+          <Pressable
+            onPress={hideAssistant}
+            accessibilityRole="button"
+            accessibilityLabel="إخفاء المترجم"
+            accessibilityHint="يبقى لسان صغير «ترجمة» على طرف الشاشة لإظهاره من جديد."
+            testID="translator-hide"
+            style={styles.hideHit}
+          >
+            <View style={[styles.hideDot, { backgroundColor: p.card, borderColor: p.border }]}>
+              <Ionicons name="remove" size={14} color={p.mutedForeground} />
+            </View>
+          </Pressable>
+          <View {...pan.panHandlers}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="المترجم ترجمان"
@@ -149,7 +204,23 @@ export function FloatingTranslator({ userId }: { userId: string }) {
           >
             <TranslatorPet size={PET - 6} />
           </Pressable>
+          </View>
         </Animated.View>
+      )}
+      {!open && visibility === 'hidden' && (
+        <Pressable
+          onPress={restoreAndOpen}
+          accessibilityRole="button"
+          accessibilityLabel="ترجمة: إظهار المترجم وفتحه"
+          testID="translator-edge-tab"
+          style={[styles.tabHit, { top: tabY }, tabOnLeft ? { left: insets.left } : { right: insets.right }]}
+        >
+          <View style={[styles.tab, { backgroundColor: p.card, borderColor: p.brandShade },
+            tabOnLeft ? { borderLeftWidth: 0, borderTopRightRadius: 12, borderBottomRightRadius: 12, alignSelf: 'flex-start' }
+              : { borderRightWidth: 0, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, alignSelf: 'flex-end' }]}>
+            <Ionicons name="language" size={15} color={p.brandShade} />
+          </View>
+        </Pressable>
       )}
 
       <Modal visible={open} transparent animationType={reduceMotion ? 'none' : 'fade'} onRequestClose={close} statusBarTranslucent>
@@ -171,7 +242,10 @@ export function FloatingTranslator({ userId }: { userId: string }) {
                       <Text accessibilityRole="header" style={[styles.title, { color: p.foreground }]}>ترجمان</Text>
                       <Text style={[styles.sub, { color: p.mutedForeground }]}>صديقك بين العبرية والعربية</Text>
                     </View>
-                    <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="إغلاق" hitSlop={10} style={[styles.iconBtn, { backgroundColor: p.muted }]}>
+                    <Pressable onPress={hideAssistant} accessibilityRole="button" accessibilityLabel="إخفاء المترجم إلى طرف الشاشة" hitSlop={4} testID="translator-cloud-hide" style={[styles.iconBtn, { backgroundColor: p.muted }]}>
+                      <Ionicons name="eye-off-outline" size={18} color={p.mutedForeground} />
+                    </Pressable>
+                    <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="إغلاق" hitSlop={4} style={[styles.iconBtn, { backgroundColor: p.muted }]}>
                       <Ionicons name="close" size={20} color={p.foreground} />
                     </Pressable>
                   </View>
@@ -255,7 +329,11 @@ export function FloatingTranslator({ userId }: { userId: string }) {
 }
 
 const styles = StyleSheet.create({
-  pet: { position: 'absolute', top: 0, left: 0, width: PET, height: PET, zIndex: 50, elevation: 12 },
+  pet: { position: 'absolute', top: -HIDE_HIT, left: 0, width: PET, height: PET + HIDE_HIT, zIndex: 50, elevation: 12 },
+  hideHit: { width: PET, height: HIDE_HIT, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 },
+  hideDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  tabHit: { position: 'absolute', width: TAB_W, height: TAB_H, justifyContent: 'center', zIndex: 50, elevation: 12 },
+  tab: { width: 22, height: 44, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', opacity: 0.92 },
   petBadge: { width: PET, height: PET, borderRadius: PET / 2, borderWidth: 2, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 6 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   puffRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', zIndex: 1 },

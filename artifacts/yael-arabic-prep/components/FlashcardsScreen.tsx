@@ -13,6 +13,8 @@ import { usePlanAccess } from '@/lib/PlanAccess';
 import { VOCABULARY_BANK } from '@/lib/vocabulary-bank';
 import { selectFlashcards, type FlashcardMemory, type FlashcardRating } from '@/lib/flashcards';
 import { loadFlashcardMemory, saveFlashcardRating } from '@/lib/flashcard-storage';
+import { loadVocabularyReview } from '@/lib/vocabulary-deck';
+import type { VocabularyReviewMemory } from '@/lib/vocabulary-review';
 import { listenForReduceMotionChanges } from '@/lib/pet-teacher-motion';
 import { formatVocabularyTime, vocabularySecondsLeft } from '@/lib/vocabulary-selection';
 
@@ -44,6 +46,7 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
   const { ready, plan, isPremium, startVocabularyRound } = usePlanAccess();
 
   const [memory, setMemory] = useState<FlashcardMemory | null>(null);
+  const [vocabulary, setVocabulary] = useState<VocabularyReviewMemory | undefined>();
   const [memoryError, setMemoryError] = useState(false);
   const [loadTick, setLoadTick] = useState(0);
   const [phase, setPhase] = useState<Phase>('intro');
@@ -61,11 +64,13 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
   useEffect(() => {
     let alive = true;
     setMemory(null); setMemoryError(false);
-    loadFlashcardMemory(userId).then(m => { if (alive) setMemory(m); }).catch(() => { if (alive) setMemoryError(true); });
+    Promise.all([loadFlashcardMemory(userId), loadVocabularyReview(userId)])
+      .then(([m, v]) => { if (alive) { setMemory(m); setVocabulary(v); } })
+      .catch(() => { if (alive) setMemoryError(true); });
     return () => { alive = false; };
   }, [userId, loadTick]);
 
-  const previewCount = useMemo(() => memory ? selectFlashcards(WORDS, userId, memory, Date.now()).length : 0, [memory, userId]);
+  const previewCount = useMemo(() => memory ? selectFlashcards(WORDS, userId, memory, Date.now(), 20, vocabulary).length : 0, [memory, vocabulary, userId]);
 
   const isExpired = useCallback(() => deadline !== null && Date.now() >= deadline, [deadline]);
   const checkExpiry = useCallback(() => {
@@ -106,8 +111,8 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
         nextDeadline = Date.now() + Math.max(0, Date.parse(timer.expiresAt) - Date.parse(timer.serverNow));
         if (!Number.isFinite(nextDeadline)) throw new Error('Invalid timer');
       }
-      const fresh = await loadFlashcardMemory(userId);
-      const selected = selectFlashcards(WORDS, userId, fresh, Date.now()).filter(w => CARDS.has(w));
+      const [fresh, quiz] = await Promise.all([loadFlashcardMemory(userId), loadVocabularyReview(userId)]);
+      const selected = selectFlashcards(WORDS, userId, fresh, Date.now(), 20, quiz).filter(w => CARDS.has(w));
       setDeck(selected); setIndex(0); setRevealed(false); setSaveError(null);
       setTally({ forgot: 0, difficult: 0, easy: 0 });
       setDeadline(nextDeadline);

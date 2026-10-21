@@ -18,6 +18,8 @@ export async function accountStorageKeys(storage: Pick<DeletionStorage, 'getAllK
     `yael-study-outbox-v1:${userId}`, `yael-study-migration-v1:${userId}`,
     `yael-exam:v1:${userId}`,
     `yael-flashcards-v1:${userId}`,
+    `yael-translator-visibility-v1:${userId}`,
+    `yael-vocabulary-review-v1:${userId}`, `yael-vocabulary-deck-v1:${userId}`,
     ...recoveryKeys,
     ...sourceKeys,
   ];

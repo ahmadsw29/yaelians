@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { vocabularyRoundOrder } from './vocabulary-selection';
 import { emptyVocabularyReview, recordVocabularyReview, validVocabularyReview, vocabularyReviewOrder } from './vocabulary-review';
 import type { VocabularyReviewMemory } from './vocabulary-review';
+import { loadFlashcardMemory } from './flashcard-storage';
 
 let pending: Promise<unknown> = Promise.resolve();
 export function reserveVocabularyRound(userId: string, size: number, serverRound?: number) {
@@ -19,7 +20,8 @@ export function reserveVocabularyRound(userId: string, size: number, serverRound
 }
 
 const reviewKey = (userId: string) => `yael-vocabulary-review-v1:${userId}`;
-async function readReview(userId: string): Promise<VocabularyReviewMemory> {
+export async function loadVocabularyReview(userId: string): Promise<VocabularyReviewMemory> {
+  if (!userId) throw new Error('A signed-in learner is required');
   const raw = await AsyncStorage.getItem(reviewKey(userId));
   if (raw === null) return emptyVocabularyReview();
   const parsed: unknown = JSON.parse(raw);
@@ -28,12 +30,13 @@ async function readReview(userId: string): Promise<VocabularyReviewMemory> {
 }
 export function reserveVocabularyReviewRound(userId: string, words: string[], serverRound?: number) {
   const reservation = pending.catch(() => undefined).then(async () => {
-    const memory = await readReview(userId);
+    const memory = await loadVocabularyReview(userId);
+    const flashcards = await loadFlashcardMemory(userId);
     const legacy = await AsyncStorage.getItem(`yael-vocabulary-deck-v1:${userId}`);
     const previous = legacy === null ? 0 : Number(legacy);
     if (!Number.isSafeInteger(previous) || previous < 0) throw new Error('Invalid vocabulary history');
     const number = Math.max(memory.roundNumber + 1, previous + 1, serverRound ?? 1);
-    const order = vocabularyReviewOrder(words, userId, number, memory);
+    const order = vocabularyReviewOrder(words, userId, number, memory, flashcards);
     await AsyncStorage.setItem(reviewKey(userId), JSON.stringify({ ...memory, roundNumber: number }));
     return { order, number };
   });
@@ -42,7 +45,7 @@ export function reserveVocabularyReviewRound(userId: string, words: string[], se
 }
 export function saveVocabularyReviewAnswer(userId: string, word: string, round: number, correct: boolean) {
   const write = pending.catch(() => undefined).then(async () => {
-    const memory = await readReview(userId);
+    const memory = await loadVocabularyReview(userId);
     const next = recordVocabularyReview(memory, word, round, correct);
     if (next !== memory) await AsyncStorage.setItem(reviewKey(userId), JSON.stringify(next));
   });
