@@ -4,6 +4,7 @@ import type { FlashcardMemory } from './flashcards';
 export type VocabularyReviewItem = {
   attempts: number; wrong: number; streak: number; lastRound: number; dueRound: number; lastCorrect: boolean;
   answeredAt?: number;
+  lastAssisted?: boolean;
 };
 export type VocabularyReviewMemory = {
   version: 1; roundNumber: number; items: Record<string, VocabularyReviewItem>;
@@ -26,9 +27,9 @@ export function vocabularyReviewOrder(words: string[], userId: string, round: nu
     }
   };
   const due = rotated.filter(index => item(index)?.dueRound <= round);
-  const mistakes = due.filter(index => !item(index).lastCorrect)
+  const mistakes = due.filter(index => !item(index).lastCorrect || item(index).lastAssisted)
     .sort((a, b) => item(a).dueRound - item(b).dueRound || item(b).wrong - item(a).wrong);
-  const reviews = due.filter(index => item(index).lastCorrect)
+  const reviews = due.filter(index => item(index).lastCorrect && !item(index).lastAssisted)
     .sort((a, b) => item(a).dueRound - item(b).dueRound);
   const forgotten = rotated.filter(index => {
     const card = flashcards?.cards[words[index]];
@@ -52,20 +53,21 @@ export function vocabularyReviewOrder(words: string[], userId: string, round: nu
   return [...selected].sort((a, b) => rotated.indexOf(a) - rotated.indexOf(b));
 }
 export function recordVocabularyReview(
-  memory: VocabularyReviewMemory, word: string, round: number, correct: boolean, now = Date.now(),
+  memory: VocabularyReviewMemory, word: string, round: number, correct: boolean, now = Date.now(), assisted = false,
 ): VocabularyReviewMemory {
-  if (!word || !Number.isSafeInteger(round) || round < 1 || round > memory.roundNumber || !Number.isFinite(now) || now < 0) throw new Error('Invalid vocabulary answer');
+  if (!word || !Number.isSafeInteger(round) || round < 1 || round > memory.roundNumber || !Number.isFinite(now) || now < 0 || typeof assisted !== 'boolean') throw new Error('Invalid vocabulary answer');
   const previous = memory.items[word];
   if (previous && previous.lastRound >= round) return memory;
-  const streak = correct ? (previous?.streak ?? 0) + 1 : 0;
-  const interval = correct ? Math.min(16, 2 ** Math.min(4, streak)) : 1;
+  const independent = correct && !assisted;
+  const streak = independent ? (previous?.streak ?? 0) + 1 : 0;
+  const interval = independent ? Math.min(16, 2 ** Math.min(4, streak)) : 1;
   return {
     ...memory,
     items: {
       ...memory.items,
       [word]: {
         attempts: (previous?.attempts ?? 0) + 1, wrong: (previous?.wrong ?? 0) + (correct ? 0 : 1),
-        streak, lastRound: round, dueRound: memory.roundNumber + interval, lastCorrect: correct, answeredAt: now,
+        streak, lastRound: round, dueRound: memory.roundNumber + interval, lastCorrect: correct, answeredAt: now, lastAssisted: assisted,
       },
     },
   };
@@ -80,5 +82,6 @@ export function validVocabularyReview(value: unknown): value is VocabularyReview
       Number.isSafeInteger(item[field as keyof VocabularyReviewItem]) && Number(item[field as keyof VocabularyReviewItem]) >= 0)
     && item.attempts > 0 && item.wrong <= item.attempts && item.streak <= item.attempts
     && (item.answeredAt === undefined || (Number.isFinite(item.answeredAt) && item.answeredAt >= 0))
+    && (item.lastAssisted === undefined || typeof item.lastAssisted === 'boolean')
     && item.lastRound <= v.roundNumber && item.dueRound > item.lastRound && typeof item.lastCorrect === 'boolean');
 }

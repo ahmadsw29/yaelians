@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { trackDailyActivity } from '@/lib/daily-goals';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
@@ -66,6 +67,7 @@ export default function AdaptiveRestatementScreen() {
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const pending = useRef<AdaptiveMemory | null>(null);
+  const lastCommitted = useRef<AdaptiveMemory | null>(null);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
 
@@ -76,6 +78,14 @@ export default function AdaptiveRestatementScreen() {
     setBusy(true);
     try {
       await saveAdaptiveMemory(userId, next);
+      const round = next.active;
+      if (round) {
+        const oldAnswers = lastCommitted.current?.active?.id === round.id ? lastCommitted.current.active.answers : {};
+        for (const id of Object.keys(round.answers)) {
+          if (!Object.hasOwn(oldAnswers, id)) trackDailyActivity(userId, 'restatement', `${round.id}:${id}`);
+        }
+      }
+      lastCommitted.current = next;
       if (!alive.current) return false;
       pending.current = null;
       setSaveError(false);
@@ -122,6 +132,7 @@ export default function AdaptiveRestatementScreen() {
       if (r.kind === 'corrupt') { setPhase('corrupt'); return; }
       if (r.kind === 'unavailable') { setPhase('unavailable'); return; }
       const m = r.kind === 'ready' ? r.memory : emptyAdaptiveMemory();
+      lastCommitted.current = m;
       setMemory(m);
       const a = m.active;
       const legacy = !!a && (a.questionIds.length > 6 || a.deadline - a.startedAt > 390000);

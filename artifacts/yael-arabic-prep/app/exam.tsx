@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { timedDailyGoalEvents, type DailyGoalEvent } from '@/lib/daily-goal-events';
+import { trackDailyActivity } from '@/lib/daily-goals';
 import { ActivityIndicator, AppState, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '@clerk/expo';
@@ -35,6 +37,7 @@ const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
 type Session = {
   version: 1;
+  attemptId?: string;
   stage: number; // 0–2: multiple choice; 3: essay; 4: results.
   deadline: number | null;
   question: number;
@@ -60,7 +63,7 @@ function saveSession(key: string, session: Session | null): Promise<void> {
 
 function newSession(): Session {
   return {
-    version: 1, stage: 0, question: 0, deadline: Date.now() + SECTION_MS,
+    version: 1, attemptId: `exam-${Date.now()}-${Math.random().toString(36).slice(2)}`, stage: 0, question: 0, deadline: Date.now() + SECTION_MS,
     answers: EXAM_SECTIONS.map(section => section.map(() => null)), essay: '',
   };
 }
@@ -87,6 +90,7 @@ function parseSession(raw: string): Session {
   if (!value || typeof value !== 'object') throw new Error('Invalid session');
   const s = value as Session;
   if (s.version !== 1 || !Number.isInteger(s.stage) || s.stage < 0 || s.stage > 4
+    || (s.attemptId !== undefined && (typeof s.attemptId !== 'string' || !s.attemptId || s.attemptId.length > 120))
     || !Number.isInteger(s.question) || s.question < 0 || s.question > 21
     || typeof s.essay !== 'string'
     || (s.stage < 4 ? typeof s.deadline !== 'number' || !Number.isFinite(s.deadline) || s.deadline <= 0 : s.deadline !== null)
@@ -128,10 +132,16 @@ function ExamSession({ userId }: { userId?: string }) {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const validContent = EXAM_SECTIONS.length === 3 && EXAM_SECTIONS.every(section => section.length === 22);
 
+  const goalEvents = useRef(new Map<string, DailyGoalEvent>());
   function persist(next: Session | null) {
+    const batch = [...goalEvents.current.values()];
     const revision = ++writeRevision.current;
     setSaving(true);
     void saveSession(key, next).then(() => {
+      for (const event of batch) {
+        trackDailyActivity(userId, event.metric, event.id);
+        goalEvents.current.delete(`${event.metric}:${event.id}`);
+      }
       if (mounted.current && revision === writeRevision.current) {
         setSaveError(false);
         setSaving(false);
@@ -146,6 +156,10 @@ function ExamSession({ userId }: { userId?: string }) {
 
   function commit(next: Session | null) {
     if (restoring.current) return;
+    if (next && !next.attemptId) next = { ...next, attemptId: current.current?.attemptId ?? `exam-${Date.now()}-${Math.random().toString(36).slice(2)}` };
+    for (const event of timedDailyGoalEvents(current.current, next, EXAM_SECTIONS, 4)) {
+      goalEvents.current.set(`${event.metric}:${event.id}`, event);
+    }
     const oldStage = current.current?.stage;
     if (next?.stage === 4 && oldStage !== undefined && oldStage < 4) {
       setCompletionCelebration(nextPracticeCelebration());

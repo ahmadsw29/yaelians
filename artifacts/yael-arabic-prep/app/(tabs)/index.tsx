@@ -20,6 +20,7 @@ import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { getProfileNames } from '@/lib/profile';
 import ExamShortcuts from '@/components/ExamShortcuts';
 import HomeFlashcardsEntry from '@/components/HomeFlashcardsEntry';
+import { DailyGoalsSection } from '@/components/DailyGoals';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
@@ -62,6 +63,7 @@ export default function HomeScreen() {
         <Text style={styles.title}>أهلًا{firstName ? ` ${firstName}` : ''}،{"\n"}نبدأ درس اليوم؟</Text>
         <Text style={styles.subtitle}>خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.</Text>
       </View>
+      <DailyGoalsSection />
 
       <View style={styles.hero}>
         <View style={styles.heroCopy}>
@@ -104,16 +106,6 @@ export default function HomeScreen() {
       <ExamShortcuts />
 
       <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>مسارك اليوم</Text>
-        <Text style={styles.sectionCaption}>كل تدريب يقرّبك من هدفك</Text>
-      </View>
-      <View style={styles.path}>
-        <PathItem icon="text-box-check-outline" label="مفردات" detail="اختر المعنى الصحيح" tone={p.brand} shade={p.brandShade} offset={0} />
-        <PathItem icon="book-open-variant" label="فهم المقروء" detail="اقرأ واكتشف الفكرة" tone={p.sky} shade={p.skyShade} offset={40} />
-        <PathItem icon="trophy-outline" label="علامة أعلى" detail="تدرّب بثقة وهدوء" tone={p.sun} shade={p.sunShade} offset={0} last />
-      </View>
-
-      <View style={styles.sectionHeading}>
         <Text style={styles.sectionTitle}>إنجازك</Text>
         <Pressable onPress={() => router.push('/progress')} accessibilityRole="button">
           <Text style={styles.seeAll}>كل التقدّم ←</Text>
@@ -134,24 +126,6 @@ export default function HomeScreen() {
       </View>
       <Text style={styles.footer}>تعلّم على مهلك، وأنت قادر على التقدّم.</Text>
     </ScrollView>
-  );
-}
-
-function PathItem({ icon, label, detail, tone, shade, offset, last = false }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; detail: string; tone: string; shade: string; offset: number; last?: boolean }) {
-  const c = useColors();
-  return (
-    <View style={pathStyles.row}>
-      <View style={{ marginRight: offset, alignItems: 'center' }}>
-        <View style={[pathStyles.node, { backgroundColor: tone, borderColor: shade }]}>
-          <MaterialCommunityIcons name={icon} size={26} color="#fffdf7" />
-        </View>
-        {!last && <View style={[pathStyles.connector, { backgroundColor: c.border }]} />}
-      </View>
-      <View style={pathStyles.copy}>
-        <Text style={[pathStyles.label, { color: c.foreground }]}>{label}</Text>
-        <Text style={[pathStyles.detail, { color: c.mutedForeground }]}>{detail}</Text>
-      </View>
-    </View>
   );
 }
 
@@ -209,15 +183,6 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     footer: { textAlign: 'center', color: c.mutedForeground, fontSize: 11, marginTop: 18, fontFamily: FONT },
   });
 }
-
-const pathStyles = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 14 },
-  node: { width: 60, height: 60, borderRadius: 30, borderBottomWidth: 6, alignItems: 'center', justifyContent: 'center' },
-  connector: { width: 6, height: 22, borderRadius: 3, marginVertical: 4 },
-  copy: { flex: 1, alignItems: 'flex-end', paddingTop: 10 },
-  label: { fontSize: 15, fontFamily: BOLD, fontWeight: '800' },
-  detail: { fontSize: 12, marginTop: 3, fontFamily: FONT },
-});
 
 const statStyles = StyleSheet.create({
   card: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 2, borderBottomWidth: 5, gap: 4, paddingHorizontal: 4 },

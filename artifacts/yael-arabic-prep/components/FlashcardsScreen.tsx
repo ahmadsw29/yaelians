@@ -28,6 +28,8 @@ for (const q of VOCABULARY_BANK) {
 }
 const WORDS = [...CARDS.keys()];
 
+import { trackDailyActivity } from '@/lib/daily-goals';
+
 type Phase = 'intro' | 'starting' | 'claim-error' | 'limit' | 'session' | 'expired' | 'complete';
 type Tally = Record<FlashcardRating, number>;
 const RATINGS: { rating: FlashcardRating; label: string; tone: 'coral' | 'sun' | 'success'; icon: 'refresh' | 'time-outline' | 'checkmark' }[] = [
@@ -136,6 +138,7 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
     savingRef.current = true; setSaving(true); setSaveError(null);
     try {
       const next = await saveFlashcardRating(userId, word, rating);
+      trackDailyActivity(userId, 'words', word);
       setMemory(next);
       setTally(t => ({ ...t, [rating]: t[rating] + 1 }));
       if (index + 1 >= deck.length) setPhase('complete');

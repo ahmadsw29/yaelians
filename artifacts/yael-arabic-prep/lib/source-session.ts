@@ -8,6 +8,7 @@ export type SourceMode = 'training' | 'full';
 // Stages: 0..sections.length-1 are question sections; next = essay (full only); final = results.
 export type SourceSession = {
   version: 1;
+  attemptId?: string;
   examId: string;
   mode: SourceMode;
   sections: number[]; // indices into exam.sections covered by this attempt
@@ -31,7 +32,7 @@ export function storageKey(userId: string | undefined, examId: string, mode: Sou
 export function newSourceSession(exam: SourceSessionExam, mode: SourceMode, section: number | null): SourceSession {
   const sections = mode === 'training' ? [section ?? 0] : exam.sections.map((_, i) => i);
   return {
-    version: 1, examId: exam.id, mode, sections, stage: 0, question: 0,
+    version: 1, attemptId: `source-${Date.now()}-${Math.random().toString(36).slice(2)}`, examId: exam.id, mode, sections, stage: 0, question: 0,
     deadline: Date.now() + SECTION_MS,
     answers: sections.map(i => exam.sections[i].map(() => null)), essay: '',
   };
@@ -57,6 +58,7 @@ export function parseSourceSession(raw: string, exam: SourceSessionExam, mode: S
   const s = v as SourceSession;
   const expected = mode === 'training' ? [section] : exam.sections.map((_, i) => i);
   const ok = s.version === 1 && s.examId === exam.id && s.mode === mode
+    && (s.attemptId === undefined || (typeof s.attemptId === 'string' && s.attemptId.length > 0 && s.attemptId.length <= 120))
     && Array.isArray(s.sections) && s.sections.length === expected.length && s.sections.every((x, i) => x === expected[i])
     && Number.isInteger(s.stage) && s.stage >= 0 && s.stage <= stageCount(s)
     && Number.isInteger(s.question) && s.question >= 0

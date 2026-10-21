@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { timedDailyGoalEvents, type DailyGoalEvent } from '@/lib/daily-goal-events';
+import { trackDailyActivity } from '@/lib/daily-goals';
 import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useUser } from '@clerk/expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -143,11 +145,17 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [now, setNow] = useState(Date.now());
   const [attempt, setAttempt] = useState(0);
+  const goalEvents = useRef(new Map<string, DailyGoalEvent>());
 
   function persist(next: SourceSession | null) {
     const r = ++revision.current;
+    const batch = [...goalEvents.current.values()];
     setSaving(true);
     void saveSourceSession(key, next).then(() => {
+      for (const event of batch) {
+        trackDailyActivity(userId, event.metric, event.id);
+        goalEvents.current.delete(`${event.metric}:${event.id}`);
+      }
       if (mounted.current && r === revision.current) { setSaveError(false); setSaving(false); }
     }).catch(() => {
       if (mounted.current && r === revision.current) { setSaveError(true); setSaving(false); }
@@ -155,6 +163,10 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
   }
   function commit(next: SourceSession | null) {
     if (restoring.current) return;
+    if (next && !next.attemptId) next = { ...next, attemptId: current.current?.attemptId ?? `source-${Date.now()}-${Math.random().toString(36).slice(2)}` };
+    for (const event of timedDailyGoalEvents(current.current, next, exam.sections, next ? next.sections.length + (next.mode === 'full' ? 1 : 0) : 0)) {
+      goalEvents.current.set(`${event.metric}:${event.id}`, event);
+    }
     const old = current.current?.stage;
     if (current.current && !isDone(current.current) && next && isDone(next)) {
       setCompletionCelebration(nextPracticeCelebration());

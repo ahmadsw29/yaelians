@@ -10,6 +10,7 @@ import { lockAccount } from "./account";
 // against the installed exam before the learner can restore on the client.
 const sessionSchema = z.object({
   version: z.literal(1),
+  attemptId: z.string().min(1).max(120).optional(),
   examId: z.string().min(1).max(80),
   mode: z.enum(["training", "full"]),
   sections: z.array(z.number().int().min(0).max(99)).min(1).max(20),

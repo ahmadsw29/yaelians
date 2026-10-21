@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AccessibilityInfo, ActivityIndicator, Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
+  AccessibilityInfo, ActivityIndicator, Alert, Animated, Easing, Platform, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,10 @@ const DRAG_THRESHOLD = 6;
 const HIDE_HIT = 44; // touch target for the hide control, stacked above the pet (never over it)
 const TAB_W = 44;
 const TAB_H = 56;
+// Departure ("goodbye") timing — total 1200ms.
+const WAVE_MS = [200, 200, 160] as const; // tilt/bob left, right, settle = 560ms
+const TRAVEL_MS = 640;                    // ease toward the edge tab with shrink
+const NATIVE = Platform.OS !== 'web';
 type Direction = TranslatorInput['direction'];
 type Phase =
   | { kind: 'idle' }
@@ -112,10 +116,30 @@ export function FloatingTranslator({ userId }: { userId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bounds, anim]);
 
+  // ---------- departure (transient, separate from persisted visibility) ----------
+  const [departing, setDeparting] = useState(false);
+  const departingRef = useRef(false);
+  const dep = useRef({
+    dx: new Animated.Value(0), bob: new Animated.Value(0), tilt: new Animated.Value(0),
+    scale: new Animated.Value(1), fade: new Animated.Value(1),
+  }).current;
+  const depAnim = useRef<Animated.CompositeAnimation | null>(null);
+  const resetDeparture = useCallback(() => {
+    depAnim.current?.stop();
+    depAnim.current = null;
+    dep.dx.setValue(0); dep.bob.setValue(0); dep.tilt.setValue(0); dep.scale.setValue(1); dep.fade.setValue(1);
+    departingRef.current = false;
+    setDeparting(false);
+  }, [dep]);
+  // Interruptions: account switch, rotation/bounds change, reduced-motion turned on, unmount.
+  useEffect(() => resetDeparture, [resetDeparture, userId, bounds]);
+  useEffect(() => { if (reduceMotion && departingRef.current) resetDeparture(); }, [reduceMotion, resetDeparture]);
+  const [instantClose, setInstantClose] = useState(false);
+
   const openRef = useRef<() => void>(() => {});
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) + Math.abs(g.dy) > DRAG_THRESHOLD,
+    onMoveShouldSetPanResponder: (_e, g) => !departingRef.current && Math.abs(g.dx) + Math.abs(g.dy) > DRAG_THRESHOLD,
     onPanResponderMove: (_e, g) => {
       if (Math.abs(g.dx) + Math.abs(g.dy) <= DRAG_THRESHOLD) return;
       anim.setValue(clamp(pos.current.x + g.dx, pos.current.y + g.dy));
@@ -164,9 +188,43 @@ export function FloatingTranslator({ userId }: { userId: string }) {
   const swap = () => { setDirection(d => (d === 'he-ar' ? 'ar-he' : 'he-ar')); resetOutput(); };
   const clear = () => { setText(''); resetOutput(); };
   const close = () => { resetOutput(); setOpen(false); };
-  openRef.current = () => setOpen(true);
-  const hideAssistant = () => { resetOutput(); setOpen(false); persistVisibility('hidden'); };
-  const restoreAndOpen = () => { persistVisibility('visible'); setOpen(true); };
+  openRef.current = () => { if (!departingRef.current) { setInstantClose(false); setOpen(true); } };
+  const tabOnLeftNow = () => pos.current.x + PET / 2 < width / 2;
+  const startDeparture = () => {
+    if (departingRef.current) return;
+    if (reduceMotion) return; // immediate hide
+    departingRef.current = true;
+    setDeparting(true);
+    const left = tabOnLeftNow();
+    // Glide so the shrunken pet's center lands on the edge tab.
+    const target = left ? insets.left + 11 - PET / 2 : width - insets.right - 11 - PET / 2;
+    const t = (v: Animated.Value, toValue: number, duration: number, easing = Easing.inOut(Easing.quad)) =>
+      Animated.timing(v, { toValue, duration, easing, useNativeDriver: NATIVE });
+    const lean = left ? -1 : 1;
+    const anim2 = Animated.sequence([
+      Animated.parallel([t(dep.tilt, -lean, WAVE_MS[0]), t(dep.bob, -8, WAVE_MS[0])]),
+      Animated.parallel([t(dep.tilt, lean * 0.8, WAVE_MS[1]), t(dep.bob, 0, WAVE_MS[1])]),
+      Animated.parallel([t(dep.tilt, -lean * 0.4, WAVE_MS[2]), t(dep.bob, -4, WAVE_MS[2])]),
+      Animated.parallel([
+        t(dep.dx, target - pos.current.x, TRAVEL_MS, Easing.bezier(0.45, 0, 0.25, 1)),
+        t(dep.bob, 0, TRAVEL_MS),
+        t(dep.tilt, 0, TRAVEL_MS),
+        t(dep.scale, 0.45, TRAVEL_MS, Easing.in(Easing.quad)),
+        Animated.sequence([Animated.delay(TRAVEL_MS * 0.55), t(dep.fade, 0, TRAVEL_MS * 0.45)]),
+      ]),
+    ]);
+    depAnim.current = anim2;
+    anim2.start(({ finished }) => { if (finished && depAnim.current === anim2) resetDeparture(); });
+  };
+  const hideAssistant = (fromCloud = false) => {
+    if (departingRef.current) return;
+    resetOutput();
+    if (fromCloud) setInstantClose(true); // no modal fade over the goodbye
+    setOpen(false);
+    persistVisibility('hidden');
+    startDeparture();
+  };
+  const restoreAndOpen = () => { persistVisibility('visible'); setInstantClose(false); setOpen(true); };
   // Edge tab snaps to whichever horizontal edge the pet was nearest to.
   const tabOnLeft = pos.current.x + PET / 2 < width / 2;
   const tabY = Math.min(Math.max(pos.current.y, insets.top + MARGIN), Math.max(insets.top + MARGIN, height - insets.bottom - TAB_H - 96));
@@ -179,10 +237,16 @@ export function FloatingTranslator({ userId }: { userId: string }) {
 
   return (
     <>
-      {!open && visibility === 'visible' && (
-        <Animated.View pointerEvents="box-none" style={[styles.pet, { transform: anim.getTranslateTransform() }]}>
+      {!open && (visibility === 'visible' || departing) && (
+        <Animated.View pointerEvents={departing ? 'none' : 'box-none'} style={[styles.pet, { transform: anim.getTranslateTransform() }]}>
+          <Animated.View pointerEvents="box-none" style={{ flex: 1, opacity: dep.fade, transform: [
+            { translateX: dep.dx }, { translateY: dep.bob },
+            { rotate: dep.tilt.interpolate({ inputRange: [-1, 1], outputRange: ['-14deg', '14deg'] }) },
+            { scale: dep.scale },
+          ] }}>
           <Pressable
-            onPress={hideAssistant}
+            onPress={() => hideAssistant()}
+            disabled={departing}
             accessibilityRole="button"
             accessibilityLabel="إخفاء المترجم"
             accessibilityHint="يبقى لسان صغير «ترجمة» على طرف الشاشة لإظهاره من جديد."
@@ -198,16 +262,18 @@ export function FloatingTranslator({ userId }: { userId: string }) {
             accessibilityRole="button"
             accessibilityLabel="المترجم ترجمان"
             accessibilityHint="يفتح غيمة الترجمة بين العبرية والعربية. يمكنك سحبه لمكان آخر."
-            onPress={() => setOpen(true)}
+            onPress={() => openRef.current()}
+            disabled={departing}
             testID="translator-pet"
             style={[styles.petBadge, { backgroundColor: p.card, borderColor: p.brandShade, shadowColor: p.brandShade }]}
           >
             <TranslatorPet size={PET - 6} />
           </Pressable>
           </View>
+          </Animated.View>
         </Animated.View>
       )}
-      {!open && visibility === 'hidden' && (
+      {!open && visibility === 'hidden' && !departing && (
         <Pressable
           onPress={restoreAndOpen}
           accessibilityRole="button"
@@ -223,7 +289,7 @@ export function FloatingTranslator({ userId }: { userId: string }) {
         </Pressable>
       )}
 
-      <Modal visible={open} transparent animationType={reduceMotion ? 'none' : 'fade'} onRequestClose={close} statusBarTranslucent>
+      <Modal visible={open} transparent animationType={reduceMotion || instantClose ? 'none' : 'fade'} onRequestClose={close} statusBarTranslucent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <Pressable accessibilityLabel="إغلاق المترجم" accessibilityRole="button" onPress={close} style={[StyleSheet.absoluteFill, { backgroundColor: p.isDark ? 'rgba(4,12,10,0.6)' : 'rgba(23,51,47,0.32)' }]} />
           <View pointerEvents="box-none" style={[styles.center, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
@@ -242,7 +308,7 @@ export function FloatingTranslator({ userId }: { userId: string }) {
                       <Text accessibilityRole="header" style={[styles.title, { color: p.foreground }]}>ترجمان</Text>
                       <Text style={[styles.sub, { color: p.mutedForeground }]}>صديقك بين العبرية والعربية</Text>
                     </View>
-                    <Pressable onPress={hideAssistant} accessibilityRole="button" accessibilityLabel="إخفاء المترجم إلى طرف الشاشة" hitSlop={4} testID="translator-cloud-hide" style={[styles.iconBtn, { backgroundColor: p.muted }]}>
+                    <Pressable onPress={() => hideAssistant(true)} accessibilityRole="button" accessibilityLabel="إخفاء المترجم إلى طرف الشاشة" hitSlop={4} testID="translator-cloud-hide" style={[styles.iconBtn, { backgroundColor: p.muted }]}>
                       <Ionicons name="eye-off-outline" size={18} color={p.mutedForeground} />
                     </Pressable>
                     <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="إغلاق" hitSlop={4} style={[styles.iconBtn, { backgroundColor: p.muted }]}>

@@ -24,6 +24,8 @@ import { StudyLoadingScreen } from '@/components/StudyLoadingScreen';
 import { AccountDeletionProvider } from '@/lib/AccountDeletion';
 import { PlanAccessProvider, usePlanAccess } from '@/lib/PlanAccess';
 import { FloatingTranslator } from '@/components/FloatingTranslator';
+import { DailyGoalsProvider } from '@/lib/DailyGoalsProvider';
+import { DailyGoalsPrompt } from '@/components/DailyGoals';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -46,8 +48,8 @@ function StartupMessage() {
 }
 
 function ReadyNavigation() {
-  const { isLoaded } = useAuth();
-  return isLoaded ? <StudyProvider><PlanAccessProvider><RootLayoutNav /><StudyLoadingScreen /></PlanAccessProvider></StudyProvider> : <StartupMessage />;
+  const { isLoaded, userId } = useAuth();
+  return isLoaded ? <StudyProvider><PlanAccessProvider><DailyGoalsProvider key={userId ?? 'guest'} userId={userId}><RootLayoutNav /><StudyLoadingScreen /></DailyGoalsProvider></PlanAccessProvider></StudyProvider> : <StartupMessage />;
 }
 
 function RootLayoutNav() {
@@ -108,6 +110,7 @@ function RootLayoutNav() {
       <Stack.Screen name="flashcards" options={{ headerShown: false }} />
     </Stack>
     {isLoaded && isSignedIn && userId && !redirectTo && <FloatingTranslator key={userId} userId={userId} />}
+    <DailyGoalsPrompt key={userId ?? 'guest'} enabled={!!(isLoaded && isSignedIn && userId && !redirectTo && planReady && plan && firstSegment === '(tabs)' && segments[1] !== 'practice')} />
     {redirectTo && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={palette.primary} />
     </View>}

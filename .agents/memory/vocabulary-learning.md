@@ -13,3 +13,7 @@ Do not explain the selection/repetition algorithm when starting vocabulary or re
 Grow the learner-facing vocabulary bank toward roughly one thousand distinct, useful Hebrew words with clear Arabic meanings and contextual Hebrew examples. Do not label authored additions as extracted from official YAEL exams unless individually verified against those files.
 **Why:** The user asked for a much larger, approximately thousand-word YAEL vocabulary collection; accuracy and provenance should remain clear as it grows.
 **How to apply:** Keep entries deduplicated and contextually testable, and distinguish curated practice content from verified exam-source words.
+
+Vocabulary hints support learning without proving independent recall.
+**Why:** Removing distractors makes the question easier; awarding mastery or advancing an independent success streak from that assisted answer would overstate what the learner knows.
+**How to apply:** Keep assisted correct answers correct in the round score, but exclude them from new word mastery, reset independent recall streaks, and bring the word back for review. Preserve the distinction in flashcard scheduling too. Hints must not pause or restart the daily timer.

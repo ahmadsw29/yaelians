@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { trackDailyActivity } from './daily-goals';
 import { vocabularyRoundOrder } from './vocabulary-selection';
 import { emptyVocabularyReview, recordVocabularyReview, validVocabularyReview, vocabularyReviewOrder } from './vocabulary-review';
 import type { VocabularyReviewMemory } from './vocabulary-review';
@@ -43,11 +44,12 @@ export function reserveVocabularyReviewRound(userId: string, words: string[], se
   pending = reservation;
   return reservation;
 }
-export function saveVocabularyReviewAnswer(userId: string, word: string, round: number, correct: boolean) {
+export function saveVocabularyReviewAnswer(userId: string, word: string, round: number, correct: boolean, assisted = false) {
   const write = pending.catch(() => undefined).then(async () => {
     const memory = await loadVocabularyReview(userId);
-    const next = recordVocabularyReview(memory, word, round, correct);
+    const next = recordVocabularyReview(memory, word, round, correct, Date.now(), assisted);
     if (next !== memory) await AsyncStorage.setItem(reviewKey(userId), JSON.stringify(next));
+    trackDailyActivity(userId, 'words', word);
   });
   pending = write;
   return write;

@@ -23,6 +23,9 @@ import { usePracticeCompletionAnnouncement } from '@/hooks/usePracticeCompletion
 import { READING_QUESTIONS } from '@/lib/study';
 import { VOCABULARY_BANK as WORD_BANK } from '@/lib/vocabulary-bank';
 import { reserveVocabularyReviewRound, saveVocabularyReviewAnswer } from '@/lib/vocabulary-deck';
+import { vocabularyHintExclusions } from '@/lib/vocabulary-hints';
+import { trackDailyActivity } from '@/lib/daily-goals';
+import { HintedVocabularyOption, VocabularyHintButton } from '@/components/VocabularyHint';
 import { formatVocabularyTime, vocabularySecondsLeft } from '@/lib/vocabulary-selection';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
@@ -116,6 +119,10 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
   const [contentHeight, setContentHeight] = useState(0);
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
+  const [hintExcluded, setHintExcluded] = useState<string[]>([]);
+  const hintRef = useRef<string[]>([]);
+  const readingAttempt = useRef(`reading-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const resetHint = () => { hintRef.current = []; setHintExcluded([]); };
   const [correct, setCorrect] = useState(0);
   const masteredWordIds = useRef<string[]>([]);
   const [celebrationKey, setCelebrationKey] = useState(0);
@@ -165,6 +172,8 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     setMode(reset.mode);
     setIndex(reset.index);
     setChoice(reset.choice);
+    resetHint();
+    readingAttempt.current = `reading-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setCorrect(reset.correct);
     masteredWordIds.current = [];
     setCelebrationKey(reset.celebrationKey);
@@ -174,8 +183,20 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     setSaveError(false);
   };
 
+  const revealHint = () => {
+    if (mode !== 'words' || choice || complete || selecting.current || hintRef.current.length) return;
+    if (deadline && Date.now() >= deadline) { expire.current(); return; }
+    const excluded = vocabularyHintExclusions(question.options, question.correctAnswer, `${userId}:${reviewRound}:${index}:${question.word}`);
+    if (!excluded.length) return;
+    hintRef.current = excluded;
+    setHintExcluded(excluded);
+    AccessibilityInfo.announceForAccessibility('استبعدنا خيارين غير صحيحين. اختر من الخيارين المتبقيين. الإجابة بمساعدة لا تُحتسب إتقانًا للكلمة.');
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const select = async (answer: string) => {
     if (complete || selecting.current) return;
+    if (mode === 'words' && hintRef.current.includes(answer)) return;
     if (deadline && Date.now() >= deadline) { expire.current(); return; }
     const selection = selectPracticeAnswer({ choice, correct, celebrationKey }, answer, question.correctAnswer);
     if (!selection) return;
@@ -185,7 +206,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       setReviewError(false);
       try {
         if (!userId || !question.word) throw new Error('Missing vocabulary identity');
-        await saveVocabularyReviewAnswer(userId, question.word, reviewRound, answer === question.correctAnswer);
+        await saveVocabularyReviewAnswer(userId, question.word, reviewRound, answer === question.correctAnswer, hintRef.current.length > 0);
       } catch {
         setReviewError(true);
         return;
@@ -195,6 +216,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       }
     }
     const feedback = getPracticeAnswerFeedback(selection.choice, question.correctAnswer);
+    if (mode === 'reading') trackDailyActivity(userId, 'reading', `${readingAttempt.current}:${index}`);
     setChoice(selection.choice);
     setCorrect(selection.correct);
     setCelebrationKey(selection.celebrationKey);
@@ -202,7 +224,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       AccessibilityInfo.announceForAccessibility(feedback.announcement);
     }
     if (answer === question.correctAnswer) {
-      if (mode === 'words' && question.word) masteredWordIds.current.push(question.word.trim().normalize('NFC'));
+      if (mode === 'words' && question.word && !hintRef.current.length) masteredWordIds.current.push(question.word.trim().normalize('NFC'));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -238,6 +260,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     if (index === activeQuestions.length - 1) { await finishRound(activeQuestions.length); return; }
     setIndex((value) => value + 1);
     setChoice(null);
+    resetHint();
   };
 
   const finish = () => {
@@ -256,6 +279,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     setReviewError(false);
     setIndex(0);
     setChoice(null);
+    resetHint();
     setCorrect(0);
     masteredWordIds.current = [];
     setCelebrationKey(0);
@@ -346,7 +370,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
         {secondsLeft !== null && <Text testID="vocabulary-countdown" accessibilityLabel={`الوقت المتبقي: ${Math.floor(secondsLeft / 60)} دقيقة و${secondsLeft % 60} ثانية`} style={[styles.progressCount, { minWidth: 44 }]}>{formatVocabularyTime(secondsLeft)}</Text>}
       </View>
 
-      <View style={styles.modeSwitch}>
+      <View style={[styles.modeSwitch, { alignItems: 'center', minHeight: 44 }]}>
         {isPremium && <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'reading' }} onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
           <Ionicons name="book" size={15} color={mode === 'reading' ? p.skyInk : c.mutedForeground} />
           <Text style={[styles.modeText, mode === 'reading' && { color: p.skyInk }]}>فهم المقروء</Text>
@@ -355,6 +379,14 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
           <Ionicons name="chatbubbles" size={15} color={mode === 'words' ? p.skyInk : c.mutedForeground} />
           <Text style={[styles.modeText, mode === 'words' && { color: p.skyInk }]}>مفردات</Text>
         </Pressable>
+        {mode === 'words' && (
+          <View style={{ width: 116 }}>
+            <VocabularyHintButton key={`hint-${reviewRound}-${index}`} used={hintExcluded.length > 0}
+              disabled={answered || answerSaving || loading || secondsLeft === 0
+                || vocabularyHintExclusions(question.options, question.correctAnswer, question.word ?? '').length === 0}
+              onPress={revealHint} />
+          </View>
+        )}
       </View>
 
     </View>
@@ -395,13 +427,18 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
         {question.options.map((option, optionIndex) => {
           const selected = choice === option;
           const answerState = getPracticeAnswerState(choice, option, question.correctAnswer);
+          const eliminated = mode === 'words' && hintExcluded.includes(option);
+          const disabled = answered || answerSaving || eliminated;
           return (
+            <HintedVocabularyOption key={`${reviewRound}-${index}-${option}`} eliminated={eliminated}
+              highlighted={mode === 'words' && hintExcluded.length > 0 && !eliminated && !answered}>
             <Pressable
               key={option}
               accessibilityRole="button"
-              accessibilityState={{ selected }}
+              accessibilityLabel={eliminated ? `${option}، مستبعد بالتلميح` : option}
+              accessibilityState={{ selected, disabled }}
               testID={`answer-${optionIndex + 1}`}
-              disabled={answered || answerSaving}
+              disabled={disabled}
               onPress={() => void select(option)}
               style={({ pressed }) => [
                 styles.option,
@@ -422,6 +459,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
                 answerState === 'wrong' && { color: p.coralInk },
               ]}>{option}</Text>
             </Pressable>
+            </HintedVocabularyOption>
           );
         })}
       </View>

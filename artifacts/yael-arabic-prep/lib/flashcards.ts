@@ -36,7 +36,7 @@ export function selectFlashcards(words: string[], userId: string, memory: Flashc
     const quiz = vocabulary?.items[word];
     // Only NEW evidence crosses modes. Old mistakes must not override a later review.
     const newerQuiz = quiz?.answeredAt !== undefined && quiz.answeredAt > (card?.lastReviewedAt ?? -1);
-    if (newerQuiz && !quiz.lastCorrect) return { dueAt: quiz.answeredAt!, mistake: true };
+    if (newerQuiz && (!quiz.lastCorrect || quiz.lastAssisted)) return { dueAt: quiz.answeredAt!, mistake: true };
     if (newerQuiz && quiz.lastCorrect && quiz.streak >= 2) {
       const gap = Math.min(16, 2 ** Math.min(4, quiz.streak)) * DAY;
       return { dueAt: Math.max(card?.dueAt ?? 0, quiz.answeredAt! + gap), mistake: false };

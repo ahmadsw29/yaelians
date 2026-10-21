@@ -30,6 +30,8 @@ export default defineConfig({
           'study-tests/vocabulary-rounds.test.ts',
           'study-tests/flashcards.test.ts',
           'study-tests/learning-bridge.test.ts',
+          'study-tests/vocabulary-hints.test.ts',
+          'study-tests/daily-goals.test.ts',
           'study-tests/translator.test.ts',
           'study-tests/learner-ranks.test.ts',
           'study-tests/study-loading.test.ts',
