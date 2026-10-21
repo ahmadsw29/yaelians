@@ -14,3 +14,4 @@
 - [Translator companion](translator-assistant.md) — Persistent movable pet across signed-in screens; keep translations ephemeral unless explicitly saved.
 - [Rank pacing](progression-pacing.md) — User doubled the harder rank ladder; preserve earned XP and shared rank-based timers, with no calendar locks.
 - [Daily learning goals](daily-learning-goals.md) — Numerical goals by section and models; device-local days, no extra access or mastery from choosing targets.
+- [Web billing provider](web-billing-provider.md) — Coordinate Whop SDK/API versions, scoped permissions, and environment-specific checkout activation.

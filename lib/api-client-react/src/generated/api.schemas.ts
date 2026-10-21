@@ -5,6 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface BillingCatalog {
+  priceLabel: string;
+  checkoutEnabled: boolean;
+}
+
+export type BillingStatusState = typeof BillingStatusState[keyof typeof BillingStatusState];
+
+
+export const BillingStatusState = {
+  inactive: 'inactive',
+  pending: 'pending',
+  active: 'active',
+} as const;
+
+export interface BillingStatus {
+  state: BillingStatusState;
+  cancelAtPeriodEnd: boolean;
+  /** @nullable */
+  periodEnd: string | null;
+  complimentary: boolean;
+}
+
 export type TranslatorInputDirection = typeof TranslatorInputDirection[keyof typeof TranslatorInputDirection];
 
 
@@ -301,4 +323,8 @@ export interface StudyImportInput {
 export interface HealthStatus {
   status: string;
 }
+
+export type CreateBillingCheckout200 = {
+  purchaseUrl: string;
+};
 

@@ -8,6 +8,33 @@
 import * as zod from 'zod';
 
 
+export const GetBillingCatalogResponse = zod.object({
+  "priceLabel": zod.string(),
+  "checkoutEnabled": zod.boolean()
+})
+
+
+export const GetBillingStatusResponse = zod.object({
+  "state": zod.enum(['inactive', 'pending', 'active']),
+  "cancelAtPeriodEnd": zod.boolean(),
+  "periodEnd": zod.string().nullable(),
+  "complimentary": zod.boolean()
+})
+
+
+export const CreateBillingCheckoutResponse = zod.object({
+  "purchaseUrl": zod.string()
+})
+
+
+export const CancelBillingSubscriptionResponse = zod.object({
+  "state": zod.enum(['inactive', 'pending', 'active']),
+  "cancelAtPeriodEnd": zod.boolean(),
+  "periodEnd": zod.string().nullable(),
+  "complimentary": zod.boolean()
+})
+
+
 export const translateStudyTextBodyTextMax = 1000;
 
 

@@ -11,6 +11,49 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /billing/catalog:
+    get:
+      operationId: getBillingCatalog
+      responses:
+        "200":
+          description: Live provider price
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingCatalog" }
+  /billing/status:
+    get:
+      operationId: getBillingStatus
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Server-verified subscription
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingStatus" }
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Hosted checkout
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [purchaseUrl]
+                properties:
+                  purchaseUrl: { type: string }
+  /billing/cancel:
+    post:
+      operationId: cancelBillingSubscription
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Subscription after cancellation request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingStatus" }
   /study/translate:
     post:
       operationId: translateStudyText
@@ -217,6 +260,20 @@ components:
       type: http
       scheme: bearer
   schemas:
+    BillingCatalog:
+      type: object
+      required: [priceLabel, checkoutEnabled]
+      properties:
+        priceLabel: { type: string }
+        checkoutEnabled: { type: boolean }
+    BillingStatus:
+      type: object
+      required: [state, cancelAtPeriodEnd, periodEnd, complimentary]
+      properties:
+        state: { type: string, enum: [inactive, pending, active] }
+        cancelAtPeriodEnd: { type: boolean }
+        periodEnd: { type: [string, "null"] }
+        complimentary: { type: boolean }
     TranslatorInput:
       type: object
       additionalProperties: false

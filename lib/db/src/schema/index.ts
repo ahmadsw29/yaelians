@@ -20,4 +20,5 @@
 export * from "./study";
 export * from "./account-deletions";
 export * from "./plan-access";
+export * from "./web-billing";
 export * from "./timed-sessions";

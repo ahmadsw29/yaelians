@@ -42,3 +42,14 @@ timeoutMs = 120000
 [nix]
 channel = "stable-25_05"
 packages = ["freetype", "gumbo", "harfbuzz", "jbig2dec", "libjpeg_turbo", "mupdf", "openjpeg", "swig", "xcbuild"]
+
+[userenv]
+
+[userenv.shared]
+WHOP_COMPANY_ID = "biz_NErke8yiZihOyI"
+WHOP_PLAN_ID = "plan_xzffNBWv01GQN"
+WHOP_PRODUCT_ID = "prod_2AjYfdpDCPKOB"
+APP_PUBLIC_URL = "https://yael-hebrew-prep.replit.app"
+
+[userenv.development]
+WHOP_CHECKOUT_ENABLED = "true"

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
+import { Platform } from 'react-native';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -44,6 +45,7 @@ export function PlanAccessProvider({ children }: { children: React.ReactNode }) 
       queryKey,
       enabled: isLoaded && !!userId,
       retry: false,
+      refetchInterval: 60_000,
       queryFn: async ({ signal }) => getStudyPlanAccess({ ...await authOptions(), signal }),
     },
   });
@@ -68,15 +70,16 @@ export function PlanAccessProvider({ children }: { children: React.ReactNode }) 
   }, [authOptions, client, userId]);
 
   const ready = isLoaded && (!userId || query.isSuccess || query.isError);
+  const verifiedPlan = Platform.OS === 'web' && query.isError ? null : query.data?.plan ?? null;
   const value = useMemo<AccessContextValue>(() => ({
     ready,
-    plan: query.data?.plan ?? null,
-    isPremium: query.data?.plan === 'premium',
+    plan: verifiedPlan,
+    isPremium: verifiedPlan === 'premium',
     usage: query.data?.usage ?? emptyUsage(),
     chooseFree,
     claimActivity,
     startVocabularyRound,
-  }), [ready, query.data, chooseFree, claimActivity, startVocabularyRound]);
+  }), [ready, query.data, verifiedPlan, chooseFree, claimActivity, startVocabularyRound]);
 
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
 }

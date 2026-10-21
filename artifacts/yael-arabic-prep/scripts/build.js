@@ -582,6 +582,24 @@ async function main() {
   if (metroProcess) {
     metroProcess.kill();
   }
+  // Preserve the native Expo manifests while also publishing the installable
+  // browser app. Never replace native bundles with a development-server URL.
+  console.log('Exporting the installable web app...');
+  await new Promise((resolve, reject) => {
+    const web = spawn('pnpm', ['exec', 'expo', 'export', '--platform', 'web', '--output-dir', 'web-build'], {
+      cwd: projectRoot,
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        EXPO_PUBLIC_DOMAIN: domain,
+        EXPO_PUBLIC_REPL_ID: expoPublicReplId,
+        EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY || '',
+        EXPO_PUBLIC_CLERK_PROXY_URL: process.env.CLERK_PROXY_URL ? `https://${domain}${process.env.CLERK_PROXY_URL}` : '',
+      },
+    });
+    web.on('error', reject);
+    web.on('exit', code => code === 0 ? resolve() : reject(new Error('Web export failed')));
+  });
   process.exit(0);
 }
 

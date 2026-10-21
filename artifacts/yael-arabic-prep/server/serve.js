@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const STATIC_ROOT = path.resolve(__dirname, '..', 'static-build');
+const WEB_ROOT = path.resolve(__dirname, '..', 'web-build');
 const TEMPLATE_PATH = path.resolve(__dirname, 'templates', 'landing-page.html');
 const basePath = (process.env.BASE_PATH || '/').replace(/\/+$/, '');
 
@@ -21,6 +22,7 @@ const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -100,11 +102,11 @@ function serveLandingPage(req, res, landingPageTemplate, appName) {
   res.end(html);
 }
 
-function serveStaticFile(urlPath, res) {
+function serveStaticFile(urlPath, res, root = STATIC_ROOT) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, '');
-  const filePath = path.join(STATIC_ROOT, safePath);
+  const filePath = path.resolve(root, `.${safePath.startsWith('/') ? safePath : `/${safePath}`}`);
 
-  if (!filePath.startsWith(STATIC_ROOT)) {
+  if (filePath !== root && !filePath.startsWith(`${root}${path.sep}`)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
@@ -119,7 +121,7 @@ function serveStaticFile(urlPath, res) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
   const content = fs.readFileSync(filePath);
-  res.writeHead(200, { 'content-type': contentType });
+  res.writeHead(200, { 'content-type': contentType, 'cache-control': ext === '.html' || urlPath === '/service-worker.js' || ext === '.webmanifest' ? 'no-cache' : 'public, max-age=3600' });
   res.end(content);
 }
 
@@ -141,10 +143,18 @@ const server = http.createServer((req, res) => {
     }
 
     if (pathname === '/') {
+      if (fs.existsSync(path.join(WEB_ROOT, 'index.html'))) return serveStaticFile('/index.html', res, WEB_ROOT);
       return serveLandingPage(req, res, landingPageTemplate, appName);
     }
   }
 
+  const webFile = path.resolve(WEB_ROOT, `.${pathname}`);
+  if (webFile.startsWith(`${WEB_ROOT}${path.sep}`) && fs.existsSync(webFile) && fs.statSync(webFile).isFile()) {
+    return serveStaticFile(pathname, res, WEB_ROOT);
+  }
+  if (!path.extname(pathname) && req.headers.accept?.includes('text/html') && fs.existsSync(path.join(WEB_ROOT, 'index.html'))) {
+    return serveStaticFile('/index.html', res, WEB_ROOT);
+  }
   serveStaticFile(pathname, res);
 });
 

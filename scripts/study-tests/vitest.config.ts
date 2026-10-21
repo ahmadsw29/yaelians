@@ -43,6 +43,8 @@ export default defineConfig({
           'study-tests/adaptive-restatement.test.ts',
           'study-tests/vocabulary-review.test.ts',
           'study-tests/hebrew-speaker.test.ts',
+          'study-tests/web-billing-policy.test.ts',
+          'study-tests/web-billing.test.ts',
           'study-tests/pet-teacher-motion.test.ts',
           'study-tests/practice-celebrations.test.ts',
         ],

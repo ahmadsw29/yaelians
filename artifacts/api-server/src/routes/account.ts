@@ -3,6 +3,7 @@ import { clerkClient, getAuth } from "@clerk/express";
 import { db, studyProgress, accountDeletions, accountPlanAccess, timedSessionBackups } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { closeWebBillingForDeletion } from "../lib/web-billing";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ export async function processAccountDeletions() {
           await lockAccount(tx, job.userId);
           const [pending] = await tx.select().from(accountDeletions).where(eq(accountDeletions.userId, job.userId));
           if (!pending) return;
+          await closeWebBillingForDeletion(job.userId);
           try { await clerkClient.users.deleteUser(job.userId); }
           catch (error) {
             if (!(typeof error === "object" && error !== null && "status" in error && error.status === 404)) throw error;

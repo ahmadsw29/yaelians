@@ -12,6 +12,7 @@ import {
   GetStudyStatsResponse, ImportStudyStatsBody, SaveStudyLessonBody, SaveStudyLessonResponse,
 } from "@workspace/api-zod";
 import { addLesson, addPracticeDay, emptyStats, lessonPracticeTime, seedPracticeRanges, validLegacyStats, withWordMastery } from "../lib/study";
+import { effectiveStudyPlan } from "../lib/web-billing";
 
 const router = Router();
 type Activity = "vocabulary" | "timed-section";
@@ -37,7 +38,7 @@ async function readPlanAccess(userId: string, date = utcDate()) {
   const claims = await db.select({ activity: planActivityClaims.activity, key: planActivityClaims.key })
     .from(planActivityClaims)
     .where(and(eq(planActivityClaims.userId, userId), eq(planActivityClaims.activityDate, date)));
-  return planAccessResponse(planRow?.plan ?? null, date, claims);
+  return planAccessResponse(await effectiveStudyPlan(userId, planRow?.plan), date, claims);
 }
 
 router.use("/study", async (req, res, next) => {
@@ -84,6 +85,7 @@ router.put("/study/plan-access", async (req, res) => {
       .onConflictDoNothing();
     // Self-service can choose only free; it must never overwrite an owner grant.
     const [selected] = await tx.select().from(accountPlanAccess).where(eq(accountPlanAccess.userId, userId));
+    selected.plan = await effectiveStudyPlan(userId, selected.plan) ?? selected.plan;
     const date = utcDate();
     const claims = await tx.select({ activity: planActivityClaims.activity, key: planActivityClaims.key })
       .from(planActivityClaims)
@@ -109,20 +111,23 @@ router.post("/study/plan-access/claims", async (req, res) => {
     await clerkClient.users.getUser(userId);
     const date = utcDate();
     const [planRow] = await tx.select().from(accountPlanAccess).where(eq(accountPlanAccess.userId, userId)).for("update");
+    const effectivePlan = await effectiveStudyPlan(userId, planRow?.plan);
     const [existing] = await tx.select().from(planActivityClaims).where(and(
       eq(planActivityClaims.userId, userId), eq(planActivityClaims.key, key),
     ));
     let allowed = false;
     if (existing) {
       allowed = existing.activity === activity;
-      if (activity === "vocabulary" && planRow?.plan === "free") {
+      if (activity === "vocabulary" && effectivePlan === "free") {
         allowed = allowed && !existing.lessonEventId
           && Date.now() < existing.startedAt.getTime() + 5 * 60 * 1000;
       }
-    } else if (planRow?.plan === "premium") {
+    } else if (effectivePlan === "premium") {
+      // Claim rows refer to the selected plan record, not the provider linkage.
+      await tx.insert(accountPlanAccess).values({ userId, plan: "free" }).onConflictDoNothing();
       await tx.insert(planActivityClaims).values({ userId, key, activity, activityDate: date });
       allowed = true;
-    } else if (planRow?.plan === "free") {
+    } else if (effectivePlan === "free") {
       const currentClaims = await tx.select().from(planActivityClaims).where(and(
         eq(planActivityClaims.userId, userId),
         eq(planActivityClaims.activity, activity),
@@ -137,7 +142,7 @@ router.post("/study/plan-access/claims", async (req, res) => {
       .from(planActivityClaims)
       .where(and(eq(planActivityClaims.userId, userId), eq(planActivityClaims.activityDate, date)));
     let vocabularyRound = null;
-    if (allowed && activity === "vocabulary" && planRow?.plan === "free") {
+    if (allowed && activity === "vocabulary" && effectivePlan === "free") {
       const [round] = await tx.select().from(planActivityClaims).where(and(
         eq(planActivityClaims.userId, userId), eq(planActivityClaims.key, key),
       ));
@@ -153,7 +158,7 @@ router.post("/study/plan-access/claims", async (req, res) => {
     return {
       status: 200 as const,
       allowed,
-      access: planAccessResponse(planRow?.plan ?? null, date, claims),
+      access: planAccessResponse(effectivePlan, date, claims),
       vocabularyRound,
     };
   });
@@ -208,7 +213,7 @@ for (const kind of ["lessons", "import"] as const) {
       let progressCredited = true;
       if ("correct" in data) {
         const [planRow] = await tx.select().from(accountPlanAccess).where(eq(accountPlanAccess.userId, userId));
-        if (planRow?.plan === "free") {
+        if (await effectiveStudyPlan(userId, planRow?.plan) === "free") {
           const [claim] = data.activityKey ? await tx.select().from(planActivityClaims).where(and(
             eq(planActivityClaims.userId, userId),
             eq(planActivityClaims.key, data.activityKey),

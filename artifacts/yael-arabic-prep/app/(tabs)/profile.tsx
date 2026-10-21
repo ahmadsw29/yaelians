@@ -130,7 +130,7 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
       </View>
     </View>
 
-    <View testID="profile-plan-overview" style={[styles.planCard, isPremium ? { backgroundColor: colors.isDark ? '#3a2a12' : '#fff4dc', borderColor: '#d99a1e', borderWidth: 2 } : { backgroundColor: colors.isDark ? '#1f2440' : '#eef0ff', borderColor: colors.isDark ? '#5b63b8' : '#b9bff2' }]}>
+    {(Platform.OS !== 'web' || isPremium) && <View testID="profile-plan-overview" style={[styles.planCard, isPremium ? { backgroundColor: colors.isDark ? '#3a2a12' : '#fff4dc', borderColor: '#d99a1e', borderWidth: 2 } : { backgroundColor: colors.isDark ? '#1f2440' : '#eef0ff', borderColor: colors.isDark ? '#5b63b8' : '#b9bff2' }]}>
       <View style={styles.planHeader}>
         <View style={styles.planTitleCopy}>
           <Text style={[styles.planEyebrow, { color: colors.mutedForeground }]}>خطتك الحالية</Text>
@@ -171,6 +171,12 @@ function ProfileEditor({ user }: { user: NonNullable<ReturnType<typeof useUser>[
       </>}
     </View>
 
+    }
+    {Platform.OS === 'web' && <Pressable testID="profile-manage-subscription" accessibilityRole="button"
+      onPress={() => router.push('/subscribe')} style={{ padding: 20, borderRadius: 20, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.primary, marginBottom: 16 }}>
+      <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: '700', textAlign: 'right' }}>الاشتراك والتثبيت</Text>
+      <Text style={{ color: colors.mutedForeground, textAlign: 'right', marginTop: 6 }}>راجع اشتراكك، أوقف التجديد أو ثبّت التطبيق على جهازك.</Text>
+    </Pressable>}
     <Pressable testID="profile-edit-toggle" accessibilityRole="button"
       accessibilityLabel="بياناتك وشخصيتك، تعديل الاسم والصورة الكرتونية"
       accessibilityHint={detailsOpen ? 'موسّع. اضغط لإخفاء بياناتك.' : 'مطوي. اضغط لعرض بياناتك.'}

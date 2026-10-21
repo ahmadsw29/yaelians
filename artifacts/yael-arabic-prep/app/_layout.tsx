@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import colors from '@/constants/colors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -26,6 +26,7 @@ import { PlanAccessProvider, usePlanAccess } from '@/lib/PlanAccess';
 import { FloatingTranslator } from '@/components/FloatingTranslator';
 import { DailyGoalsProvider } from '@/lib/DailyGoalsProvider';
 import { DailyGoalsPrompt } from '@/components/DailyGoals';
+import { WebInstallProvider } from '@/lib/WebInstall';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -76,10 +77,17 @@ function RootLayoutNav() {
   }), [addListener]);
 
   const firstSegment = segments[0];
-  let redirectTo: '/welcome' | '/plans' | '/plans?reason=premium-exam' | '/(tabs)' | null = null;
+  const publicWeb = firstSegment === 'website' || firstSegment === 'web-policy';
+  const billingWeb = firstSegment === 'subscribe' || firstSegment === 'billing-return';
+  const accountWeb = firstSegment === '(tabs)' && segments[1] === 'profile';
+  let redirectTo: '/welcome' | '/website' | '/subscribe' | '/plans' | '/plans?reason=premium-exam' | '/(tabs)' | null = null;
   if (isLoaded) {
-    if (!isSignedIn && firstSegment !== 'welcome' && firstSegment !== '(auth)') {
-      redirectTo = '/welcome';
+    if (!isSignedIn && firstSegment !== 'welcome' && firstSegment !== '(auth)' && !publicWeb) {
+      redirectTo = Platform.OS === 'web' ? '/website' : '/welcome';
+    } else if (isSignedIn && planReady && Platform.OS === 'web' && plan !== 'premium' && !publicWeb && !billingWeb && !accountWeb) {
+      redirectTo = '/subscribe';
+    } else if (Platform.OS === 'web' && (publicWeb || billingWeb || accountWeb)) {
+      // Marketing, policy and verification pages remain reachable after sign-in.
     } else if (isSignedIn && planReady && !plan && firstSegment !== 'plans') {
       redirectTo = '/plans';
     } else if (isSignedIn && planReady && plan === 'free' && firstSegment === 'exam') {
@@ -88,6 +96,7 @@ function RootLayoutNav() {
       redirectTo = '/(tabs)';
     }
   }
+  const verifyingAccess = Platform.OS === 'web' && isSignedIn && !planReady && !publicWeb && !billingWeb && firstSegment !== '(auth)';
   // Keep the root navigator mounted while guards redirect. Replacing it with a
   // Redirect tears down its state and can repeatedly remount the same route.
   useEffect(() => {
@@ -99,6 +108,10 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: 'رجوع' }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
+      <Stack.Screen name="website" options={{ headerShown: false }} />
+      <Stack.Screen name="subscribe" options={{ headerShown: false }} />
+      <Stack.Screen name="billing-return" options={{ headerShown: false }} />
+      <Stack.Screen name="web-policy" options={{ headerShown: false }} />
       <Stack.Screen name="plans" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
@@ -110,9 +123,9 @@ function RootLayoutNav() {
       <Stack.Screen name="restatement" options={{ headerShown: false }} />
       <Stack.Screen name="flashcards" options={{ headerShown: false }} />
     </Stack>
-    {isLoaded && isSignedIn && userId && !redirectTo && <FloatingTranslator key={`translator:${userId}`} userId={userId} />}
-    <DailyGoalsPrompt key={`goals:${userId ?? 'guest'}`} enabled={!!(isLoaded && isSignedIn && userId && !redirectTo && planReady && plan && firstSegment === '(tabs)' && segments[1] !== 'practice')} />
-    {redirectTo && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
+    {isLoaded && isSignedIn && userId && !redirectTo && !publicWeb && !billingWeb && (Platform.OS !== 'web' || plan === 'premium') && <FloatingTranslator key={`translator:${userId}`} userId={userId} />}
+    <DailyGoalsPrompt key={`goals:${userId ?? 'guest'}`} enabled={!!(isLoaded && isSignedIn && userId && !redirectTo && planReady && plan && (Platform.OS !== 'web' || plan === 'premium') && firstSegment === '(tabs)' && segments[1] !== 'practice')} />
+    {(redirectTo || verifyingAccess) && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={palette.primary} />
     </View>}
     </>
@@ -143,7 +156,7 @@ export default function RootLayout() {
             <ErrorBoundary>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
-                  <AccountDeletionProvider><ReadyNavigation /></AccountDeletionProvider>
+                  <WebInstallProvider><AccountDeletionProvider><ReadyNavigation /></AccountDeletionProvider></WebInstallProvider>
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </ErrorBoundary>
