@@ -53,7 +53,7 @@ export function QuestionPrompt({ index, text, hebrew = false, label, children, s
   const kind = presenterFor(index);
   const { fontScale } = useWindowDimensions();
   const expanded = usesExpandedQuestionLayout(fontScale);
-  const speech = useHebrewSpeech(spokenWord);
+  const speech = useHebrewSpeech(spokenWord, kind);
   const playing = speech.status !== 'idle';
   const tint = kind === 'zizo' ? p.coral : kind === 'lumi' ? p.sun : kind === 'nuna' ? p.brand : p.sky;
   return (
@@ -68,7 +68,7 @@ export function QuestionPrompt({ index, text, hebrew = false, label, children, s
         {children}
         {!!spokenWord && <>
           <Pressable testID="hebrew-speaker" onPress={speech.toggle}
-            accessibilityRole="button" accessibilityLabel={playing ? 'إيقاف النطق' : `اسمع نطق ${spokenWord} بالعبرية`}
+            accessibilityRole="button" accessibilityLabel={playing ? 'إيقاف النطق' : `اسمع نطق ${spokenWord} بالعبرية بصوت ${CREATURE_NAMES[kind]}`}
             accessibilityState={{ busy: speech.status === 'loading', selected: playing }}
             style={[s.speaker, compact && !expanded && s.compactSpeaker, { backgroundColor: playing ? p.brandSoft : p.skySoft, borderColor: playing ? p.brand : p.sky }]}>
             <Ionicons name={playing ? 'stop-circle' : 'volume-high'} size={23} color={p.skyInk} />

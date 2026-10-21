@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createHebrewSpeaker, selectHebrewVoice, type SpeechDriver } from '../../artifacts/yael-arabic-prep/lib/hebrew-speaker';
+import { createHebrewSpeaker, selectHebrewVoice, PET_SPEECH_STYLES, type SpeechDriver } from '../../artifacts/yael-arabic-prep/lib/hebrew-speaker';
 
 function setup(voices = [{ identifier: 'hebrew', language: 'he-IL' }]) {
   const speak = vi.fn<SpeechDriver['speak']>();
@@ -11,6 +11,46 @@ function setup(voices = [{ identifier: 'hebrew', language: 'he-IL' }]) {
 afterEach(() => vi.useRealTimers());
 
 describe('Hebrew pronunciation controller', () => {
+  it('gives every presenter a distinct, intelligible pitch and pace through the real speech driver', async () => {
+    const signatures = new Set<string>();
+    for (const character of Object.keys(PET_SPEECH_STYLES) as (keyof typeof PET_SPEECH_STYLES)[]) {
+      const { driver, changed } = setup();
+      const speaker = createHebrewSpeaker(driver, changed, character);
+      await speaker.toggle('שלום');
+      const [word, options] = driver.speak.mock.calls[0];
+      expect(word).toBe('שלום');
+      expect(options).toMatchObject({
+        language: 'he-IL', voice: 'hebrew',
+        pitch: PET_SPEECH_STYLES[character].pitch, rate: PET_SPEECH_STYLES[character].rate,
+      });
+      expect(options.pitch).toBeGreaterThanOrEqual(0.9);
+      expect(options.pitch).toBeLessThanOrEqual(1.4);
+      expect(options.rate).toBeGreaterThanOrEqual(0.7);
+      expect(options.rate).toBeLessThanOrEqual(0.9);
+      signatures.add(`${options.pitch}:${options.rate}`);
+      options.onStart();
+      expect(changed).toHaveBeenLastCalledWith({ status: 'speaking', error: null });
+      options.onDone();
+      expect(changed).toHaveBeenLastCalledWith({ status: 'idle', error: null });
+    }
+    expect(signatures.size).toBe(Object.keys(PET_SPEECH_STYLES).length);
+  });
+
+  it('keeps character voices stable across voice-list order and never chooses a non-Hebrew voice', () => {
+    const voices = [
+      { identifier: 'a', language: 'en-US' },
+      { identifier: 'he-a', language: 'he-IL' },
+      { identifier: 'he-b', language: 'iw_IL', quality: 'Enhanced' },
+    ];
+    for (const character of Object.keys(PET_SPEECH_STYLES) as (keyof typeof PET_SPEECH_STYLES)[]) {
+      const selected = selectHebrewVoice(voices, character);
+      expect(selected?.language).toMatch(/^(he|iw)/);
+      expect(selectHebrewVoice([...voices].reverse(), character)).toEqual(selected);
+      expect(selectHebrewVoice([voices[0]], character)).toBeUndefined();
+    }
+    expect(selectHebrewVoice(voices, 'zizo')).not.toEqual(selectHebrewVoice(voices, 'lumi'));
+  });
+
   it('selects Hebrew, including legacy iw identifiers, never an unrelated voice', () => {
     expect(selectHebrewVoice([{ identifier: 'en', language: 'en-US' }])).toBeUndefined();
     expect(selectHebrewVoice([{ identifier: 'old-he', language: 'iw_IL' }])?.identifier).toBe('old-he');

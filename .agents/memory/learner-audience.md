@@ -9,6 +9,10 @@ The app is for students aged 17–24. The primary guide should be an imaginary p
 
 **How to apply:** Use original expressive creatures and question-presenter characters, not a cat or a copy of Duolingo's owl. Keep the experience relatable to late teens and university-age learners. Preserve customizable profile avatars as a separate feature.
 
+The speaker button should make the Hebrew word sound like it is spoken by the presenting pet, rather than giving every character the same neutral voice.
+**Why:** The user explicitly asked for words spoken with the pets' sounds when pressing the speaker.
+**How to apply:** Give presenters distinct speaking styles without sacrificing clear Hebrew pronunciation or substituting animal noises. Current playback uses device Hebrew voices, so do not promise identical recorded voices across phones.
+
 Address the learner in masculine Arabic, not feminine.
 
 **Why:** The user explicitly requested the male version of learner-facing language.

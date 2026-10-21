@@ -1,3 +1,14 @@
+import type { CreatureKind } from '@/components/PetTeacher';
+
+/** Gentle character differences; never distort the Hebrew into sound effects. */
+export const PET_SPEECH_STYLES: Record<CreatureKind, { pitch: number; rate: number; voiceIndex: number }> = {
+  zizo: { pitch: 1.32, rate: 0.88, voiceIndex: 0 },
+  lumi: { pitch: 1.10, rate: 0.78, voiceIndex: 1 },
+  nuna: { pitch: 1.20, rate: 0.82, voiceIndex: 2 },
+  ghaima: { pitch: 0.94, rate: 0.76, voiceIndex: 1 },
+  rami: { pitch: 1.00, rate: 0.84, voiceIndex: 0 },
+};
+
 export type HebrewVoice = { identifier: string; language: string; quality?: string };
 export type SpeakerState = { status: 'idle' | 'loading' | 'speaking'; error: string | null };
 export type SpeechDriver = {
@@ -9,8 +20,14 @@ export type SpeechDriver = {
   }): void;
 };
 
-export function selectHebrewVoice(voices: HebrewVoice[]) {
+export function selectHebrewVoice(voices: HebrewVoice[], character?: CreatureKind) {
   const hebrew = voices.filter(voice => /^(he|iw)([-_]|$)/i.test(voice.language));
+  if (character && hebrew.length) {
+    const ordered = [...hebrew].sort((a, b) =>
+      Number(b.quality === 'Enhanced') - Number(a.quality === 'Enhanced')
+      || a.identifier.localeCompare(b.identifier));
+    return ordered[PET_SPEECH_STYLES[character].voiceIndex % ordered.length];
+  }
   return hebrew.find(voice => voice.quality === 'Enhanced') ?? hebrew[0];
 }
 
@@ -18,7 +35,7 @@ const unavailable = 'الصوت العبري غير متوفر على جهازك
 const failed = 'تعذّر تشغيل النطق. تحقق من الصوت على جهازك، ثم حاول مجددًا.';
 
 /** Ignores late callbacks from an old word and never queues repeated taps. */
-export function createHebrewSpeaker(driver: SpeechDriver, onChange: (state: SpeakerState) => void) {
+export function createHebrewSpeaker(driver: SpeechDriver, onChange: (state: SpeakerState) => void, character?: CreatureKind) {
   let generation = 0;
   let active = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -56,10 +73,12 @@ export function createHebrewSpeaker(driver: SpeechDriver, onChange: (state: Spea
       if (id !== generation) return;
       const voices = await driver.voices();
       if (id !== generation) return;
-      const voice = selectHebrewVoice(voices);
+      const voice = selectHebrewVoice(voices, character);
       if (!voice) { fail(unavailable); return; }
       driver.speak(text.trim(), {
-        language: 'he-IL', voice: voice.identifier, rate: 0.8, pitch: 1,
+        language: 'he-IL', voice: voice.identifier,
+        rate: character ? PET_SPEECH_STYLES[character].rate : 0.8,
+        pitch: character ? PET_SPEECH_STYLES[character].pitch : 1,
         onStart: () => {
           if (id !== generation) return;
           clearTimer();

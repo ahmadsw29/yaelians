@@ -3,15 +3,16 @@ import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as Speech from 'expo-speech';
 import { createHebrewSpeaker, type SpeakerState } from '@/lib/hebrew-speaker';
+import type { CreatureKind } from '@/components/PetTeacher';
 
-export function useHebrewSpeech(text?: string) {
+export function useHebrewSpeech(text?: string, character?: CreatureKind) {
   const mounted = useRef(true);
   const [state, setState] = useState<SpeakerState>({ status: 'idle', error: null });
   const controller = useMemo(() => createHebrewSpeaker({
     voices: () => Speech.getAvailableVoicesAsync(),
     stop: () => Speech.stop(),
     speak: (word, options) => Speech.speak(word, { ...options, useApplicationAudioSession: false }),
-  }, next => { if (mounted.current) setState(next); }), []);
+  }, next => { if (mounted.current) setState(next); }, character), [character]);
 
   useEffect(() => {
     mounted.current = true;
