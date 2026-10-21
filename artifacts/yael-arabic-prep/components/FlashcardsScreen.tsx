@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AccessibilityInfo, ActivityIndicator, Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View,
+  AccessibilityInfo, ActivityIndicator, Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { usePlanAccess } from '@/lib/PlanAccess';
 import { VOCABULARY_BANK } from '@/lib/vocabulary-bank';
 import { selectFlashcards, type FlashcardMemory, type FlashcardRating } from '@/lib/flashcards';
 import { loadFlashcardMemory, saveFlashcardRating } from '@/lib/flashcard-storage';
+import { listenForReduceMotionChanges } from '@/lib/pet-teacher-motion';
 import { formatVocabularyTime, vocabularySecondsLeft } from '@/lib/vocabulary-selection';
 
 const BOLD = ARABIC_BOLD_FONT;
@@ -287,32 +288,101 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
 function FlashCard({ card, revealed, onReveal, disabled }: { card: Card; revealed: boolean; onReveal: () => void; disabled: boolean }) {
   const p = usePlay();
   const speech = useHebrewSpeech(card.word);
-  const fade = useRef(new Animated.Value(revealed ? 1 : 0)).current;
+  const turn = useRef(new Animated.Value(0)).current;
+  const anim = useRef<Animated.CompositeAnimation | null>(null);
+  const [face, setFace] = useState<'front' | 'back'>('front');
+  const [reduceMotion, setReduceMotion] = useState(true);
+  const [heights, setHeights] = useState({ front: 0, back: 0 });
+  useEffect(() => listenForReduceMotionChanges(AccessibilityInfo, setReduceMotion), []);
+
+  const turnTo = useCallback((target: 'front' | 'back') => {
+    setFace(target);
+    anim.current?.stop();
+    const toValue = target === 'back' ? 1 : 0;
+    if (reduceMotion) { turn.setValue(toValue); return; }
+    anim.current = Animated.spring(turn, { toValue, friction: 8, tension: 46, useNativeDriver: Platform.OS !== 'web' });
+    anim.current.start();
+  }, [reduceMotion, turn]);
+
+  useEffect(() => { if (revealed) turnTo('back'); }, [revealed]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { anim.current?.stop(); }, []);
   useEffect(() => {
-    Animated.timing(fade, { toValue: revealed ? 1 : 0, duration: 220, useNativeDriver: Platform.OS !== 'web' }).start();
-  }, [revealed, fade]);
+    if (!reduceMotion) return;
+    anim.current?.stop();
+    anim.current = null;
+    turn.setValue(face === 'back' ? 1 : 0);
+  }, [reduceMotion, face, turn]);
+
+  const onCardPress = () => {
+    if (!revealed) { if (!disabled) onReveal(); return; }
+    turnTo(face === 'back' ? 'front' : 'back');
+  };
+  const measure = (key: 'front' | 'back') => (e: LayoutChangeEvent) => {
+    const h = Math.ceil(e.nativeEvent.layout.height);
+    setHeights(prev => prev[key] === h ? prev : { ...prev, [key]: h });
+  };
+  const height = Math.max(240, heights.front, revealed ? heights.back : 0) + 36;
   const playing = speech.status !== 'idle';
+  const lift = turn.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.94, 1] });
+  const faceStyle = (side: 'front' | 'back') => ({
+    opacity: turn.interpolate(side === 'front'
+      ? { inputRange: [0, 0.49, 0.5, 1], outputRange: [1, 1, 0, 0] }
+      : { inputRange: [0, 0.5, 0.51, 1], outputRange: [0, 0, 1, 1] }),
+    transform: [
+      { perspective: 1100 },
+      { rotateY: turn.interpolate({ inputRange: [0, 1], outputRange: side === 'front' ? ['0deg', '180deg'] : ['-180deg', '0deg'] }) },
+      { scale: lift },
+    ],
+  });
+  const hidden = (side: 'front' | 'back') => face !== side
+    ? { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const, pointerEvents: 'none' as const }
+    : {};
+
   return (
-    <View style={[s.card, { backgroundColor: p.card, borderColor: p.brand }]}>
-      <Pressable accessibilityRole="button" disabled={revealed || disabled} onPress={onReveal}
-        accessibilityLabel={revealed ? `الكلمة ${card.word}` : `الكلمة ${card.word}. اضغط لكشف المعنى`} style={s.front}>
-        <Text style={[s.hebrew, { color: p.foreground }]} lang="he">{card.word}</Text>
-        {revealed && !!card.transliteration && <Text style={[s.translit, { color: p.mutedForeground }]}>{card.transliteration}</Text>}
-        {!revealed && <Text style={[s.tapHint, { color: p.mutedForeground }]}>اضغط على البطاقة لتكشف المعنى</Text>}
+    <View style={s.cardWrap}>
+      <Pressable testID="flashcard-card" onPress={onCardPress} disabled={!revealed && disabled}
+        accessibilityRole="button"
+        accessibilityLabel={face === 'front'
+          ? `الوجه الأمامي: ${card.word}`
+          : `الوجه الخلفي: ${card.meaning}${card.sentence ? `. ${card.sentence}` : ''}`}
+        accessibilityHint={revealed ? 'اضغط لقلب البطاقة' : 'اضغط لكشف المعنى'}
+        accessibilityState={{ expanded: face === 'back', disabled: !revealed && disabled }}
+        accessibilityValue={{ text: face === 'front' ? 'front' : 'back' }}
+        style={{ height }}>
+        <Animated.View testID="flashcard-face-front" {...hidden('front')}
+          style={[s.face, { backgroundColor: p.card, borderColor: p.brand }, faceStyle('front')]}>
+          <View onLayout={measure('front')} style={s.faceInner} accessible={false}>
+            <Text style={[s.faceTag, { color: p.mutedForeground }]}>עברית</Text>
+            <Text style={[s.hebrew, { color: p.foreground }]} lang="he">{card.word}</Text>
+            {revealed && !!card.transliteration && <Text style={[s.translit, { color: p.mutedForeground }]}>{card.transliteration}</Text>}
+            <View style={s.turnHint}>
+              <Ionicons name="sync-outline" size={14} color={p.mutedForeground} />
+              <Text style={[s.tapHint, { color: p.mutedForeground }]}>{revealed ? 'اضغط لتقلبها' : 'اضغط على البطاقة لتكشف المعنى'}</Text>
+            </View>
+          </View>
+        </Animated.View>
+        {revealed && (
+          <Animated.View testID="flashcard-face-back" {...hidden('back')}
+            style={[s.face, { backgroundColor: p.card, borderColor: p.sun }, faceStyle('back')]}>
+            <View onLayout={measure('back')} style={s.faceInner} accessible={false}>
+              <Text style={[s.faceTag, { color: p.mutedForeground }]}>المعنى</Text>
+              <Text style={[s.meaning, { color: p.brand }]}>{card.meaning}</Text>
+              {!!card.transliteration && <Text style={[s.translit, { color: p.mutedForeground }]}>{`${card.word} · ${card.transliteration}`}</Text>}
+              {!!card.sentence && (
+                <View style={[s.sentenceBox, { borderTopColor: p.border }]}>
+                  <Text style={[s.sentence, { color: p.foreground }]} lang="he">{card.sentence}</Text>
+                </View>
+              )}
+            </View>
+          </Animated.View>
+        )}
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={playing ? 'إيقاف النطق' : 'استمع للنطق'} onPress={speech.toggle}
+      <Pressable testID="flashcard-speak" accessibilityRole="button" accessibilityLabel={playing ? 'إيقاف النطق' : 'استمع للنطق'} onPress={speech.toggle}
         style={[s.speak, { backgroundColor: p.muted, borderColor: p.border }]}>
         <Ionicons name={playing ? 'stop' : 'volume-high'} size={18} color={p.foreground} />
         <Text style={[s.speakText, { color: p.foreground }]}>{playing ? 'إيقاف' : 'استمع'}</Text>
       </Pressable>
       {!!speech.error && <Text style={[s.speechErr, { color: p.coral }]} accessibilityLiveRegion="polite">النطق العبري غير متاح على هذا الجهاز الآن.</Text>}
-      {revealed && (
-        <Animated.View style={[s.back, { borderTopColor: p.border, opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }]}
-          accessibilityLiveRegion="polite">
-          <Text style={[s.meaning, { color: p.brand }]}>{card.meaning}</Text>
-          {!!card.sentence && <Text style={[s.sentence, { color: p.foreground }]} lang="he">{card.sentence}</Text>}
-        </Animated.View>
-      )}
     </View>
   );
 }
@@ -343,15 +413,18 @@ const s = StyleSheet.create({
   session: { padding: 16, gap: 16 },
   progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
   count: { fontWeight: '800', fontSize: 13, fontVariant: ['tabular-nums'] },
-  card: { borderRadius: 28, borderWidth: 3, borderBottomWidth: 8, padding: 18, gap: 12, minHeight: 260 },
-  front: { alignItems: 'center', justifyContent: 'center', minHeight: 150, gap: 6 },
+  cardWrap: { gap: 12 },
+  face: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 28, borderWidth: 3, borderBottomWidth: 8, paddingHorizontal: 18, justifyContent: 'center', backfaceVisibility: 'hidden', overflow: 'hidden' },
+  faceInner: { alignItems: 'center', gap: 8 },
+  faceTag: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textAlign: 'center' },
+  turnHint: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 4 },
+  sentenceBox: { alignSelf: 'stretch', borderTopWidth: 2, borderStyle: 'dashed', paddingTop: 12, marginTop: 4 },
   hebrew: { fontSize: 44, lineHeight: 60, fontWeight: '800', textAlign: 'center', writingDirection: 'rtl' },
   translit: { fontSize: 15, fontStyle: 'italic', textAlign: 'center' },
   tapHint: { fontSize: 13, textAlign: 'center', writingDirection: 'rtl' },
   speak: { alignSelf: 'center', minHeight: 44, flexDirection: 'row-reverse', alignItems: 'center', gap: 6, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1 },
   speakText: { fontFamily: BOLD, fontWeight: '800', fontSize: 13 },
   speechErr: { fontSize: 12, lineHeight: 20, textAlign: 'center', writingDirection: 'rtl' },
-  back: { borderTopWidth: 2, borderStyle: 'dashed', paddingTop: 14, gap: 8 },
   meaning: { fontFamily: BOLD, fontWeight: '800', fontSize: 22, lineHeight: 36, textAlign: 'center', writingDirection: 'rtl' },
   sentence: { fontSize: 18, lineHeight: 30, textAlign: 'center', writingDirection: 'rtl' },
   rateWrap: { gap: 10 },
