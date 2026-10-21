@@ -15,11 +15,11 @@ Address the learner in masculine Arabic, not feminine.
 
 **How to apply:** Use masculine forms in instructional, feedback, completion, and onboarding copy.
 
-Keep answer feedback near the next/back controls visual: a character and a check/cross, without extra praise or encouragement sentences. A wrong-answer correction may still show the actual correct answer.
+Keep answer feedback visual, without extra praise or encouragement sentences. A wrong-answer correction may still show the actual correct answer. The pet now belongs in its own animated celebration area in the empty space below the answers, not beside Next.
 
-**Why:** The user previously asked to remove the “إجابة رائعة” and other encouragement messages and leave the character beside the correctness symbol.
+**Why:** The user asked to remove praise messages, then explicitly requested a separate “celebration park” because the pet beside Next made the button smaller.
 
-**How to apply:** Do not reintroduce congratulatory or consoling lines when restyling practice navigation.
+**How to apply:** Keep Next full-width and outside the pet's layout. Use available empty space for movement, respect reduced motion, and never cover answers or navigation with decoration. Do not reintroduce praise sentences.
 
 Use the same Arabic typeface in practice questions, answers, and navigation as on the home page.
 
@@ -32,3 +32,7 @@ Vocabulary practice should show progress, the vocabulary category, the word and 
 **Why:** The user explicitly corrected an oversized bottom gap and said he wants everything visible on one page without scrolling.
 
 **How to apply:** Use a compact question layout and a persistent header; do not solve footer overlap by reserving excessive empty space. Preserve access to content when text is enlarged.
+
+Reading comprehension must have its own home entry as the third practice card, after vocabulary and restatement.
+**Why:** The user said the reading section was missing and explicitly requested it in the third row.
+**How to apply:** Preserve that order when adding or moving home cards; daily goal summaries are not practice cards.

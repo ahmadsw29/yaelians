@@ -32,6 +32,7 @@ export default defineConfig({
           'study-tests/learning-bridge.test.ts',
           'study-tests/vocabulary-hints.test.ts',
           'study-tests/daily-goals.test.ts',
+          'study-tests/reading-practice.test.ts',
           'study-tests/translator.test.ts',
           'study-tests/learner-ranks.test.ts',
           'study-tests/study-loading.test.ts',

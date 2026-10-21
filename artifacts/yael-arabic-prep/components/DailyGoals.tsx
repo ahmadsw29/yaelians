@@ -18,7 +18,7 @@ type Meta = { key: DailyMetric; label: string; unit: string; hint: string; max: 
 const METRICS: Meta[] = [
   { key: 'words', label: 'مفردات', unit: 'كلمة', hint: 'كلمات مختلفة راجعتها اليوم', max: 300, step: 5, icon: 'book', route: '/practice' },
   { key: 'restatement', label: 'إعادة صياغة', unit: 'سؤال', hint: 'أسئلة جاوبت عليها، صح أو غلط', max: 120, step: 2, icon: 'swap-horizontal', route: '/restatement' },
-  { key: 'reading', label: 'فهم المقروء', unit: 'سؤال', hint: 'أسئلة قطع قراءة جاوبت عليها', max: 120, step: 2, icon: 'reader', route: '/exam-library' },
+  { key: 'reading', label: 'فهم المقروء', unit: 'سؤال', hint: 'أسئلة قطع قراءة جاوبت عليها', max: 120, step: 2, icon: 'reader', route: '/reading' },
   { key: 'models', label: 'نماذج كاملة', unit: 'نموذج', hint: 'جاوب كل الأسئلة وسلّم التعبير ليُحسب النموذج', max: 5, step: 1, icon: 'trophy', route: '/exam-library' },
 ];
 

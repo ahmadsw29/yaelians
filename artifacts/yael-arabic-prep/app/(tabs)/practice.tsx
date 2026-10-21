@@ -20,7 +20,7 @@ import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getPracticeScreenSpacing, usesExpandedQuestionLayout } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
 import { usePracticeCompletionAnnouncement } from '@/hooks/usePracticeCompletionAnnouncement';
-import { READING_QUESTIONS } from '@/lib/study';
+import { READING_QUESTIONS, type ReadingQuestion } from '@/lib/study';
 import { VOCABULARY_BANK as WORD_BANK } from '@/lib/vocabulary-bank';
 import { reserveVocabularyReviewRound, saveVocabularyReviewAnswer } from '@/lib/vocabulary-deck';
 import { vocabularyHintExclusions } from '@/lib/vocabulary-hints';
@@ -29,7 +29,7 @@ import { HintedVocabularyOption, VocabularyHintButton } from '@/components/Vocab
 import { formatVocabularyTime, vocabularySecondsLeft } from '@/lib/vocabulary-selection';
 import { useStudy } from '@/lib/StudyProvider';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
-import { PetTeacherReaction } from '@/components/PetTeacher';
+import { PracticeCelebrationPark } from '@/components/PracticeCelebrationPark';
 import { ChunkyButton, ChunkyProgress, QuestionPrompt, usePlay } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
 import { completionFeedback } from '@/lib/completion-feedback';
@@ -103,7 +103,7 @@ function FreePracticePrompt() {
   </View>;
 }
 
-function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null }) {
+export function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey, readingBank = READING_QUESTIONS, initialMode = 'words' }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null; readingBank?: ReadingQuestion[]; initialMode?: 'words' | 'reading' }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -116,6 +116,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
   const expanded = usesExpandedQuestionLayout(fontScale);
   const screenSpacing = getPracticeScreenSpacing(Platform.OS, insets.top, insets.bottom, isLiquidGlassAvailable());
   const [bodyHeight, setBodyHeight] = useState(0);
+  const [parkHeight, setParkHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
@@ -129,7 +130,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
-  const [mode, setMode] = useState<'words' | 'reading'>('words');
+  const [mode, setMode] = useState<'words' | 'reading'>(initialMode);
   const trackProgress = true;
   const [wordOrder, setWordOrder] = useState(initialOrder);
   const [reviewRound, setReviewRound] = useState(initialRoundNumber);
@@ -153,11 +154,11 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
     return () => { clearInterval(timer); listener.remove(); };
   }, [deadline, complete]);
   const wordQuestions = wordOrder.map(i => WORD_BANK[i]);
-  const activeQuestions = mode === 'words' ? wordQuestions : READING_QUESTIONS;
+  const activeQuestions = mode === 'words' ? wordQuestions : readingBank;
   const progressPosition = getProgressMarkerPosition(index, activeQuestions.length);
   const question = mode === 'words'
     ? { ...wordQuestions[index % wordQuestions.length], passage: '' }
-    : { ...READING_QUESTIONS[index % READING_QUESTIONS.length], word: '', transliteration: '', sentence: '' };
+    : { ...readingBank[index % readingBank.length], word: '', transliteration: '', sentence: '' };
   const answerFeedback = getPracticeAnswerFeedback(choice, question.correctAnswer);
   const isCorrect = answerFeedback?.isCorrect ?? false;
   const completionAnnouncement = getPracticeCompletionAnnouncement(
@@ -320,7 +321,7 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
             <ChunkyButton tone="ghost" icon="arrow-back" onPress={finish} testID="finish-practice" label="العودة للرئيسية" />
             {mode === 'words' && isPremium && <ChunkyButton tone="success" icon="refresh" onPress={() => void continuePractice()} testID="continue-vocabulary"
               label="واصل التدريب بجولة جديدة" />}
-            {!isPremium && <Text style={{ color: c.mutedForeground, textAlign: 'center' }}>جولتك القادمة غدًا. تجربة مجانية تشمل جولة واحدة لخمس دقائق يوميًا.</Text>}
+            {!isPremium && <Text style={{ color: c.mutedForeground, textAlign: 'center' }}>{mode === 'words' ? 'جولتك القادمة غدًا. تجربة مجانية تشمل جولة واحدة لخمس دقائق يوميًا.' : 'التجربة المجانية تشمل قسمًا موقوتًا واحدًا كل يوم، مشتركًا مع تدريب إعادة الصياغة.'}</Text>}
           </View>
         ) : null}
       </ScrollView>
@@ -334,14 +335,6 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       {answerFeedback && <Text accessibilityLiveRegion="polite" importantForAccessibility="yes"
         style={styles.accessibilityAnnouncement}>{answerFeedback.announcement}</Text>}
       <View style={mode === 'words' ? styles.compactFooterRow : undefined}>
-        {answered && <View style={[styles.feedbackRow, mode === 'words' && { width: 68, gap: 4 }]}>
-          <PetTeacherReaction mood={isCorrect ? 'happy' : 'sad'} size={mode === 'words' ? 34 : 62} jumpKey={celebrationKey} />
-          <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28}
-            color={isCorrect ? p.successInk : p.coralInk} accessibilityLabel={isCorrect ? 'إجابة صحيحة' : 'إجابة غير صحيحة'} />
-          {mode !== 'words' && <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-end' }}>
-            {!isCorrect && <Text style={[styles.feedbackBody, { color: p.coralInk }]}>الإجابة الصحيحة: {question.correctAnswer}</Text>}
-          </View>}
-        </View>}
         <ChunkyButton testID="next-question" disabled={!choice || loading || answerSaving}
           onPress={next} tone={!answered || isCorrect ? 'success' : 'coral'} icon="arrow-back"
           label={index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}
@@ -371,26 +364,18 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
       </View>
 
       <View style={[styles.modeSwitch, { alignItems: 'center', minHeight: 44 }]}>
-        {isPremium && <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'reading' }} onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
+        {(isPremium || initialMode === 'reading') && <Pressable disabled={initialMode === 'reading'} accessibilityRole="button" accessibilityState={{ selected: mode === 'reading' }} onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
           <Ionicons name="book" size={15} color={mode === 'reading' ? p.skyInk : c.mutedForeground} />
           <Text style={[styles.modeText, mode === 'reading' && { color: p.skyInk }]}>فهم المقروء</Text>
         </Pressable>}
-        <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'words' }} onPress={() => changeMode('words')} style={[styles.modeButton, mode === 'words' && styles.modeButtonActive]}>
+        {initialMode !== 'reading' && <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'words' }} onPress={() => changeMode('words')} style={[styles.modeButton, mode === 'words' && styles.modeButtonActive]}>
           <Ionicons name="chatbubbles" size={15} color={mode === 'words' ? p.skyInk : c.mutedForeground} />
           <Text style={[styles.modeText, mode === 'words' && { color: p.skyInk }]}>مفردات</Text>
-        </Pressable>
-        {mode === 'words' && (
-          <View style={{ width: 116 }}>
-            <VocabularyHintButton key={`hint-${reviewRound}-${index}`} used={hintExcluded.length > 0}
-              disabled={answered || answerSaving || loading || secondsLeft === 0
-                || vocabularyHintExclusions(question.options, question.correctAnswer, question.word ?? '').length === 0}
-              onPress={revealHint} />
-          </View>
-        )}
+        </Pressable>}
       </View>
 
     </View>
-    <ScrollView testID="practice-question-body" key={`${mode}-${index}`} style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+    <ScrollView testID="practice-question-body" key={`${mode}-${index}`} style={{ flex: 1 }} contentContainerStyle={[styles.content, { flexGrow: 1 }]} showsVerticalScrollIndicator={false}
       scrollEnabled={mode !== 'words' || contentHeight > bodyHeight + 1}
       onLayout={event => setBodyHeight(event.nativeEvent.layout.height)}
       onContentSizeChange={(_, height) => setContentHeight(height)}
@@ -423,6 +408,12 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
         </>
       )}
 
+      {mode === 'words' && <View testID="vocabulary-hint-area" style={{ alignItems: 'flex-end', marginBottom: 6 }}>
+        <VocabularyHintButton key={`hint-${reviewRound}-${index}`} used={hintExcluded.length > 0}
+          disabled={answered || answerSaving || loading || secondsLeft === 0
+            || vocabularyHintExclusions(question.options, question.correctAnswer, question.word ?? '').length === 0}
+          onPress={revealHint} />
+      </View>}
       <View style={styles.options}>
         {question.options.map((option, optionIndex) => {
           const selected = choice === option;
@@ -463,6 +454,14 @@ function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, 
           );
         })}
       </View>
+      {mode === 'reading' && answered && !!question.meaning && <View style={[styles.readingCard, { marginTop: 12 }]}>
+        <Text style={{ color: p.skyInk, fontFamily: BOLD, writingDirection: 'rtl', textAlign: 'right', lineHeight: 25 }}>{question.meaning}</Text>
+      </View>}
+      {mode === 'words' && !expanded && <View testID="practice-celebration-space"
+        onLayout={event => setParkHeight(event.nativeEvent.layout.height)}
+        style={{ flex: 1, minHeight: 0, justifyContent: 'center', overflow: 'hidden' }}>
+        {answered && parkHeight >= 100 && <PracticeCelebrationPark correct={isCorrect} animationKey={index + 1} />}
+      </View>}
       {expanded && footer}
     </ScrollView>
     {!expanded && footer}

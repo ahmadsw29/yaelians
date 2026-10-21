@@ -85,7 +85,7 @@ export function VocabularyHintButton({ used, disabled, onPress }: { used: boolea
   const inactive = used || disabled;
   const bg = used ? p.sunSoft : disabled ? p.muted : p.sun;
   const border = used ? p.sun : disabled ? p.track : p.sunShade;
-  const fg = used ? p.sunInk : disabled ? p.mutedForeground : p.sunInk;
+  const fg = used ? p.sunInk : disabled ? p.foreground : p.isDark ? p.onBrand : p.foreground;
   const label = used ? 'بمساعدة' : 'تلميح';
 
   return (

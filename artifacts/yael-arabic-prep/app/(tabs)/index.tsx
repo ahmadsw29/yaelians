@@ -20,6 +20,7 @@ import { StudySyncStatus } from '@/components/StudySyncStatus';
 import { getProfileNames } from '@/lib/profile';
 import ExamShortcuts from '@/components/ExamShortcuts';
 import HomeFlashcardsEntry from '@/components/HomeFlashcardsEntry';
+import HomeReadingEntry from '@/components/HomeReadingEntry';
 import { DailyGoalsSection } from '@/components/DailyGoals';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
@@ -91,6 +92,7 @@ export default function HomeScreen() {
         </View>
         <ChunkyButton tone="sun" icon="arrow-back" label="إعادة صياغة" testID="start-restatement" onPress={() => router.push('/restatement')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
       </View>
+      <HomeReadingEntry />
 
       <Pressable testID="home-study" accessibilityRole="button" accessibilityLabel="ركن الدراسة، دروس مع معلّمين من عالم الخيال" onPress={() => router.push('/study')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
         <View style={styles.studyArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind="ghaima" mood="happy" size={64} /></View>
