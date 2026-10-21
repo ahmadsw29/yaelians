@@ -2,6 +2,12 @@
 name: Free and premium allowances
 description: User-defined limits, vocabulary duration and rotation, and premium pricing.
 ---
+The current monetization direction is an installable web app for iPhone and Android, with website payments at ₪48.90 per month and payouts in Israel. Active subscribers get all courses and unlimited practice.
+
+**Why:** The user chose an installable web app and monthly billing after asking to require website payment before making the app available to install. This supersedes the intervening request to make everything free.
+
+**How to apply:** Link access to a server-verified subscription and the signed-in learner, not possession of an installation/download link. Keep billing disabled until a compatible provider is connected and checkout is verified. Do not silently change shekels to another currency or treat RevenueCat's native-store connection as web checkout. Earlier trial allowances below describe the existing app, not authorization to bypass paid website access.
+
 Call the free tier “تجربة مجانية” everywhere in learner-facing copy.
 
 **Why:** The user explicitly asked to replace “خطة مجانية” with “تجربة مجانية” in every location.
