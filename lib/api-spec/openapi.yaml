@@ -11,6 +11,28 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /study/translate:
+    post:
+      operationId: translateStudyText
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TranslatorInput" }
+      responses:
+        "200":
+          description: AI-generated translation for study, not an official answer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranslatorResult" }
+        "400": { description: Enter 1 to 1000 characters and a valid direction }
+        "401": { description: Sign in required }
+        "403": { description: Account deletion pending }
+        "429": { description: Too many translations; retry later }
+        "502": { description: Translation provider failed; retry }
+        "503": { description: Translator is temporarily unavailable }
+        "504": { description: Translation timed out; retry }
   /study/courses:
     get:
       operationId: getStudyCourses
@@ -195,6 +217,21 @@ components:
       type: http
       scheme: bearer
   schemas:
+    TranslatorInput:
+      type: object
+      additionalProperties: false
+      required: [text, direction]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 1000 }
+        direction: { type: string, enum: [he-ar, ar-he] }
+    TranslatorResult:
+      type: object
+      additionalProperties: false
+      required: [translation, direction, generated]
+      properties:
+        translation: { type: string, minLength: 1, maxLength: 12000 }
+        direction: { type: string, enum: [he-ar, ar-he] }
+        generated: { type: boolean, enum: [true] }
     TimedSessionBackup:
       type: object
       required: [revision, savedAt, session]

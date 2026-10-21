@@ -30,3 +30,7 @@ export * from './studyPlanAccessUsage';
 export * from './studyStats';
 export * from './timedSessionBackup';
 export * from './timedSessionInput';
+export * from './translatorInput';
+export * from './translatorInputDirection';
+export * from './translatorResult';
+export * from './translatorResultDirection';

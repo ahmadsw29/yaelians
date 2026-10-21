@@ -22,6 +22,10 @@ The preview test browser may expose speech synthesis but have no installed voice
 **Why:** Pronunciation checks found an empty real voice list; controlled speech events verified the UI lifecycle but could not verify audible Hebrew.
 **How to apply:** Distinguish simulated speech checks from actual audio verification. Do not substitute a non-Hebrew voice or claim phone pronunciation was heard based on a browser simulation.
 
+API code generation can briefly remove generated modules while Metro is watching and leave a stale module-resolution failure.
+**Why:** Clean code generation temporarily deletes its output directory; Metro can observe that intermediate state even though the final generated client exists.
+**How to apply:** Finish generation and confirm the files exist, then restart Metro once if it retains the missing-module error. Do not replace correct shared-client imports with ad hoc fetches.
+
 Do not insert a transient progress-loading row above the practice question.
 **Why:** The user reported that “جاري تحميل التقدم” moved every question element downward and asked for a loading screen instead when waiting is necessary.
 **How to apply:** Keep cached background progress refreshes silent and question geometry stable. Use one full-screen loader for genuinely blocking initial loading, without hiding actionable errors or saved-lesson recovery notices.

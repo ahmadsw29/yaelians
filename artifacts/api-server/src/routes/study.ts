@@ -1,6 +1,7 @@
 import { Router } from "express";
 import studyCoursesRouter from "./study-courses";
 import timedSessionsRouter from "./timed-sessions";
+import translatorRouter from "./translator";
 import { isDeepStrictEqual } from "node:util";
 import { clerkClient, getAuth } from "@clerk/express";
 import { lockAccount } from "./account";
@@ -55,6 +56,7 @@ router.use("/study", async (req, res, next) => {
 
 router.use("/study", studyCoursesRouter);
 router.use("/study", timedSessionsRouter);
+router.use("/study", translatorRouter);
 
 router.get("/study/stats", async (req, res) => {
   const userId = getAuth(req).userId!;

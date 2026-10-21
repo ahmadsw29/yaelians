@@ -32,7 +32,9 @@ import type {
   StudyPlanAccess,
   StudyStats,
   TimedSessionBackup,
-  TimedSessionInput
+  TimedSessionInput,
+  TranslatorInput,
+  TranslatorResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -61,6 +63,88 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getTranslateStudyTextUrl = () => {
+
+
+
+
+  return `/api/study/translate`
+}
+
+export const translateStudyText = async (translatorInput: TranslatorInput, options?: Parameters<typeof customFetch>[1]): Promise<TranslatorResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<TranslatorResult>(getTranslateStudyTextUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(translatorInput)
+  }
+);}
+
+
+
+
+
+export const getTranslateStudyTextMutationKey = () => ['translateStudyText'] as const;
+
+export const getTranslateStudyTextMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof translateStudyText>>, TError,TranslateStudyTextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof translateStudyText>>, TError,TranslateStudyTextMutationVariables, TContext> => {
+
+const mutationKey = getTranslateStudyTextMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof translateStudyText>>, TranslateStudyTextMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  translateStudyText(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TranslateStudyTextMutationResult = NonNullable<Awaited<ReturnType<typeof translateStudyText>>>
+    export type TranslateStudyTextMutationBody = BodyType<TranslatorInput>
+    export type TranslateStudyTextMutationError = ErrorType<void>
+    export type TranslateStudyTextMutationVariables = {data: BodyType<TranslatorInput>}
+
+    export const useTranslateStudyText = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof translateStudyText>>, TError,TranslateStudyTextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof translateStudyText>>,
+        TError,
+        TranslateStudyTextMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTranslateStudyTextMutationOptions(options));
+    }
 
 export const getGetStudyCoursesUrl = () => {
 

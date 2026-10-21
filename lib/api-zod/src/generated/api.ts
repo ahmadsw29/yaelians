@@ -8,6 +8,26 @@
 import * as zod from 'zod';
 
 
+export const translateStudyTextBodyTextMax = 1000;
+
+
+
+export const TranslateStudyTextBody = zod.object({
+  "text": zod.string().min(1).max(translateStudyTextBodyTextMax),
+  "direction": zod.enum(['he-ar', 'ar-he'])
+})
+
+export const translateStudyTextResponseTranslationMax = 12000;
+
+
+
+export const TranslateStudyTextResponse = zod.object({
+  "translation": zod.string().min(1).max(translateStudyTextResponseTranslationMax),
+  "direction": zod.enum(['he-ar', 'ar-he']),
+  "generated": zod.literal(true)
+})
+
+
 
 
 

@@ -5,6 +5,41 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type TranslatorInputDirection = typeof TranslatorInputDirection[keyof typeof TranslatorInputDirection];
+
+
+export const TranslatorInputDirection = {
+  'he-ar': 'he-ar',
+  'ar-he': 'ar-he',
+} as const;
+
+export interface TranslatorInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  text: string;
+  direction: TranslatorInputDirection;
+}
+
+export type TranslatorResultDirection = typeof TranslatorResultDirection[keyof typeof TranslatorResultDirection];
+
+
+export const TranslatorResultDirection = {
+  'he-ar': 'he-ar',
+  'ar-he': 'ar-he',
+} as const;
+
+export interface TranslatorResult {
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  translation: string;
+  direction: TranslatorResultDirection;
+  generated: true;
+}
+
 export interface TimedSessionBackup {
   /** @minimum 0 */
   revision: number;

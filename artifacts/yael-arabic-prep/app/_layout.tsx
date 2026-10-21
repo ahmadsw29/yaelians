@@ -23,6 +23,7 @@ import { StudyProvider } from '@/lib/StudyProvider';
 import { StudyLoadingScreen } from '@/components/StudyLoadingScreen';
 import { AccountDeletionProvider } from '@/lib/AccountDeletion';
 import { PlanAccessProvider, usePlanAccess } from '@/lib/PlanAccess';
+import { FloatingTranslator } from '@/components/FloatingTranslator';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -50,7 +51,7 @@ function ReadyNavigation() {
 }
 
 function RootLayoutNav() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
   const { addListener } = useClerk();
   const segments = useSegments();
   const router = useRouter();
@@ -106,6 +107,7 @@ function RootLayoutNav() {
       <Stack.Screen name="restatement" options={{ headerShown: false }} />
       <Stack.Screen name="flashcards" options={{ headerShown: false }} />
     </Stack>
+    {isLoaded && isSignedIn && userId && !redirectTo && <FloatingTranslator key={userId} userId={userId} />}
     {redirectTo && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={palette.primary} />
     </View>}
