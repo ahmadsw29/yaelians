@@ -15,3 +15,4 @@
 - [Rank pacing](progression-pacing.md) — User doubled the harder rank ladder; preserve earned XP and shared rank-based timers, with no calendar locks.
 - [Daily learning goals](daily-learning-goals.md) — Numerical goals by section and models; device-local days, no extra access or mastery from choosing targets.
 - [Web billing provider](web-billing-provider.md) — Coordinate Whop SDK/API versions, scoped permissions, and environment-specific checkout activation.
+- [Publishing generated assets](publishing-assets.md) — Git exclusions and deployment exclusions differ; required build outputs must remain in the published image.

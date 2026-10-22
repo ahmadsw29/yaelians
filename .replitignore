@@ -4,4 +4,5 @@
 # No need to store the pnpm store twice.
 .local
 /generated-artifacts/
-/artifacts/yael-arabic-prep/web-build/
+# Keep the generated web-build in the deployment image. It is excluded from
+# Git separately; excluding it here also removes it after the build succeeds.
