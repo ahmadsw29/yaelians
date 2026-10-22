@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Platform, Text, View } from 'react-native';
-import colors from '@/constants/colors';
+import { Platform, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -13,7 +12,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
@@ -27,6 +26,7 @@ import { FloatingTranslator } from '@/components/FloatingTranslator';
 import { DailyGoalsProvider } from '@/lib/DailyGoalsProvider';
 import { DailyGoalsPrompt } from '@/components/DailyGoals';
 import { WebInstallProvider } from '@/lib/WebInstall';
+import { StartupStatus } from '@/components/StartupStatus';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -39,13 +39,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function StartupMessage() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, gap: 16, backgroundColor: colors.light.background }}>
-      <ActivityIndicator size="large" color={colors.light.primary} />
-      <Text style={{ color: colors.light.foreground, fontSize: 20, textAlign: 'center' }}>جارٍ تجهيز رحلتك مع كلمة…</Text>
-      <Text style={{ color: colors.light.mutedForeground, textAlign: 'center', lineHeight: 24 }}>قد يستغرق الاتصال الآمن بضع ثوانٍ. تأكّد من اتصالك بالإنترنت.</Text>
-    </View>
-  );
+  return <StartupStatus />;
 }
 
 function ReadyNavigation() {
@@ -57,6 +51,7 @@ function RootLayoutNav() {
   const { getToken, isLoaded, isSignedIn, userId } = useAuth();
   const { addListener } = useClerk();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
   const navigationState = useRootNavigationState();
   const palette = useColors();
@@ -77,11 +72,14 @@ function RootLayoutNav() {
   }), [addListener]);
 
   const firstSegment = segments[0];
+  // The index route owns initial routing. Two simultaneous redirect owners
+  // can race between native plan pages and web subscription pages.
+  const indexRoute = pathname === '/' && firstSegment !== '(tabs)';
   const publicWeb = firstSegment === 'website' || firstSegment === 'web-policy';
   const billingWeb = firstSegment === 'subscribe' || firstSegment === 'billing-return';
   const accountWeb = firstSegment === '(tabs)' && segments[1] === 'profile';
   let redirectTo: '/welcome' | '/website' | '/subscribe' | '/plans' | '/plans?reason=premium-exam' | '/(tabs)' | null = null;
-  if (isLoaded) {
+  if (isLoaded && !indexRoute) {
     if (!isSignedIn && firstSegment !== 'welcome' && firstSegment !== '(auth)' && !publicWeb) {
       redirectTo = Platform.OS === 'web' ? '/website' : '/welcome';
     } else if (isSignedIn && planReady && Platform.OS === 'web' && plan !== 'premium' && !publicWeb && !billingWeb && !accountWeb) {
@@ -96,7 +94,7 @@ function RootLayoutNav() {
       redirectTo = '/(tabs)';
     }
   }
-  const verifyingAccess = Platform.OS === 'web' && isSignedIn && !planReady && !publicWeb && !billingWeb && firstSegment !== '(auth)';
+  const verifyingAccess = Platform.OS === 'web' && isSignedIn && !planReady && !indexRoute && !publicWeb && !billingWeb && firstSegment !== '(auth)';
   // Keep the root navigator mounted while guards redirect. Replacing it with a
   // Redirect tears down its state and can repeatedly remount the same route.
   useEffect(() => {
@@ -126,7 +124,7 @@ function RootLayoutNav() {
     {isLoaded && isSignedIn && userId && !redirectTo && !publicWeb && !billingWeb && (Platform.OS !== 'web' || plan === 'premium') && <FloatingTranslator key={`translator:${userId}`} userId={userId} />}
     <DailyGoalsPrompt key={`goals:${userId ?? 'guest'}`} enabled={!!(isLoaded && isSignedIn && userId && !redirectTo && planReady && plan && (Platform.OS !== 'web' || plan === 'premium') && firstSegment === '(tabs)' && segments[1] !== 'practice')} />
     {(redirectTo || verifyingAccess) && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={palette.primary} />
+      <StartupStatus compact />
     </View>}
     </>
   );
@@ -146,7 +144,9 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return <StartupMessage />;
+  // Browser text can render with system fallbacks while fonts download.
+  // Do not serialize authentication and navigation behind four font requests.
+  if (Platform.OS !== 'web' && !fontsLoaded && !fontError) return <StartupMessage />;
 
   return (
     <SafeAreaProvider>

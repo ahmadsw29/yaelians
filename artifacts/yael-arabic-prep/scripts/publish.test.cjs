@@ -6,6 +6,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const http = require('node:http');
 const { once } = require('node:events');
+const zlib = require('node:zlib');
+const { compressWebAssets } = require('./compress-web.cjs');
 
 const appRoot = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(appRoot, '../..');
@@ -29,6 +31,12 @@ test('packaged production server serves browsers without Expo Go', async t => {
   fs.writeFileSync(path.join(web, 'index.html'), html);
   fs.writeFileSync(path.join(web, 'manifest.webmanifest'), '{"display":"standalone"}');
   fs.writeFileSync(path.join(web, 'service-worker.js'), '// network only');
+  const assetPath = '/_expo/static/js/web/entry-0123456789abcdef.js';
+  fs.mkdirSync(path.dirname(path.join(web, assetPath)), { recursive: true });
+  const bundle = 'console.log("YAEL browser app");\n'.repeat(200);
+  fs.writeFileSync(path.join(web, assetPath), bundle);
+  const compressed = await compressWebAssets(web);
+  assert.ok(compressed.gzipBytes < compressed.originalBytes / 2);
   let server;
   vm.runInNewContext(source, {
     __dirname: path.join(fixture, 'server'),
@@ -50,6 +58,25 @@ test('packaged production server serves browsers without Expo Go', async t => {
   const manifest = await fetch(url + '/manifest.webmanifest');
   assert.equal(manifest.status, 200);
   assert.match(manifest.headers.get('content-type'), /application\/manifest\+json/);
+  assert.equal(manifest.headers.get('cache-control'), 'no-cache');
+  const htmlResponse = await fetch(url);
+  assert.equal(htmlResponse.headers.get('cache-control'), 'no-cache');
+  for (const [accept, expected] of [['gzip', 'gzip'], ['br', 'br'], ['gzip;q=0, br;q=0', undefined], ['br;q=0.1,gzip;q=1', 'gzip']]) {
+    const response = await new Promise((resolve, reject) => {
+      http.get(url + assetPath, { headers: { 'Accept-Encoding': accept } }, res => {
+        const chunks = [];
+        res.on('data', chunk => chunks.push(chunk));
+        res.on('end', () => resolve({ headers: res.headers, body: Buffer.concat(chunks) }));
+        res.on('error', reject);
+      }).on('error', reject);
+    });
+    assert.equal(response.headers['content-encoding'], expected);
+    assert.match(response.headers['cache-control'], /immutable/);
+    assert.equal(response.headers.vary, 'Accept-Encoding');
+    const decoded = expected === 'br' ? zlib.brotliDecompressSync(response.body)
+      : expected === 'gzip' ? zlib.gunzipSync(response.body) : response.body;
+    assert.equal(decoded.toString(), bundle);
+  }
 });
 
 test('missing packaged browser output is rejected rather than showing Expo Go', () => {

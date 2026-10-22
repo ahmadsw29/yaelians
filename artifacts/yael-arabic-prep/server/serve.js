@@ -101,7 +101,7 @@ function serveLandingPage(req, res, landingPageTemplate, appName) {
   res.end(html);
 }
 
-function serveStaticFile(urlPath, res, root = STATIC_ROOT) {
+function serveStaticFile(urlPath, res, root = STATIC_ROOT, req) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, '');
   const filePath = path.resolve(root, `.${safePath.startsWith('/') ? safePath : `/${safePath}`}`);
 
@@ -119,9 +119,28 @@ function serveStaticFile(urlPath, res, root = STATIC_ROOT) {
 
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-  const content = fs.readFileSync(filePath);
-  res.writeHead(200, { 'content-type': contentType, 'cache-control': ext === '.html' || urlPath === '/service-worker.js' || ext === '.webmanifest' ? 'no-cache' : 'public, max-age=3600' });
-  res.end(content);
+  const encodings = new Map(String(req?.headers['accept-encoding'] ?? '').split(',').map(part => {
+    const [name, ...params] = part.trim().split(';');
+    const quality = params.find(param => param.trim().startsWith('q='));
+    return [name, quality ? Number(quality.trim().slice(2)) : 1];
+  }));
+  const encoding = ['br', 'gzip']
+    .filter(name => (encodings.get(name) ?? encodings.get('*') ?? 0) > 0)
+    .sort((a, b) => (encodings.get(b) ?? encodings.get('*') ?? 0) - (encodings.get(a) ?? encodings.get('*') ?? 0))
+    .find(name => fs.existsSync(`${filePath}.${name === 'gzip' ? 'gz' : 'br'}`));
+  const servedPath = encoding ? `${filePath}.${encoding === 'gzip' ? 'gz' : 'br'}` : filePath;
+  const immutable = root === WEB_ROOT && /^\/(?:_expo\/static|assets)\//.test(urlPath)
+    && /[.-][a-f0-9]{16,}\./.test(urlPath);
+  res.writeHead(200, {
+    'content-type': contentType,
+    'cache-control': ext === '.html' || urlPath === '/service-worker.js' || ext === '.webmanifest'
+      ? 'no-cache' : immutable ? 'public, max-age=31536000, immutable' : 'public, max-age=3600',
+    'content-length': fs.statSync(servedPath).size,
+    'vary': 'Accept-Encoding',
+    ...(encoding ? { 'content-encoding': encoding } : {}),
+  });
+  if (req?.method === 'HEAD') return res.end();
+  fs.createReadStream(servedPath).on('error', () => res.destroy()).pipe(res);
 }
 
 // A missing browser export must fail publishing, not silently send students
@@ -147,18 +166,18 @@ const server = http.createServer((req, res) => {
     }
 
     if (pathname === '/') {
-      return serveStaticFile('/index.html', res, WEB_ROOT);
+      return serveStaticFile('/index.html', res, WEB_ROOT, req);
     }
   }
 
   const webFile = path.resolve(WEB_ROOT, `.${pathname}`);
   if (webFile.startsWith(`${WEB_ROOT}${path.sep}`) && fs.existsSync(webFile) && fs.statSync(webFile).isFile()) {
-    return serveStaticFile(pathname, res, WEB_ROOT);
+    return serveStaticFile(pathname, res, WEB_ROOT, req);
   }
   if (!path.extname(pathname) && req.headers.accept?.includes('text/html') && fs.existsSync(path.join(WEB_ROOT, 'index.html'))) {
-    return serveStaticFile('/index.html', res, WEB_ROOT);
+    return serveStaticFile('/index.html', res, WEB_ROOT, req);
   }
-  serveStaticFile(pathname, res);
+  serveStaticFile(pathname, res, STATIC_ROOT, req);
 });
 
 const port = parseInt(process.env.PORT || '3000', 10);

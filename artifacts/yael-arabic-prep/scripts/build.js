@@ -3,6 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
+const { compressWebAssets } = require('./compress-web.cjs');
 
 let metroProcess = null;
 
@@ -606,6 +607,7 @@ async function main() {
     }
   }
   console.log('Installable browser app verified; browser visitors will not be redirected to Expo Go.');
+  console.log('Precompressing browser assets...', await compressWebAssets(path.join(projectRoot, 'web-build')));
   process.exit(0);
 }
 

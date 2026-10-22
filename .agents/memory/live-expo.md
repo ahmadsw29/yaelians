@@ -14,6 +14,14 @@ Always show loading UI while authentication initializes instead of rendering not
 **Why:** Browser verification observed approximately twelve seconds of blank startup while authentication loaded, despite no application errors.
 **How to apply:** Retain explicit font and authentication loading states; do not mistake a successful bundle for completed UI startup.
 
+On the web, load optional custom fonts alongside authentication instead of blocking the entire app on their downloads.
+**Why:** Serial font loading delays the first usable screen on mobile connections. Native splash behavior remains separate.
+**How to apply:** Render browser text with system fallbacks while fonts load; never skip session or entitlement verification to make startup appear faster.
+
+Keep one redirect owner for the initial index route, and distinguish it from the tab group's home route even though both can have pathname `/`.
+**Why:** Competing index/layout redirects mixed native plan destinations with web subscription destinations and could leave a spinner during startup.
+**How to apply:** Let the index decide its initial destination; retain the layout's authorization guard for tab screens and protected deep links.
+
 Phone-sized web previews do not validate native iOS safe areas or floating-tab clearance.
 **Why:** Web checks passed while the user's native screenshot showed progress under the status bar and Next crowded by floating tabs. Excessive clearance left a large unwanted gap; removing native clearance let the bar cover Next again.
 **How to apply:** In this practice screen, the floating iOS bar can overlay the fixed footer. Retain one bottom clearance above it, without stacking duplicate bar and safe-area reservations. Avoid double automatic/manual scroll insets, and do not describe a web viewport check as native-device verification.

@@ -1,18 +1,19 @@
 import React from 'react';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
-import { ActivityIndicator, View } from 'react-native';
+import { Platform } from 'react-native';
 import { usePlanAccess } from '@/lib/PlanAccess';
-import { useColors } from '@/hooks/useColors';
+import { StartupStatus } from '@/components/StartupStatus';
 
 export default function IndexRoute() {
   const { isLoaded, isSignedIn } = useAuth();
   const { ready, plan } = usePlanAccess();
-  const colors = useColors();
   if (!isLoaded || (isSignedIn && !ready)) {
-    return <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={colors.primary} />
-    </View>;
+    return <StartupStatus compact />;
+  }
+  if (Platform.OS === 'web') {
+    if (!isSignedIn) return <Redirect href="/website" />;
+    return <Redirect href={plan === 'premium' ? '/(tabs)' : '/subscribe'} />;
   }
   if (!isSignedIn) return <Redirect href="/welcome" />;
   if (!plan) return <Redirect href="/plans" />;
