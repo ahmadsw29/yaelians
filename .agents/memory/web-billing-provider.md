@@ -25,3 +25,9 @@ Treat checkout activation and bank payout readiness as separate states.
 **Why:** The user explicitly requested enabling checkout while bank payout readiness was unconfirmed. Whop's payout documentation requires identity verification and a payout method for withdrawals; the available company response does not establish payout readiness.
 
 **How to apply:** Honor explicit checkout activation requests without claiming bank payouts are ready. Explain that the merchant must complete Whop's secure payout onboarding, and never treat a generic company verification badge as proof of KYC status.
+
+Use Whop's documented hosted payout portal for connected-account onboarding instead of guessing dashboard navigation.
+
+**Why:** The connected-account mobile and browser dashboards expose different controls; Settings → Payments configures buyer payment methods, not merchant bank payouts.
+
+**How to apply:** Generate a short-lived account link with the `payouts_portal` use case through the installed connection. Deliver it privately to the owner, warn against sharing it, and never persist its token or put it in the app. The owner enters identity and bank information directly on Whop.
