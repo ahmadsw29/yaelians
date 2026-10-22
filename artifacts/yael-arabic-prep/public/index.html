@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ar">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#f7f4ed" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/pwa-icon.png" />
+    <title>كلمة — YAEL Hebrew Prep</title>
+    <style id="expo-reset">
+      html, body { height: 100%; }
+      html { background-color: #f7f4ed; color-scheme: light; }
+      body { overflow: hidden; background-color: inherit; }
+      #root { display: flex; height: 100%; flex: 1; }
+      @media (prefers-color-scheme: dark) {
+        html { background-color: #111d1b; color-scheme: dark; }
+      }
+    </style>
+    <script id="appearance-bootstrap">
+      (function () {
+        // Appearance only: no account, learner or session data is stored here.
+        var preference = 'system';
+        try { preference = localStorage.getItem('yael-web-appearance') || 'system'; } catch (_) {}
+        var dark = preference === 'dark' ||
+          (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var background = dark ? '#111d1b' : '#f7f4ed';
+        document.documentElement.style.backgroundColor = background;
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', background);
+        document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', dark ? 'black-translucent' : 'default');
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>فعّل JavaScript لاستخدام التطبيق.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

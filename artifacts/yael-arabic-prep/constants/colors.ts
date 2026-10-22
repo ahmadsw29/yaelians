@@ -13,6 +13,7 @@
  */
 
 const colors = {
+  darkBackground: '#111d1b',
   light: {
     // Legacy aliases (kept for backward compatibility)
     text: '#17332f',

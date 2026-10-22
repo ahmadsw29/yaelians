@@ -39,7 +39,7 @@ export function useColors() {
   const dark = (preference === 'system' ? system : preference) === 'dark';
   const palette = dark ? {
     ...colors.light,
-    text: '#edf5ef', foreground: '#edf5ef', background: '#111d1b',
+    text: '#edf5ef', foreground: '#edf5ef', background: colors.darkBackground,
     card: '#1b2b27', cardForeground: '#edf5ef', primary: '#85cbbb', tint: '#85cbbb',
     primaryForeground: '#102923', secondary: '#253c34', secondaryForeground: '#c6ddd0',
     muted: '#283731', mutedForeground: '#a9b9b0', accent: '#513b30', accentForeground: '#f6bc9e',

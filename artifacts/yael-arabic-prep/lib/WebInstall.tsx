@@ -1,13 +1,35 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import { useColors, useThemePreference } from '@/hooks/useColors';
 
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 const Context = createContext({ canInstall: false, help: '', install: async () => {} });
 
 export function WebInstallProvider({ children }: { children: React.ReactNode }) {
+  const colors = useColors();
+  const { preference } = useThemePreference();
   const [event, setEvent] = useState<InstallEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [help, setHelp] = useState('');
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const ensureMeta = (name: string, content: string) => {
+      let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = name;
+        document.head.appendChild(meta);
+      }
+      meta.content = content;
+    };
+    ensureMeta('theme-color', colors.background);
+    ensureMeta('apple-mobile-web-app-capable', 'yes');
+    ensureMeta('apple-mobile-web-app-status-bar-style', colors.isDark ? 'black-translucent' : 'default');
+    document.documentElement.style.backgroundColor = colors.background;
+    document.documentElement.style.colorScheme = colors.isDark ? 'dark' : 'light';
+    document.body.style.backgroundColor = colors.background;
+    try { localStorage.setItem('yael-web-appearance', preference); } catch { /* Private browsing may deny storage. */ }
+  }, [colors.background, colors.isDark, preference]);
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const standalone = () => setInstalled(window.matchMedia('(display-mode: standalone)').matches
@@ -17,15 +39,7 @@ export function WebInstallProvider({ children }: { children: React.ReactNode }) 
     const done = () => { setInstalled(true); setEvent(null); };
     window.addEventListener('beforeinstallprompt', prompt);
     window.addEventListener('appinstalled', done);
-    const manifest = document.createElement('link');
-    manifest.rel = 'manifest'; manifest.href = '/manifest.webmanifest';
-    document.head.appendChild(manifest);
-    const icon = document.createElement('link');
-    icon.rel = 'apple-touch-icon'; icon.href = '/pwa-icon.png';
-    document.head.appendChild(icon);
-    const meta = document.createElement('meta');
-    meta.name = 'theme-color'; meta.content = '#10201c';
-    document.head.appendChild(meta);
+    // Installation tags are in public/index.html before iOS paints the status bar.
     // Network-only navigation fallback: never put learner/API data in a shared cache.
     if (!__DEV__ && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js').catch(() => setHelp('يمكنك استخدام التطبيق من المتصفح، أو إضافته يدويًا إلى الشاشة الرئيسية.'));
@@ -33,7 +47,6 @@ export function WebInstallProvider({ children }: { children: React.ReactNode }) 
     return () => {
       window.removeEventListener('beforeinstallprompt', prompt);
       window.removeEventListener('appinstalled', done);
-      manifest.remove(); icon.remove(); meta.remove();
     };
   }, []);
   const install = async () => {

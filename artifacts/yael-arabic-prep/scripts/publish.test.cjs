@@ -13,6 +13,38 @@ const appRoot = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(appRoot, '../..');
 const source = fs.readFileSync(path.join(appRoot, 'server/serve.js'), 'utf8');
 
+test('web launch chrome follows light, dark and system appearance without depending on storage', () => {
+  const html = fs.readFileSync(path.join(appRoot, 'public/index.html'), 'utf8');
+  const bootstrap = html.match(/<script id="appearance-bootstrap">([\s\S]*?)<\/script>/)[1];
+  for (const [preference, systemDark, expected] of [
+    ['light', true, false], ['dark', false, true],
+    ['system', true, true], ['system', false, false], [null, true, true],
+  ]) {
+    const metas = {};
+    const root = { style: {} };
+    vm.runInNewContext(bootstrap, {
+      localStorage: { getItem: () => preference },
+      matchMedia: () => ({ matches: systemDark }),
+      document: {
+        documentElement: root,
+        querySelector: selector => ({ setAttribute: (_, value) => { metas[selector] = value; } }),
+      },
+    });
+    assert.equal(root.style.backgroundColor, expected ? '#111d1b' : '#f7f4ed');
+    assert.equal(root.style.colorScheme, expected ? 'dark' : 'light');
+    assert.equal(metas['meta[name="apple-mobile-web-app-status-bar-style"]'], expected ? 'black-translucent' : 'default');
+    assert.equal(metas['meta[name="theme-color"]'], root.style.backgroundColor);
+  }
+  assert.doesNotThrow(() => vm.runInNewContext(bootstrap, {
+    localStorage: { getItem() { throw new Error('Storage denied'); } },
+    matchMedia: () => ({ matches: false }),
+    document: { documentElement: { style: {} }, querySelector: () => ({ setAttribute() {} }) },
+  }));
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(html, /id="root"/);
+  assert.equal((html.match(/name="viewport"/g) || []).length, 1);
+});
+
 test('publishing includes browser output while Git excludes it', () => {
   const deploymentIgnore = fs.readFileSync(path.join(workspaceRoot, '.replitignore'), 'utf8');
   const gitIgnore = fs.readFileSync(path.join(workspaceRoot, '.gitignore'), 'utf8');

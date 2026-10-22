@@ -26,6 +26,10 @@ Phone-sized web previews do not validate native iOS safe areas or floating-tab c
 **Why:** Web checks passed while the user's native screenshot showed progress under the status bar and Next crowded by floating tabs. Excessive clearance left a large unwanted gap; removing native clearance let the bar cover Next again.
 **How to apply:** In this practice screen, the floating iOS bar can overlay the fixed footer. Retain one bottom clearance above it, without stacking duplicate bar and safe-area reservations. Avoid double automatic/manual scroll insets, and do not describe a web viewport check as native-device verification.
 
+For this Expo single-page web export, use the public HTML template for pre-JavaScript installation and status-bar metadata, not a Router `+html` document.
+**Why:** A successful SPA export silently ignored `+html` and emitted the default viewport without iPhone launch metadata. Runtime-only tags arrive too late for some installed-iOS chrome decisions.
+**How to apply:** Check the exported HTML itself after shell changes. Preserve light/dark/system appearance and safe-area handling; browser screenshots cannot validate the actual installed iPhone status bar.
+
 The preview test browser may expose speech synthesis but have no installed voices.
 **Why:** Pronunciation checks found an empty real voice list; controlled speech events verified the UI lifecycle but could not verify audible Hebrew.
 **How to apply:** Distinguish simulated speech checks from actual audio verification. Do not substitute a non-Hebrew voice or claim phone pronunciation was heard based on a browser simulation.
