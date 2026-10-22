@@ -600,6 +600,12 @@ async function main() {
     web.on('error', reject);
     web.on('exit', code => code === 0 ? resolve() : reject(new Error('Web export failed')));
   });
+  for (const requiredFile of ['index.html', 'manifest.webmanifest', 'service-worker.js']) {
+    if (!fs.existsSync(path.join(projectRoot, 'web-build', requiredFile))) {
+      throw new Error(`Web export is incomplete: missing ${requiredFile}`);
+    }
+  }
+  console.log('Installable browser app verified; browser visitors will not be redirected to Expo Go.');
   process.exit(0);
 }
 

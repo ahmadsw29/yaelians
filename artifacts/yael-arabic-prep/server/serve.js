@@ -3,7 +3,7 @@
  *
  * Serves the output of build.js (static-build/) with two special routes:
  * - GET / or /manifest with expo-platform header → platform manifest JSON
- * - GET / without expo-platform → landing page HTML
+ * - GET / without expo-platform → installable browser app
  * Everything else falls through to static file serving from ./static-build/.
  *
  * Zero external dependencies — uses only Node.js built-ins (http, fs, path).
@@ -15,7 +15,6 @@ const path = require('path');
 
 const STATIC_ROOT = path.resolve(__dirname, '..', 'static-build');
 const WEB_ROOT = path.resolve(__dirname, '..', 'web-build');
-const TEMPLATE_PATH = path.resolve(__dirname, 'templates', 'landing-page.html');
 const basePath = (process.env.BASE_PATH || '/').replace(/\/+$/, '');
 
 const MIME_TYPES = {
@@ -125,8 +124,13 @@ function serveStaticFile(urlPath, res, root = STATIC_ROOT) {
   res.end(content);
 }
 
-const landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
-const appName = getAppName();
+// A missing browser export must fail publishing, not silently send students
+// to an Expo Go account they cannot access.
+for (const requiredFile of ['index.html', 'manifest.webmanifest', 'service-worker.js']) {
+  if (!fs.existsSync(path.join(WEB_ROOT, requiredFile))) {
+    throw new Error(`Missing web build file: ${requiredFile}. Run the production build before starting the server.`);
+  }
+}
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
@@ -143,8 +147,7 @@ const server = http.createServer((req, res) => {
     }
 
     if (pathname === '/') {
-      if (fs.existsSync(path.join(WEB_ROOT, 'index.html'))) return serveStaticFile('/index.html', res, WEB_ROOT);
-      return serveLandingPage(req, res, landingPageTemplate, appName);
+      return serveStaticFile('/index.html', res, WEB_ROOT);
     }
   }
 
