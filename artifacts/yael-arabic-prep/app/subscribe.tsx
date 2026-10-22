@@ -32,7 +32,7 @@ export function MembershipPage({ returning = false }: { returning?: boolean }) {
     if (status.data) void client.invalidateQueries({ queryKey: ['plan-access', userId] });
   }, [status.data, client, userId]);
   const checkout = async () => {
-    if (busy) return;
+    if (busy || !catalog.data?.checkoutEnabled) return;
     setBusy(true); setMessage(undefined);
     try {
       const result = await createBillingCheckout(await options());
@@ -68,7 +68,8 @@ export function MembershipPage({ returning = false }: { returning?: boolean }) {
     : active ? 'active' : returning ? 'pending' : status.data?.state ?? 'inactive';
   return <>
     <WebMembership
-      state={state} priceLabel={catalog.data?.checkoutEnabled ? catalog.data.priceLabel : null}
+      state={state} priceLabel={catalog.data?.priceLabel ?? null}
+      checkoutEnabled={catalog.data?.checkoutEnabled ?? false}
       busy={busy} verifyBusy={status.isFetching} cancelBusy={cancelBusy}
       message={message ?? (status.data?.complimentary ? 'لديك وصول كامل مجاني من الإدارة. لا توجد دفعات أو تجديد تلقائي لهذا الوصول.'
         : catalog.data && !catalog.data.checkoutEnabled ? 'إعداد الدفع قيد الإكمال. لن نطلب منك الدفع قبل تفعيل صفحة الدفع الآمنة.'

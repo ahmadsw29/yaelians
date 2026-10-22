@@ -8,6 +8,7 @@ import { ARABIC_BOLD_FONT } from '@/constants/typography';
 type State = 'checking' | 'inactive' | 'pending' | 'active' | 'error';
 type Props = {
   complimentary?: boolean;
+  checkoutEnabled: boolean;
   state: State; priceLabel: string | null; busy: boolean; verifyBusy: boolean; cancelBusy: boolean; message?: string;
   cancelAtPeriodEnd: boolean; periodEnd: string | null; canInstall: boolean; installHelp?: string;
   onCheckout: () => void; onVerify: () => void; onOpenApp: () => void; onInstall: () => void; onCancel: () => void;
@@ -70,8 +71,8 @@ export default function WebMembership(props: Props) {
               <Text style={[s.price, { color: priceLabel ? p.foreground : p.mutedForeground }]}>{priceLabel ? `${priceLabel} شهريًا` : 'السعر غير متاح حاليًا'}</Text>
               <Text style={[s.small, { color: p.mutedForeground }]}>يتجدّد تلقائيًا كل 30 يومًا حتى تلغيه. لا توجد فترة تجريبية مجانية. الدفع يتم في صفحة دفع آمنة في المتصفح.</Text>
             </View>
-            <ChunkyButton testID="web-checkout" label={busy ? 'جارٍ فتح صفحة الدفع…' : 'اشترك الآن'} icon="card" tone="sun"
-              disabled={busy || !priceLabel} onPress={props.onCheckout} />
+            <ChunkyButton testID="web-checkout" label={busy ? 'جارٍ فتح صفحة الدفع…' : props.checkoutEnabled ? 'اشترك الآن' : 'قريبًا — الدفع غير مفعّل'} icon="card" tone="sun"
+              disabled={busy || !priceLabel || !props.checkoutEnabled} onPress={props.onCheckout} />
           </View>}
 
           {(state === 'pending' || state === 'error') &&
