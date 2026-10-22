@@ -18,4 +18,10 @@ Shared environment configuration cannot be overridden by adding the same key sep
 
 **Why:** The configuration service rejected that conflicting placement. Checkout activation must remain independently controlled in development and production.
 
-**How to apply:** Put differing activation settings in their own environments; keep production disabled until merchant verification and explicit launch approval. Never assume a hidden provider product prevents charges through its checkout URL.
+**How to apply:** Put differing activation settings in their own environments. Production activation requires explicit user approval. Never assume a hidden provider product prevents charges through its checkout URL.
+
+Treat checkout activation and bank payout readiness as separate states.
+
+**Why:** The user explicitly requested enabling checkout while bank payout readiness was unconfirmed. Whop's payout documentation requires identity verification and a payout method for withdrawals; the available company response does not establish payout readiness.
+
+**How to apply:** Honor explicit checkout activation requests without claiming bank payouts are ready. Explain that the merchant must complete Whop's secure payout onboarding, and never treat a generic company verification badge as proof of KYC status.
