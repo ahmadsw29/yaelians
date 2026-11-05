@@ -1,3 +1,4 @@
+import { toWesternDigits } from '@/lib/display-numbers';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo, ActivityIndicator, Alert, Animated, Easing, Platform, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
@@ -174,7 +175,7 @@ export function FloatingTranslator({ userId }: { userId: string }) {
       const auth = await getStudyAuthOptions(() => clerk.session ?? null, userId, active);
       const result = await translateStudyText({ text: trimmed, direction }, { ...auth, signal: ac.signal });
       if (!active()) return;
-      setPhase({ kind: 'done', translation: result.translation });
+      setPhase({ kind: 'done', translation: toWesternDigits(result.translation) });
     } catch (error) {
       if (!active()) return;
       setPhase({ kind: 'error', ...describeError(error) });

@@ -64,7 +64,7 @@ export default function ReadingScreen() {
         افتح نصًا، اكتشف فكرته، وجاوب خطوة خطوة مع معلّمك.
       </Text>
       <Text style={{ color: p.foreground, lineHeight: 26, textAlign: 'right', writingDirection: 'rtl' }}>
-        نص عبري واحد وأسئلته، حتى ٦ أسئلة خلال ١٠ دقائق. ستبقى القطعة متاحة مع كل سؤال، وبعد إجابتك يظهر شرح بالعربية.
+        نص عبري واحد وأسئلته، حتى 6 أسئلة خلال 10 دقائق. ستبقى القطعة متاحة مع كل سؤال، وبعد إجابتك يظهر شرح بالعربية.
       </Text>
       <Text style={{ color: p.skyInk, lineHeight: 24, textAlign: 'right', writingDirection: 'rtl' }}>
         الأسئلة من النماذج التي أضفتها. الشروح تعليمية وليست مفتاحًا رسميًا.

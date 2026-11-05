@@ -13,6 +13,23 @@ const appRoot = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(appRoot, '../..');
 const source = fs.readFileSync(path.join(appRoot, 'server/serve.js'), 'utf8');
 
+test('Arabic number and date displays always use Western digits', () => {
+  const ts = require('typescript');
+  const module = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(appRoot, 'lib/display-numbers.ts'), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, { exports: module.exports, module, Date });
+  const { toWesternDigits, formatDisplayNumber, formatDisplayDate, formatDisplayDateTime } = module.exports;
+  assert.equal(toWesternDigits('\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669'), '0123456789');
+  assert.equal(toWesternDigits('\u06f0\u06f1\u06f2\u06f3\u06f4\u06f5\u06f6\u06f7\u06f8\u06f9'), '0123456789');
+  assert.equal(toWesternDigits('هدفك 20 كلمة'), 'هدفك 20 كلمة');
+  for (const value of [formatDisplayNumber(1234), formatDisplayNumber(48.9),
+    formatDisplayDate('2026-11-05T12:34:00Z'), formatDisplayDateTime(new Date('2026-11-05T12:34:00Z'))]) {
+    assert.doesNotMatch(value, /[\u0660-\u0669\u06f0-\u06f9]/);
+    assert.match(value, /[0-9]/);
+  }
+});
+
 test('checkout convenience preserves hosted destination and verified-state boundaries', () => {
   const ts = require('typescript');
   const module = { exports: {} };

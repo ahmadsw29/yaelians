@@ -23,6 +23,8 @@ import HomeFlashcardsEntry from '@/components/HomeFlashcardsEntry';
 import HomeReadingEntry from '@/components/HomeReadingEntry';
 import { DailyGoalsSection } from '@/components/DailyGoals';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
+import { useDailyStudyTip } from '@/hooks/useDailyStudyTip';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
@@ -33,10 +35,11 @@ export default function HomeScreen() {
   const p = usePlay();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const tip = useDailyStudyTip();
   const { stats, loading, refresh } = useStudy();
   useFocusEffect(useCallback(() => { refresh(); }, [user?.id]));
 
-  const styles = makeStyles(p, insets.top);
+  const styles = makeStyles(p, insets.top, insets.bottom);
   const accuracy = stats.answeredQuestions
     ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
     : 0;
@@ -64,13 +67,14 @@ export default function HomeScreen() {
         <Text style={styles.title}>أهلًا{firstName ? ` ${firstName}` : ''}،{"\n"}نبدأ درس اليوم؟</Text>
         <Text style={styles.subtitle}>خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.</Text>
       </View>
+      <View style={styles.sections}>
       <DailyGoalsSection />
 
       <View style={styles.hero}>
         <View style={styles.heroCopy}>
-          <View style={styles.lessonTag}><Text style={styles.lessonTagText}>جولة اليوم · ٢٠ كلمة</Text></View>
+          <View style={styles.lessonTag}><Text style={styles.lessonTagText}>جولة اليوم · 20 كلمة</Text></View>
           <Text style={styles.heroTitle}>كلمات تفتح{"\n"}لك المعنى</Text>
-          <Text style={styles.heroSub}>تدرّب على ٢٠ مفردة من نماذج YAEL</Text>
+          <Text style={styles.heroSub}>تدرّب على 20 مفردة من نماذج YAEL</Text>
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <View style={styles.heroHalo} />
@@ -106,6 +110,7 @@ export default function HomeScreen() {
       <HomeFlashcardsEntry />
 
       <ExamShortcuts />
+      </View>
 
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionTitle}>إنجازك</Text>
@@ -119,11 +124,11 @@ export default function HomeScreen() {
         <StatCard icon="book" value={loading ? '—' : `${stats.masteredWords}`} label="كلمة تعلّمتها" color={p.sky} />
       </View>
 
-      <View style={styles.tipCard}>
+      <View style={styles.tipCard} testID="daily-study-tip">
         <View style={styles.tipIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind="lumi" size={58} /></View>
         <View style={styles.tipCopy}>
           <Text style={styles.tipTitle}>نصيحة اليوم</Text>
-          <Text style={styles.tipBody}>انظر إلى الكلمات المحيطة بالكلمة الجديدة — غالبًا ستساعدك على فهم معناها.</Text>
+          <Text style={styles.tipBody} testID="daily-study-tip-text">{tip.text}</Text>
         </View>
       </View>
       <Text style={styles.footer}>تعلّم على مهلك، وأنت قادر على التقدّم.</Text>
@@ -142,11 +147,11 @@ function StatCard({ icon, value, label, color }: { icon: keyof typeof Ionicons.g
   );
 }
 
-function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
+function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset: number) {
   const c = p;
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    content: { paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 12, paddingBottom: 28, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    content: { paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 12, paddingBottom: 28 + (Platform.OS === 'web' ? WEB_TAB_BAR_HEIGHT : 56 + bottomInset), maxWidth: 600, width: '100%', alignSelf: 'center' },
     topLine: { flexDirection: 'row-reverse', alignItems: 'center', gap: 9, marginBottom: 22 },
     brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: p.brand, borderBottomWidth: 3, borderColor: p.brandShade, alignItems: 'center', justifyContent: 'center' },
     brand: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 19, flex: 1, textAlign: 'right' },
@@ -156,8 +161,9 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     eyebrow: { color: p.brandShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, marginBottom: 6 },
     title: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', textAlign: 'right', fontSize: 28, lineHeight: 38 },
     subtitle: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, textAlign: 'right', marginTop: 6 },
-    hero: { backgroundColor: p.brand, borderRadius: 26, borderBottomWidth: 7, borderColor: p.brandShade, padding: 18, marginBottom: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
-    rHero: { backgroundColor: p.coral, borderRadius: 26, borderBottomWidth: 7, borderColor: p.coralShade, padding: 18, marginBottom: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    sections: { gap: 24, marginBottom: 24 },
+    hero: { backgroundColor: p.brand, borderRadius: 26, borderBottomWidth: 7, borderColor: p.brandShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    rHero: { backgroundColor: p.coral, borderRadius: 26, borderBottomWidth: 7, borderColor: p.coralShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
     heroCopy: { flex: 1, minWidth: 150, alignItems: 'flex-end' },
     lessonTag: { backgroundColor: 'rgba(255,253,247,0.22)', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, marginBottom: 9 },
     lessonTagText: { color: p.onBrand, fontSize: 11, fontFamily: BOLD, fontWeight: '800' },
@@ -173,7 +179,7 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     seeAll: { color: p.skyShade, fontSize: 13, fontFamily: BOLD, fontWeight: '800' },
     path: { marginBottom: 20, paddingHorizontal: 4 },
     statsRow: { flexDirection: 'row', gap: 9, marginBottom: 17 },
-    studyCard: { backgroundColor: p.skySoft, borderRadius: 22, borderWidth: 2, borderBottomWidth: 6, borderColor: p.sky, padding: 12, marginBottom: 22, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    studyCard: { backgroundColor: p.skySoft, borderRadius: 22, borderWidth: 2, borderBottomWidth: 6, borderColor: p.sky, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     studyArt: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
     studyTitle: { color: p.skyInk, fontFamily: BOLD, fontWeight: '800', fontSize: 16 },
     studyBody: { color: p.skyInk, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },

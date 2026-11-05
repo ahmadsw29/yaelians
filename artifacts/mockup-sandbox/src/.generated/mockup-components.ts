@@ -5,6 +5,7 @@ export const modules: ModuleMap = {
   "./components/mockups/yael-account/Refreshed.tsx": () => import("../components/mockups/yael-account/Refreshed.tsx"),
   "./components/mockups/yael-celebration/Current.tsx": () => import("../components/mockups/yael-celebration/Current.tsx"),
   "./components/mockups/yael-celebration/TutorCelebration.tsx": () => import("../components/mockups/yael-celebration/TutorCelebration.tsx"),
+  "./components/mockups/yael-first-lesson/FirstLesson.tsx": () => import("../components/mockups/yael-first-lesson/FirstLesson.tsx"),
   "./components/mockups/yael-progress-cat/Current.tsx": () => import("../components/mockups/yael-progress-cat/Current.tsx"),
   "./components/mockups/yael-progress-cat/Kitten.tsx": () => import("../components/mockups/yael-progress-cat/Kitten.tsx")
 };

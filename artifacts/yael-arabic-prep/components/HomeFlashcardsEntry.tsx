@@ -45,7 +45,7 @@ export default function HomeFlashcardsEntry() {
 }
 
 const s = StyleSheet.create({
-  wrap: { marginBottom: 22, paddingTop: 14, paddingHorizontal: 6 },
+  wrap: { paddingTop: 14, paddingHorizontal: 6 },
   layer: { position: 'absolute', borderRadius: 22, borderWidth: 2, borderBottomWidth: 5 },
   layerBack: { top: 0, bottom: 14, left: 22, right: 22, transform: [{ rotate: '-3deg' }] },
   layerMid: { top: 6, bottom: 8, left: 12, right: 12, transform: [{ rotate: '2deg' }] },

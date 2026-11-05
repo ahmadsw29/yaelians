@@ -8,12 +8,12 @@ export default function ExamShortcuts() {
   const router = useRouter();
   return <View style={styles.group}>
     <Pressable testID="home-training" accessibilityRole="button"
-      onPress={() => router.push('/source-session?exam=b17&mode=training&section=0')}
+      onPress={() => router.push('/source-session')}
       style={({ pressed }) => [styles.card, { backgroundColor: c.secondary, borderColor: c.primary, opacity: pressed ? 0.8 : 1 }]}>
       <Ionicons name="timer-outline" size={29} color={c.primary} />
       <View style={styles.copy}>
         <Text style={[styles.title, { color: c.foreground }]}>تدريب 20 دقيقة</Text>
-        <Text style={[styles.detail, { color: c.foreground }]}>22 سؤالًا من نموذج B-17 • ابدأ أو أكمل محاولتك</Text>
+        <Text style={[styles.detail, { color: c.foreground }]}>22 سؤالًا متنوعًا • ابدأ أو أكمل محاولتك</Text>
       </View>
       <Ionicons name="arrow-back" size={20} color={c.primary} />
     </Pressable>
@@ -31,7 +31,7 @@ export default function ExamShortcuts() {
 }
 
 const styles = StyleSheet.create({
-  group: { gap: 10, marginBottom: 22 },
+  group: { gap: 14 },
   card: { flexDirection: 'row-reverse', alignItems: 'center', padding: 16, gap: 12, borderWidth: 1, borderRadius: 22, minHeight: 88 },
   copy: { flex: 1, gap: 5 },
   title: { fontFamily: Platform.OS === 'web' ? 'Inter_700Bold' : undefined, fontSize: 18, textAlign: 'right', writingDirection: 'rtl' },

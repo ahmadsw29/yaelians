@@ -25,3 +25,7 @@ Timed practice results must remain separate from account learning statistics unl
 **Why:** The requested recovery feature is for moving attempts between devices, not granting additional XP, mastery, streaks, or completed lessons. Restoring the same result repeatedly must not count as new learning.
 
 **How to apply:** Backup, restore, and explicit guest transfer must not submit lesson events or merge result-derived counters into account learning stats.
+
+Do not show the manual cross-device backup, restore, and guest-transfer panel on the timed-practice screen.
+**Why:** The user explicitly asked to delete that panel from the practice experience.
+**How to apply:** Keep local autosave and saved attempts intact. Removing these controls is not permission to erase cloud backups, transfer guest data automatically, or reintroduce the panel during recovery work.

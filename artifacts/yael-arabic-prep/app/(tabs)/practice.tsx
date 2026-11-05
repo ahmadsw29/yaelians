@@ -40,7 +40,6 @@ import {
   getPracticeAnswerFeedback,
   getPracticeAnswerState,
   getPracticeCompletionAnnouncement,
-  getPracticeModeReset,
   getProgressMarkerPosition,
   selectPracticeAnswer,
 } from '@/lib/progress-marker';
@@ -90,7 +89,7 @@ function FreePracticePrompt() {
     </View>
     <Text style={{ color: c.foreground, fontSize: 24, fontWeight: '700', textAlign: 'center' }}>استخدمت جولة المفردات اليوم</Text>
     <Text style={{ color: c.mutedForeground, fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-      تجربة مجانية تشمل جولة واحدة لمدة ٥ دقائق كل يوم. ارجع غدًا لجولة جديدة، أو استكشف الخطة الكاملة للتدرّب بلا حدود.
+      تجربة مجانية تشمل جولة واحدة لمدة 5 دقائق كل يوم. ارجع غدًا لجولة جديدة، أو استكشف الخطة الكاملة للتدرّب بلا حدود.
     </Text>
     <Pressable testID="vocabulary-return-home" accessibilityRole="button" onPress={() => router.replace('/')}
       style={({ pressed }) => ({ minHeight: 52, borderRadius: 16, backgroundColor: c.primary, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9, opacity: pressed ? 0.82 : 1 })}>
@@ -130,7 +129,8 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
   const [complete, setComplete] = useState(false);
   const [saved, setSaved] = useState(false);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
-  const [mode, setMode] = useState<'words' | 'reading'>(initialMode);
+  // The route owns the section; vocabulary and reading are separate sessions.
+  const mode = initialMode;
   const trackProgress = true;
   const [wordOrder, setWordOrder] = useState(initialOrder);
   const [reviewRound, setReviewRound] = useState(initialRoundNumber);
@@ -165,24 +165,6 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
     correct, completedTotal ?? activeQuestions.length, secondsLeft === 0,
   );
   usePracticeCompletionAnnouncement(complete, completionAnnouncement);
-
-  const changeMode = (nextMode: 'words' | 'reading') => {
-    if (selecting.current) return;
-    if (nextMode === mode) return;
-    const reset = getPracticeModeReset(nextMode);
-    setMode(reset.mode);
-    setIndex(reset.index);
-    setChoice(reset.choice);
-    resetHint();
-    readingAttempt.current = `reading-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setCorrect(reset.correct);
-    masteredWordIds.current = [];
-    setCelebrationKey(reset.celebrationKey);
-    setComplete(reset.complete);
-    setSaved(reset.saved);
-    setCompletionCelebration(null);
-    setSaveError(false);
-  };
 
   const revealHint = () => {
     if (mode !== 'words' || choice || complete || selecting.current || hintRef.current.length) return;
@@ -363,15 +345,11 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
         {secondsLeft !== null && <Text testID="vocabulary-countdown" accessibilityLabel={`الوقت المتبقي: ${Math.floor(secondsLeft / 60)} دقيقة و${secondsLeft % 60} ثانية`} style={[styles.progressCount, { minWidth: 44 }]}>{formatVocabularyTime(secondsLeft)}</Text>}
       </View>
 
-      <View style={[styles.modeSwitch, { alignItems: 'center', minHeight: 44 }]}>
-        {(isPremium || initialMode === 'reading') && <Pressable disabled={initialMode === 'reading'} accessibilityRole="button" accessibilityState={{ selected: mode === 'reading' }} onPress={() => changeMode('reading')} style={[styles.modeButton, mode === 'reading' && styles.modeButtonActive]}>
-          <Ionicons name="book" size={15} color={mode === 'reading' ? p.skyInk : c.mutedForeground} />
-          <Text style={[styles.modeText, mode === 'reading' && { color: p.skyInk }]}>فهم المقروء</Text>
-        </Pressable>}
-        {initialMode !== 'reading' && <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'words' }} onPress={() => changeMode('words')} style={[styles.modeButton, mode === 'words' && styles.modeButtonActive]}>
-          <Ionicons name="chatbubbles" size={15} color={mode === 'words' ? p.skyInk : c.mutedForeground} />
-          <Text style={[styles.modeText, mode === 'words' && { color: p.skyInk }]}>مفردات</Text>
-        </Pressable>}
+      <View testID="practice-category" style={styles.categoryBar}>
+        <View style={styles.categoryBadge}>
+          <Ionicons name={mode === 'reading' ? 'book' : 'chatbubbles'} size={15} color={p.skyInk} />
+          <Text accessibilityRole="header" style={styles.categoryText}>{mode === 'reading' ? 'فهم المقروء' : 'مفردات'}</Text>
+        </View>
       </View>
 
     </View>
@@ -478,10 +456,9 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 6 },
     backButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
     progressCount: { color: p.successInk, fontSize: 13, fontFamily: BOLD, fontWeight: '800', minWidth: 40, textAlign: 'center' },
-    modeSwitch: { flexDirection: 'row-reverse', backgroundColor: c.muted, borderRadius: 16, padding: 3, marginBottom: 8, gap: 4 },
-    modeButton: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 5, borderRadius: 12 },
-    modeButtonActive: { backgroundColor: p.skySoft, borderWidth: 2, borderColor: p.sky, borderBottomWidth: 4 },
-    modeText: { flexShrink: 1, minWidth: 0, textAlign: 'right', writingDirection: 'rtl', color: c.mutedForeground, fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22 },
+    categoryBar: { backgroundColor: c.muted, borderRadius: 16, padding: 3, marginBottom: 8, minHeight: 44, justifyContent: 'center' },
+    categoryBadge: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 5, borderRadius: 12, backgroundColor: p.skySoft, borderWidth: 2, borderColor: p.sky, borderBottomWidth: 4 },
+    categoryText: { flexShrink: 1, minWidth: 0, textAlign: 'right', writingDirection: 'rtl', color: p.skyInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22 },
     lessonKicker: { color: p.coralShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, textAlign: 'right', marginBottom: 10, letterSpacing: 0.3 },
     wordStage: { alignItems: 'center', backgroundColor: p.brandSoft, borderRadius: 14, paddingVertical: 4, paddingLeft: 44 },
     hebrew: { color: c.foreground, fontSize: 28, lineHeight: 36, fontFamily: BOLD, fontWeight: '800', textAlign: 'center', writingDirection: 'rtl' },

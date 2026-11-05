@@ -13,3 +13,7 @@ Daily targets are planning aids, not earned mastery, XP, or permission to bypass
 Goals currently use the device-local day and on-device account-scoped storage.
 **Why:** This keeps the planner usable alongside offline learning without changing authoritative server quotas or XP. Cross-device goal synchronization is separate work.
 **How to apply:** Keep the device-only disclosure honest, preserve damaged data rather than silently resetting it, and do not confuse local goal rollover with the server's free-usage reset.
+
+Home advice must use 30 different YAEL study tips, showing one per day rather than fixed text or a new random tip on every visit.
+**Why:** The user explicitly asked for “30 advice, 1 per day” after noticing the same advice never changed.
+**How to apply:** Keep the advice stable within the device-local day, consistent with the daily planner above. Ensure the entire card can scroll above the bottom navigation, including its last line.

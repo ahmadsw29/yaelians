@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IMPORTED_EXAMS } from '../../artifacts/yael-arabic-prep/lib/solved-exams';
 import { restatementExam, restatementSessionKey } from '../../artifacts/yael-arabic-prep/lib/restatement-practice';
@@ -7,6 +8,23 @@ import {
   newSourceSession, parseSourceSession, saveSourceSession, storageKey,
 } from '../../artifacts/yael-arabic-prep/lib/source-session';
 import { accountStorageKeys } from '../../artifacts/yael-arabic-prep/lib/deletionStorage';
+
+test('timed training keeps source metadata out of its entry and presentation', () => {
+  // Structural guard alongside browser checks of intro, questions, and review.
+  // Internal model IDs must remain unchanged for saved attempts and access rules.
+  const screen = readFileSync(new URL('../../artifacts/yael-arabic-prep/components/SourceSessionScreen.tsx', import.meta.url), 'utf8');
+  const entry = readFileSync(new URL('../../artifacts/yael-arabic-prep/components/ExamShortcuts.tsx', import.meta.url), 'utf8');
+  expect(screen).not.toContain('sourceFilename');
+  expect(screen.match(/\bexam\.title\b/g)).toHaveLength(1);
+  expect(screen).toContain("const modelTitle = mode === 'full' ? exam.title : null;");
+  for (const line of screen.split('\n').filter(line => /q(?:q)?\.sourcePage/.test(line))) {
+    expect(line).toContain("mode === 'full'");
+  }
+  expect(entry).not.toMatch(/B-17|sourceFilename/);
+  expect(entry).toContain("router.push('/source-session')");
+  expect(screen).toContain("const examId = defaultTraining ? 'b17' : one(params.exam);");
+  expect(screen).toContain('حلول مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا');
+});
 
 test('restored training and full sessions keep answers, essay, results, and original deadlines', () => {
   const exam = IMPORTED_EXAMS[0];

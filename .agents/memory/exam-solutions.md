@@ -13,3 +13,7 @@ Mixed exam-section training should remain directly accessible from the homepage 
 Focused restatement practice must retain the original uploaded questions and options, rather than replace them with shorter invented questions.
 **Why:** The user requested rephrasing practice using the wording and length of the supplied exams.
 **How to apply:** Keep original source references and generated-solution labels; treat focused practice as a choice within the existing timed-section allowance, not a new free allowance.
+
+Do not display file names, model codes, uploaded-file references, or source-page numbers anywhere in the 20-minute training flow, including its homepage entry, headers, questions, results, and review.
+**Why:** The user repeatedly objected to source details and clarified that learners should not see the file's name anywhere in this training, not merely in its introduction.
+**How to apply:** Keep internal source metadata and saved-attempt identities unchanged. Preserve the AI-generated/nonofficial solution disclaimer without mentioning source files. This request concerns 20-minute training, not the separate full-exam library.

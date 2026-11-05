@@ -37,6 +37,10 @@ Vocabulary practice should show progress, the vocabulary category, the word and 
 
 **How to apply:** Use a compact question layout and a persistent header; do not solve footer overlap by reserving excessive empty space. Preserve access to content when text is enlarged.
 
-Reading comprehension must have its own home entry as the third practice card, after vocabulary and restatement.
-**Why:** The user said the reading section was missing and explicitly requested it in the third row.
-**How to apply:** Preserve that order when adding or moving home cards; daily goal summaries are not practice cards.
+Reading comprehension must be a separate section, with its own home entry as the third practice card after vocabulary and restatement. Do not put a reading tab or mode switch inside vocabulary practice.
+**Why:** The user requested reading in the third row, then explicitly rejected having it inside “مفردات” and asked to keep it separate.
+**How to apply:** Preserve that home order and route-specific sessions. Shared rendering code is fine, but learners must not switch vocabulary and reading inside one round. Daily goal summaries are not practice cards.
+
+Use Western digits `0123456789` throughout the app, not Arabic-Indic or Persian digits, while retaining Arabic text and RTL layout.
+**Why:** The user explicitly requested “1234567890 numbers only not arabic ones!”
+**How to apply:** Apply this to copy, goals, scores, timers, prices, dates, translation output, and design previews. Explicitly select Latin numbering for Arabic locale formatting; normalize digit input without changing saved numerical values.

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { formatDisplayDate } from '@/lib/display-numbers';
 import { Modal, Platform, Pressable, Text, View } from 'react-native';
 import { useAuth, useClerk, useUser } from '@clerk/expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -131,7 +132,7 @@ export function MembershipPage({ returning = false }: { returning?: boolean }) {
         : undefined)}
       complimentary={status.data?.complimentary ?? false}
       cancelAtPeriodEnd={status.data?.cancelAtPeriodEnd ?? false}
-      periodEnd={status.data?.periodEnd ? new Date(status.data.periodEnd).toLocaleDateString('ar') : null}
+      periodEnd={status.data?.periodEnd ? formatDisplayDate(status.data.periodEnd) : null}
       canInstall={active && install.canInstall}
       installHelp={install.help}
       onCheckout={useAccountEmail => void checkout(useAccountEmail)} onVerify={() => void verify()}

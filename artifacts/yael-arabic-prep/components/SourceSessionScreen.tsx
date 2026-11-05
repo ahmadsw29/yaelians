@@ -10,7 +10,6 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import PetTeacher from '@/components/PetTeacher';
 import { QuestionPrompt } from '@/components/Playful';
 import PracticeCelebration from '@/components/PracticeCelebration';
-import SourceSessionBackup from '@/components/SourceSessionBackup';
 import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
@@ -37,11 +36,20 @@ export default function SourceSessionScreen() {
   const c = useColors();
   const router = useRouter();
   const params = useLocalSearchParams<{ exam?: string; mode?: string; section?: string; focus?: string }>();
-  const examId = one(params.exam);
-  const mode = one(params.mode);
-  const sectionRaw = one(params.section);
+  // The home practice entry uses a neutral URL; identifiers remain internal so
+  // its existing saved-attempt key and daily allowance do not change.
+  const defaultTraining = params.exam === undefined && params.mode === undefined
+    && params.section === undefined && params.focus === undefined;
+  const examId = defaultTraining ? 'b17' : one(params.exam);
+  const mode = defaultTraining ? 'training' : one(params.mode);
+  const sectionRaw = defaultTraining ? '0' : one(params.section);
   const focusRaw = one(params.focus);
   const focused = focusRaw === 'restatement';
+  useEffect(() => {
+    if (!defaultTraining && examId === 'b17' && mode === 'training' && sectionRaw === '0' && focusRaw === undefined) {
+      router.replace('/source-session');
+    }
+  }, [defaultTraining, examId, mode, sectionRaw, focusRaw, router]);
   const activityKey = useMemo(
     () => `timed-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
     [examId, mode, sectionRaw, focusRaw],
@@ -51,12 +59,12 @@ export default function SourceSessionScreen() {
   const section = sectionRaw !== undefined && /^\d+$/.test(sectionRaw) ? Number(sectionRaw) : null;
   let problem = '';
   if (focusRaw !== undefined && !focused) problem = 'نوع التركيز غير معروف.';
-  else if (!exam) problem = 'لم نجد هذا النموذج في المكتبة.';
+  else if (!exam) problem = 'لم نجد أسئلة هذه الجلسة.';
   else if (mode !== 'training' && mode !== 'full') problem = 'نوع الجلسة غير معروف.';
-  else if (mode === 'training' && (section === null || section >= exam.sections.length)) problem = 'رقم القسم غير صالح لهذا النموذج.';
+  else if (mode === 'training' && (section === null || section >= exam.sections.length)) problem = 'اختيار جلسة التدريب غير صالح.';
   else if (focused && mode !== 'training') problem = 'تدريب إعادة الصياغة متاح لقسم واحد فقط.';
   else if (focused && exam.sections[section ?? 0].length === 0) problem = 'لا توجد أسئلة إعادة صياغة في هذا القسم.';
-  else if (exam.sections.length === 0 || (!focused && exam.sections.some(s => s.length === 0))) problem = 'محتوى هذا النموذج غير مكتمل.';
+  else if (exam.sections.length === 0 || (!focused && exam.sections.some(s => s.length === 0))) problem = 'محتوى هذه الجلسة غير مكتمل.';
 
   const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
   useEffect(() => {
@@ -111,7 +119,7 @@ function InvalidScreen({ message }: { message: string }) {
   const s = makeStyles(c);
   const router = useRouter();
   return <View style={s.screen}>
-    <Header title="جلسة تدريب" caption="نماذج مرفوعة" />
+    <Header title="جلسة تدريب" caption="استعدادك لامتحان YAEL" />
     <View style={s.content}>
       <View style={s.error}>
         <Text style={s.title}>تعذّر فتح الجلسة</Text>
@@ -134,7 +142,6 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
   const current = useRef<SourceSession | null>(null);
   const mounted = useRef(true);
   const revision = useRef(0);
-  const restoring = useRef(false);
   const [session, setSession] = useState<SourceSession | null>(null);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,7 +169,6 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
     });
   }
   function commit(next: SourceSession | null) {
-    if (restoring.current) return;
     if (next && !next.attemptId) next = { ...next, attemptId: current.current?.attemptId ?? `source-${Date.now()}-${Math.random().toString(36).slice(2)}` };
     for (const event of timedDailyGoalEvents(current.current, next, exam.sections, next ? next.sections.length + (next.mode === 'full' ? 1 : 0) : 0)) {
       goalEvents.current.set(`${event.metric}:${event.id}`, event);
@@ -177,23 +183,6 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
     setSession(next);
     if (old !== next?.stage) { setConfirmation(null); setNow(Date.now()); }
     persist(next);
-  }
-
-  async function restoreBackup(next: SourceSession) {
-    // Save first: a failed disk write must not replace the displayed attempt.
-    restoring.current = true;
-    try {
-      await saveSourceSession(key, next);
-      if (!mounted.current) return;
-      current.current = next;
-      setSession(next);
-      setCompletionCelebration(null);
-      setConfirmation(null);
-      setNow(Date.now());
-      setNotice('');
-      setSaveError(false);
-      setLoadError(false);
-    } finally { restoring.current = false; }
   }
 
   useEffect(() => {
@@ -224,7 +213,6 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
 
   useEffect(() => {
     function tick() {
-      if (restoring.current) return;
       const t = Date.now();
       setNow(t);
       const prev = current.current;
@@ -238,7 +226,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
   }, []);
 
   function edit(update: (x: SourceSession) => SourceSession): boolean {
-    if (restoring.current || !canPractice) return false;
+    if (!canPractice) return false;
     const prev = current.current;
     if (!prev || isDone(prev) || prev.stage !== session?.stage) return false;
     const next = catchUp(prev, Date.now());
@@ -257,7 +245,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
     }
   }
 
-  const sectionLabel = focused ? 'تدريب إعادة صياغة' : mode === 'training' ? `تدريب القسم ${(section ?? 0) + 1}` : 'النموذج كاملًا';
+  const sectionLabel = focused ? 'تدريب إعادة صياغة' : mode === 'training' ? 'تدريب متنوع' : 'النموذج كاملًا';
   const done = session ? isDone(session) : false;
   const essayStage = session ? isEssayStage(session) : false;
   const active = !!session && !done;
@@ -299,7 +287,10 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
     </Pressable>;
   }
 
-  const headerTitle = focused ? 'إعادة صياغة' : active ? (essayStage ? `${exam.title} • التعبير الكتابي` : `${exam.title} • القسم ${(srcSection ?? 0) + 1}`) : `نموذج ${exam.title}`;
+  // Model identity is for the full-exam library only, never timed training.
+  const modelTitle = mode === 'full' ? exam.title : null;
+  const headerTitle = mode === 'training' ? (focused ? 'إعادة صياغة' : 'تدريب 20 دقيقة')
+    : active ? (essayStage ? `${modelTitle} • التعبير الكتابي` : `${modelTitle} • القسم ${(srcSection ?? 0) + 1}`) : `نموذج ${modelTitle}`;
   const clock = active ? <View accessible accessibilityLabel={`الوقت المتبقي ${Math.floor(seconds / 60)} دقيقة و${seconds % 60} ثانية`}
     style={[s.clock, seconds <= 60 && { borderColor: c.destructive }]}>
     <Ionicons name="time-outline" color={seconds <= 60 ? c.destructive : c.primary} size={18} />
@@ -308,11 +299,9 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
 
   return (
     <View style={s.screen}>
-      <Header title={headerTitle} caption={focused ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={clock} />
+      <Header title={headerTitle} caption={mode === 'training' ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={clock} />
       <KeyboardAwareScrollViewCompat bottomOffset={24} keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
-        {!loading && <SourceSessionBackup userId={userId} exam={exam} mode={mode} section={section} focused={focused}
-          session={session} onRestore={restoreBackup} />}
         {loading ? <View style={{ gap: 12 }}>
           {[120, 64, 64, 64].map((h, i) => <View key={i} style={[s.skeleton, { height: h }]} />)}
           <Text style={s.caption}>جارٍ استعادة محاولتك…</Text>
@@ -328,24 +317,24 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
           {saveError ? <View style={s.error}>
             <Text accessibilityRole="alert" style={s.body}>تعذّر حفظ آخر التغييرات على هذا الجهاز. لا تغادر قبل إعادة الحفظ.</Text>
             {button('إعادة الحفظ', () => persist(current.current), 'source-retry-save', true)}
-          </View> : session && <Text style={s.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ محليًا • استخدم النسخ إلى الحساب لحفظه على أجهزتك الأخرى'}</Text>}
+          </View> : session && <Text style={s.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ على هذا الجهاز'}</Text>}
 
           {!session ? <>
             {!canPractice && <Text style={s.body}>التدريب غير متاح الآن: ربما استُخدم القسم اليومي أو تعذّر التحقق من الاتصال. يمكنك استعادة نتيجتك ومراجعتها؛ لا تبدأ محاولة جديدة.</Text>}
             <PetTeacher />
-            <Text style={s.eyebrow}>{focused ? 'تدريب إعادة صياغة' : `${exam.title} • ${exam.sourceFilename}`}</Text>
+            {focused && <Text style={s.eyebrow}>تدريب إعادة صياغة</Text>}
             <Text style={s.hero}>{mode === 'training' ? (focused ? `إعادة صياغة،\n20 دقيقة.` : `قسم واحد،\n20 دقيقة.`) : `النموذج كاملًا،\nبإيقاعه الحقيقي.`}</Text>
             <View style={s.card}>
               <Text style={s.title}>قبل أن تبدأ</Text>
               {mode === 'training'
-                ? <Text style={s.body}>{focused ? `${exam.sections[section ?? 0].length} سؤال إعادة صياغة من نماذج حقيقية خلال 20 دقيقة. دون تعبير كتابي.` : `القسم ${(section ?? 0) + 1} من النموذج: ${exam.sections[section ?? 0].length} سؤالًا خلال 20 دقيقة. ينتهي التدريب بعد هذا القسم، دون تعبير كتابي.`}</Text>
+                ? <Text style={s.body}>{focused ? `${exam.sections[section ?? 0].length} سؤال إعادة صياغة خلال 20 دقيقة. دون تعبير كتابي.` : `${exam.sections[section ?? 0].length} سؤالًا متنوعًا خلال 20 دقيقة، دون تعبير كتابي.`}</Text>
                 : <Text style={s.body}>{exam.sections.length} أقسام بالترتيب الأصلي، 20 دقيقة لكل قسم، ثم 15 دقيقة لموضوع التعبير.</Text>}
               <Text style={s.body}>يمكنك التنقّل وتغيير اختيارك داخل القسم الحالي. التسليم أو انتهاء الوقت يغلق القسم نهائيًا.</Text>
               <Text style={s.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة. الحفظ تلقائي على الجهاز فقط؛ يمكنك نسخ المحاولة إلى حسابك واستعادتها يدويًا على جهاز آخر.</Text>
             </View>
             <View style={s.notice}>
-              <Text style={s.title}>مستند تدريب مرفوع</Text>
-              <Text style={s.body}>الأسئلة من ملفك المرفوع وبترتيبها الأصلي. هذا تدريب على المحتوى، وليس واجهة امتحان YAELNET الفعلي. أعددنا حلولًا وشروحات بالعربية للتصحيح بعد التسليم؛ هي حلول مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا وقد تحتاج مراجعة معلّم.</Text>
+              <Text style={s.title}>عن هذا التدريب</Text>
+              <Text style={s.body}>هذا تدريب للاستعداد للامتحان، وليس واجهة امتحان YAELNET الفعلي. أعددنا حلولًا وشروحات بالعربية للتصحيح بعد التسليم؛ هي حلول مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا وقد تحتاج مراجعة معلّم.</Text>
               <Text style={s.caption}>لا تدخل الأسئلة المعلّمة «تحتاج مراجعة» في النتيجة. لا تُمنح علامة آلية للتعبير.</Text>
             </View>
             {button('ابدأ • يبدأ الوقت الآن', () => { if (!canPractice) return; setNotice(''); setNow(Date.now()); commit(newSourceSession(exam, mode, section)); }, 'source-start', false, !canPractice)}
@@ -356,7 +345,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
             {q ? <>
               <View style={s.row}>
                 <Text style={s.caption}>{questions.length - unanswered} / {questions.length} إجابة</Text>
-                <Text style={s.eyebrow}>السؤال {session.question + 1} • {TYPE_LABEL[q.type] ?? q.type} • صفحة {q.sourcePage}</Text>
+                <Text style={s.eyebrow}>السؤال {session.question + 1} • {TYPE_LABEL[q.type] ?? q.type}{mode === 'full' ? ` • صفحة ${q.sourcePage}` : ''}</Text>
               </View>
               <View style={s.progressTrack}><View style={[s.progressFill, { width: `${((questions.length - unanswered) / questions.length) * 100}%` }]} /></View>
               {!!q.passage && <View style={s.card}>
@@ -407,7 +396,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
               {button('تسليم التعبير وإنهاء النموذج', () => setConfirmation({ kind: 'submit', stage: session.stage }), 'source-submit')}
             </> : null}
           </> : <>
-            <Text style={s.eyebrow}>{focused ? 'انتهى تدريب إعادة صياغة' : `انتهت الجلسة • ${exam.title}`}</Text>
+            <Text style={s.eyebrow}>{focused ? 'انتهى تدريب إعادة صياغة' : mode === 'training' ? 'انتهى تدريب 20 دقيقة' : `انتهت الجلسة • ${modelTitle}`}</Text>
             {completionCelebration && srcFeedback === 'celebrate' && <PracticeCelebration variant={completionCelebration} />}
             <Text style={s.hero}>{srcFeedback === 'celebrate' ? `أنهيت التدريب.\nوقت المراجعة.` : srcFeedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات' : srcFeedback === 'review' ? 'جولة للمراجعة: راجع الأسئلة التي أخطأت فيها ثم حاول مجددًا' : 'تقدّم ثابت. راجع الأخطاء القليلة وواصل'}</Text>
             <View style={s.card}>
@@ -441,7 +430,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
               </View>
             </View>
             {session.sections.map((secIdx, si) => <View key={secIdx} style={{ gap: 12 }}>
-              <Text style={s.title}>{focused ? 'مراجعة اختياراتك' : `القسم ${secIdx + 1} • مراجعة اختياراتك`}</Text>
+              <Text style={s.title}>{mode === 'training' ? 'مراجعة اختياراتك' : `القسم ${secIdx + 1} • مراجعة اختياراتك`}</Text>
               {exam.sections[secIdx].map((qq, qi) => {
                 const sel = session.answers[si][qi];
                 const st: AnswerReviewState = getAnswerReviewState(sel, qq.answer);
@@ -452,7 +441,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
                     <Ionicons name={t.icon} size={18} color={t.fg} />
                     <Text style={[s.statusText, { color: t.fg }]}>{ANSWER_REVIEW_LABELS[st]}</Text>
                   </View>
-                  <Text style={s.eyebrow}>السؤال {qi + 1} • صفحة {qq.sourcePage}{focused ? '' : ` • ${exam.title}`}</Text>
+                  <Text style={s.eyebrow}>السؤال {qi + 1}{mode === 'full' ? ` • صفحة ${qq.sourcePage} • ${modelTitle}` : ''}</Text>
                   {!!qq.passage && qi > 0 && exam.sections[secIdx][qi - 1].passage === qq.passage ? null : !!qq.passage && <Text selectable style={s.hebrewSmall}>{qq.passage}</Text>}
                   <Text selectable style={s.hebrew}>{qq.number}. {qq.prompt}</Text>
                   {qq.options.map((o, oi) => {

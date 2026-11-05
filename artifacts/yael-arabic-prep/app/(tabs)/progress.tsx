@@ -70,7 +70,7 @@ export default function ProgressScreen() {
         </View>
         <View style={styles.weekNote}>
           <MaterialCommunityIcons name="lightbulb-on-outline" size={18} color="#a56c44" />
-          <Text style={styles.weekNoteText}>٥ دقائق كل يوم أفضل من ساعة مرة بالأسبوع.</Text>
+          <Text style={styles.weekNoteText}>5 دقائق كل يوم أفضل من ساعة مرة بالأسبوع.</Text>
         </View>
       </View>
 

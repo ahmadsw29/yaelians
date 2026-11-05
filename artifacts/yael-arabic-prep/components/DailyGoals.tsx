@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { formatDisplayNumber as ar, toWesternDigits } from '@/lib/display-numbers';
 import {
   AccessibilityInfo, ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, Pressable,
   ScrollView, StyleSheet, Text, TextInput, View,
@@ -32,7 +33,6 @@ const PRESETS: { id: string; label: string; free: DailyTargets; premium: DailyTa
 
 const clamp = (n: number, max: number) => Math.max(0, Math.min(max, Math.round(Number.isFinite(n) ? n : 0)));
 const same = (a: DailyTargets, b: DailyTargets) => METRICS.every((m) => a[m.key] === b[m.key]);
-const ar = (n: number) => n.toLocaleString('ar-EG');
 
 function useReducedMotion() {
   const [reduced, setReduced] = useState(false);
@@ -277,7 +277,7 @@ function Stepper({ meta, value, onChange }: { meta: Meta; value: number; onChang
         {btn(1)}
         <TextInput value={text ?? String(value)} keyboardType="number-pad" maxLength={3} selectTextOnFocus
           accessibilityLabel={`هدف ${meta.label} بال${meta.unit}، الحد ${meta.max}`}
-          onChangeText={(t) => { const d = t.replace(/[^0-9٠-٩]/g, '').replace(/[٠-٩]/g, (c) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))); setText(d); onChange(d === '' ? 0 : Number(d)); }}
+          onChangeText={(t) => { const d = toWesternDigits(t).replace(/[^0-9]/g, ''); setText(d); onChange(d === '' ? 0 : Number(d)); }}
           onBlur={() => setText(null)}
           style={[st.input, { color: p.foreground, backgroundColor: p.background, borderColor: p.border }]} />
         {btn(-1)}

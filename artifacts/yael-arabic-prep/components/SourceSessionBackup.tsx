@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { formatDisplayDateTime } from '@/lib/display-numbers';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSession } from '@clerk/expo';
 import { useRouter } from 'expo-router';
@@ -110,7 +111,7 @@ export default function SourceSessionBackup({ userId, exam, mode, section, focus
     </> : <>
       <Text style={styles.text}>{busy ? 'جارٍ تنفيذ العملية…' : backup.isPending ? 'جارٍ التحقق من نسخة الحساب…'
         : backup.isError ? 'تعذّر التحقق من نسخة الحساب. المحاولة المحلية لم تتغيّر.'
-        : backup.data?.savedAt ? `آخر نسخة للحساب: ${new Date(backup.data.savedAt).toLocaleString('ar')} • التغييرات اللاحقة محلية حتى تنسخها مجددًا.`
+        : backup.data?.savedAt ? `آخر نسخة للحساب: ${formatDisplayDateTime(backup.data.savedAt)} • التغييرات اللاحقة محلية حتى تنسخها مجددًا.`
         : 'لا توجد نسخة للحساب لهذا القسم حتى الآن.'}</Text>
       {button('تحديث حالة النسخة', () => { void backup.refetch(); }, 'timed-refresh', backup.isFetching)}
       {button('نسخ إلى الحساب', () => setAction('backup'), 'timed-backup', !session || !backup.data || backup.isError || backup.isFetching)}
