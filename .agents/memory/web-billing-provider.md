@@ -39,3 +39,11 @@ Do not label every return from checkout as a payment still processing.
 The user wants the actual checkout simplified, ideally Apple Pay directly inside the app's website—not merely a clearer subscription page before an external form.
 **Why:** The user repeated that the provider checkout itself asks for too much information and rejected app-side page improvements as the solution to that problem.
 **How to apply:** Distinguish app-side convenience from provider checkout changes. Explain supported-integration limits honestly; never imply a decorative Apple Pay button is functional or that moving checkout overrides bank declines.
+
+Reducing repeated checkout details must still allow a different payer email.
+**Why:** The user specifically wants fewer fields in the provider checkout, but someone else may pay for the learner. Receipt email must not become an access-control identity.
+**How to apply:** Prefilling an already-verified email is a convenience with an explicit opt-out before checkout; keep paid entitlement bound to the authenticated learner through server verification.
+
+Do not rely on Whop's documented `email.hidden=1` option without verifying the actual hosted page.
+**Why:** The live hosted checkout still displayed its prefilled email field despite that documented parameter. Wallet buttons were visible, but a URL flag alone did not establish that a field disappeared.
+**How to apply:** Prefer honest prefill behavior, leave the field editable, and verify the provider-rendered form before promising fewer visible fields.

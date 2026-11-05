@@ -18,6 +18,10 @@ The managed Clerk tenant rejects built-in first_name during signup. Display name
 **Why:** Real signup returned HTTP 422 for first_name; built-in names are not enabled on this tenant. Metadata must never grant authorization.
 **How to apply:** Keep login/signup limited to configured identity fields; preserve existing metadata when editing the profile.
 
+The user wants this app's passwords to be easy to create and rejects long minimum-length requirements.
+**Why:** The user repeated the request after seeing a 15-character minimum during password reset.
+**How to apply:** Treat signup and reset as one provider-enforced password-policy change, not a cosmetic error-message fix. Do not claim the requirement was lowered unless the identity provider actually accepts the new policy.
+
 Account-deletion testing must use a newly created disposable account, never an existing learner.
 **Why:** The user explicitly prohibited deleting existing users during implementation or testing.
 **How to apply:** Establish that the test account was created for the current test before taking any destructive action.

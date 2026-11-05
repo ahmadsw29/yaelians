@@ -13,7 +13,7 @@ type Props = {
   checkoutEnabled: boolean;
   state: State; priceLabel: string | null; busy: boolean; verifyBusy: boolean; cancelBusy: boolean; message?: string;
   cancelAtPeriodEnd: boolean; periodEnd: string | null; canInstall: boolean; installHelp?: string;
-  onCheckout: () => void; onVerify: () => void; onOpenApp: () => void; onInstall: () => void; onCancel: () => void;
+  onCheckout: (useAccountEmail?: boolean) => void; onVerify: () => void; onOpenApp: () => void; onInstall: () => void; onCancel: () => void;
   onSignOut: () => void; onPrivacy: () => void; onTerms: () => void;
   onAccount: () => void;
 };
@@ -28,6 +28,7 @@ const HEAD: Record<State, { title: string; text: string; kind: CreatureKind; ico
 
 export default function WebMembership(props: Props) {
   const [helpOpen, setHelpOpen] = useState(false);
+  const [useAccountEmail, setUseAccountEmail] = useState(true);
   const { state, priceLabel, busy, verifyBusy, cancelBusy, message, cancelAtPeriodEnd, periodEnd, canInstall, installHelp } = props;
   const p = usePlay();
   const h = props.complimentary ? { ...HEAD.active, title: 'وصولك الكامل مفعّل' } : HEAD[state];
@@ -76,15 +77,25 @@ export default function WebMembership(props: Props) {
               <Text style={[s.small, { color: p.mutedForeground }]}>يتجدّد كل 30 يومًا حتى تلغيه. لا توجد فترة تجريبية مجانية.</Text>
             </View>
             <ChunkyButton testID="web-checkout" label={busy ? 'جارٍ فتح الدفع الآمن…' : props.checkoutEnabled ? `اشترك بـ ${priceLabel ?? '…'} شهريًا` : 'الدفع غير مفعّل حاليًا'} icon="card" tone="sun"
-              disabled={busy || verifyBusy || !priceLabel || !props.checkoutEnabled} onPress={props.onCheckout} />
-            <Text style={[s.small, { color: p.mutedForeground }]}>ستكمل الدفع الآمن لدى Whop، ثم نعيدك إلى تدريبك تلقائيًا. بيانات البطاقة لا تُحفظ في التطبيق.</Text>
-            {!!props.email && <View style={[s.receipt, { backgroundColor: p.card }]}>
-              <Ionicons name="mail-outline" size={18} color={p.mutedForeground} />
-              <View style={{ flex: 1 }}>
-                <Text style={[s.small, { color: p.mutedForeground }]}>بريدك جاهز في صفحة الدفع، ويمكنك تغييره هناك</Text>
-                <Text testID="web-payment-email" selectable style={{ color: p.foreground, fontSize: 14, textAlign: 'right' }}>{props.email}</Text>
-              </View>
+              disabled={busy || verifyBusy || !priceLabel || !props.checkoutEnabled} onPress={() => props.onCheckout(useAccountEmail)} />
+            {props.checkoutEnabled && <View testID="web-wallet-guidance" style={[s.receipt, { backgroundColor: p.card }]}>
+              <Ionicons name="wallet-outline" size={24} color={p.foreground} />
+              <Text style={[s.small, { flex: 1, color: p.foreground }]}>للدفع بأقل كتابة، اختَر Apple Pay أو Google Pay إن ظهر في صفحة Whop. إذا لم يتوفّر لجهازك أو بطاقتك، يمكنك الدفع بالبطاقة.</Text>
             </View>}
+            <Text style={[s.small, { color: p.mutedForeground }]}>ستكمل الدفع الآمن لدى Whop، ثم نعيدك إلى تدريبك تلقائيًا. بيانات البطاقة لا تُحفظ في التطبيق.</Text>
+            {!!props.email && <Pressable testID="web-use-account-email" accessibilityRole="checkbox"
+              accessibilityLabel="عبّئ بريد حسابي تلقائيًا في صفحة الدفع"
+              aria-checked={useAccountEmail}
+              accessibilityState={{ checked: useAccountEmail, disabled: busy || verifyBusy }}
+              disabled={busy || verifyBusy} onPress={() => setUseAccountEmail(value => !value)}
+              style={[s.receipt, { backgroundColor: p.card, minHeight: 44 }]}>
+              <Ionicons name={useAccountEmail ? 'checkbox' : 'square-outline'} size={24} color={p.foreground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.small, { color: p.foreground }]}>{useAccountEmail ? 'عبّئ بريد حسابي تلقائيًا في صفحة الدفع' : 'سأدخل بريدًا آخر في صفحة الدفع'}</Text>
+                <Text testID="web-payment-email" selectable style={{ color: p.foreground, fontSize: 14, textAlign: 'right' }}>{props.email}</Text>
+                <Text style={[s.small, { color: p.mutedForeground }]}>للدفع ببريد مختلف، أزِل علامة الاختيار قبل المتابعة.</Text>
+              </View>
+            </Pressable>}
             <Pressable testID="web-already-paid" accessibilityRole="button" disabled={verifyBusy || busy} onPress={props.onVerify} style={s.helpButton}>
               <Text style={[s.bold, { color: p.brandShade }]}>{verifyBusy ? 'جارٍ التحقّق…' : 'دفعت بالفعل؟ تحقّق من اشتراكك'}</Text>
             </Pressable>

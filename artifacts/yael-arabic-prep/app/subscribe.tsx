@@ -62,14 +62,14 @@ export function MembershipPage({ returning = false }: { returning?: boolean }) {
       document.removeEventListener('visibilitychange', checkOnReturn);
     };
   }, [userId, status.refetch]);
-  const checkout = async () => {
+  const checkout = async (useAccountEmail = true) => {
     if (checkoutInFlight.current || status.isFetching || status.isError
       || status.data?.state !== 'inactive' || !catalog.data?.checkoutEnabled) return;
     checkoutInFlight.current = true;
     setBusy(true); setMessage(undefined);
     try {
       const result = await createBillingCheckout(await options());
-      const url = hostedCheckoutUrl(result.purchaseUrl, email);
+      const url = hostedCheckoutUrl(result.purchaseUrl, useAccountEmail ? email : undefined);
       if (Platform.OS === 'web') window.location.assign(url);
     } catch {
       setMessage('تعذّر فتح صفحة الدفع. تحقّق من حالة اشتراكك قبل المحاولة مرة أخرى؛ لا تضغط للدفع مجددًا إذا كنت قد أتممته.');
@@ -134,7 +134,7 @@ export function MembershipPage({ returning = false }: { returning?: boolean }) {
       periodEnd={status.data?.periodEnd ? new Date(status.data.periodEnd).toLocaleDateString('ar') : null}
       canInstall={active && install.canInstall}
       installHelp={install.help}
-      onCheckout={() => void checkout()} onVerify={() => void verify()}
+      onCheckout={useAccountEmail => void checkout(useAccountEmail)} onVerify={() => void verify()}
       onOpenApp={() => void openApp()} onInstall={() => { if (active) void install.install(); }}
       onAccount={() => router.push('/(tabs)/profile')}
       onCancel={() => setConfirm(true)} onSignOut={() => void clerk.signOut()}

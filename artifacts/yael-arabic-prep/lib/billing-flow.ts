@@ -19,7 +19,11 @@ export function hostedCheckoutUrl(purchaseUrl: string, verifiedEmail?: string) {
   if (url.protocol !== 'https:' || url.hostname !== 'whop.com' || url.username || url.password || url.port) {
     throw new Error('Invalid checkout destination');
   }
-  if (verifiedEmail?.trim()) url.searchParams.set('email', verifiedEmail.trim());
-  // Leave the email editable: a parent may pay for the learner.
+  // Clear overrides so a different payer can enter their email. Keep the field
+  // editable: live hosted checkout does not reliably honor email.hidden.
+  for (const key of ['email', 'email.hidden', 'email.disabled']) url.searchParams.delete(key);
+  if (verifiedEmail?.trim()) {
+    url.searchParams.set('email', verifiedEmail.trim());
+  }
   return url.toString();
 }

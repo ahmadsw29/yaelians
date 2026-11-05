@@ -25,6 +25,20 @@ test('checkout convenience preserves hosted destination and verified-state bound
   assert.equal(url.searchParams.get('existing'), '1');
   assert.equal(url.searchParams.has('email.disabled'), false);
   assert.equal(url.searchParams.has('email.hidden'), false);
+  const fast = new URL(hostedCheckoutUrl('https://whop.com/checkout/example?existing=1&email.hidden=1', 'learner@example.test'));
+  assert.equal(fast.searchParams.has('email.hidden'), false);
+  assert.equal(fast.searchParams.get('email'), 'learner@example.test');
+  assert.equal(fast.searchParams.has('email.disabled'), false);
+  const alternate = new URL(hostedCheckoutUrl(fast.toString()));
+  assert.equal(alternate.searchParams.has('email'), false);
+  assert.equal(alternate.searchParams.has('email.hidden'), false);
+  const unknown = new URL(hostedCheckoutUrl(fast.toString(), '  '));
+  assert.equal(unknown.searchParams.has('email.hidden'), false);
+  assert.equal(unknown.searchParams.has('email'), false);
+  const editable = new URL(hostedCheckoutUrl(fast.toString() + '&email.disabled=1', 'parent@example.test'));
+  assert.equal(editable.searchParams.get('email'), 'parent@example.test');
+  assert.equal(editable.searchParams.has('email.disabled'), false);
+  assert.equal(editable.searchParams.has('email.hidden'), false);
   assert.equal(hostedCheckoutUrl('https://whop.com/checkout/example'), 'https://whop.com/checkout/example');
   for (const bad of ['http://whop.com/checkout/x', 'https://whop.com.fake.test/x', 'https://fake.test/?next=whop.com', 'https://name:secret@whop.com/x', 'https://whop.com:8443/x']) {
     assert.throws(() => hostedCheckoutUrl(bad));
@@ -36,6 +50,15 @@ test('checkout convenience preserves hosted destination and verified-state bound
   assert.equal(billingScreenState('active', false, true, false), 'error');
   assert.equal(billingScreenState(undefined, false, false, false), 'error');
   assert.equal(billingScreenState(undefined, true, false, false), 'checking');
+});
+
+test('subscription forwards the payer-email choice to checkout and exposes checkbox state', () => {
+  const page = fs.readFileSync(path.join(appRoot, 'app/subscribe.tsx'), 'utf8');
+  const membership = fs.readFileSync(path.join(appRoot, 'components/WebMembership.tsx'), 'utf8');
+  assert.match(page, /onCheckout=\{useAccountEmail => void checkout\(useAccountEmail\)\}/);
+  assert.match(page, /hostedCheckoutUrl\(result\.purchaseUrl, useAccountEmail \? email : undefined\)/);
+  assert.match(membership, /onPress=\{\(\) => props\.onCheckout\(useAccountEmail\)\}/);
+  assert.match(membership, /aria-checked=\{useAccountEmail\}/);
 });
 
 test('web launch chrome follows light, dark and system appearance without depending on storage', () => {
