@@ -73,6 +73,11 @@ export default function HomeScreen() {
           <Ionicons name="flame" size={17} color={p.coral} />
           <Text style={styles.streakText}>{stats.streak} أيام</Text>
         </View>
+        <Pressable testID="home-menu-open" accessibilityRole="button" accessibilityLabel="فتح القائمة" hitSlop={6}
+          onPress={() => router.push('/menu')}
+          style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.7 }]}>
+          <Ionicons name="grid-outline" size={19} color={p.brandShade} />
+        </Pressable>
       </View>
 
       <View style={styles.greeting}>
@@ -171,6 +176,7 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset
     brand: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 19, flex: 1, textAlign: 'right' },
     streakPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: p.coralSoft, borderRadius: 14, borderWidth: 2, borderColor: p.coral, paddingHorizontal: 10, paddingVertical: 5 },
     streakText: { color: p.coralInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13 },
+    menuBtn: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.border },
     greeting: { alignItems: 'flex-end', marginBottom: 16 },
     eyebrow: { color: p.brandShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, marginBottom: 6 },
     title: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', textAlign: 'right', fontSize: 28, lineHeight: 38 },

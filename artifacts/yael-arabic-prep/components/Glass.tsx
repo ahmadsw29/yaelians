@@ -5,7 +5,8 @@ import { useReduceMotion } from '@/components/HomeMotion';
 /**
  * Soft frosted controls: uniform translucent tint, a quiet edge and minimal
  * elevation. No shine bands or glossy gradients. Native platforms use the same
- * lightweight tint; supported browsers also blur the backdrop.
+ * lightweight tint. Avoid backdrop filters inside transformed scroll content:
+ * browser compositing can paint the sampled backdrop outside the button.
  */
 export function useReducedTransparency() {
   const [reduced, setReduced] = useState(() => Platform.OS === 'ios' || (
@@ -66,12 +67,14 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
         const { pressed, hovered, focused } = st as State;
         const live = !disabled;
         return [
-          g.base, { borderRadius: radius, borderColor: t.edge, shadowColor: t.shadow },
+          g.base, {
+            borderRadius: radius, borderColor: t.edge, shadowColor: t.shadow,
+            backgroundColor: reduced || disabled ? opaqueFill : surfaceFill,
+          },
           Platform.OS === 'web' && {
-            // Progressive enhancement; uniform frosted tint works without blur.
-            backgroundColor: 'transparent',
-            backdropFilter: reduced ? 'none' : 'blur(18px) saturate(125%)',
-            WebkitBackdropFilter: reduced ? 'none' : 'blur(18px) saturate(125%)',
+            // Keep this control in its own clipped paint boundary, without
+            // GPU backdrop sampling across animated/rounded card ancestors.
+            isolation: 'isolate',
             transitionProperty: 'transform, box-shadow, border-color',
             transitionDuration: reduceMotion ? '0ms' : '180ms',
           } as ViewStyle,
@@ -88,7 +91,6 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
         return <>
           <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
             style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: reduced || disabled ? opaqueFill : surfaceFill }]} />
             <View style={[StyleSheet.absoluteFill, g.rim, { borderRadius: radius, borderColor: disabled ? 'transparent' : t.rim }]} />
             {pressed && !disabled && <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(255,255,255,0.035)' : 'rgba(15,58,51,0.04)' }]} />}
           </View>
@@ -100,7 +102,7 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
 }
 
 const g = StyleSheet.create({
-  base: { borderWidth: StyleSheet.hairlineWidth, overflow: 'visible' },
+  base: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   lift: { shadowOpacity: 0.045, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   flat: { shadowOpacity: 0, elevation: 0 },
   hover: { shadowOpacity: 0.08 },

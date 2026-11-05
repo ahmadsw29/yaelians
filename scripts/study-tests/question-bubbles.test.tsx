@@ -101,7 +101,15 @@ describe('question bubble accessibility layout (native props, not device renderi
     expect(pressable().props.accessibilityLabel).toBe('متابعة');
     expect(pressable().props.accessibilityRole).toBe('button');
     expect(tree.root.findAllByType('LinearGradient' as any)).toHaveLength(0);
-    expect(flatten(pressable().props.style({ pressed: false })).shadowOpacity).toBeLessThan(0.05);
+    const surface = flatten(pressable().props.style({ pressed: false }));
+    expect(surface.shadowOpacity).toBeLessThan(0.05);
+    expect(surface.overflow).toBe('hidden');
+    expect(surface.backgroundColor).toBe('rgba(255,255,255,0.76)');
+    for (const state of [{ pressed: false }, { pressed: true }, { pressed: false, focused: true }]) {
+      const paint = flatten(pressable().props.style(state));
+      expect(paint.backdropFilter).toBeUndefined();
+      expect(paint.WebkitBackdropFilter).toBeUndefined();
+    }
     await act(async () => { pressable().props.onPress(); });
     expect(onPress).toHaveBeenCalledOnce();
     const pressed = flatten(pressable().props.style({ pressed: true, focused: false }));

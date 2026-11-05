@@ -21,7 +21,7 @@ export default function ProgressScreen() {
 
   const hiddenStats = loading || statsUnavailable;
   const displayedStats = getStudyStatsDisplay(stats, hiddenStats);
-  const styles = makeStyles(c, insets.top);
+  const styles = makeStyles(c, insets.top, insets.bottom);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -93,10 +93,10 @@ function Metric({ icon, value, unit, label, tint, color }: { icon: keyof typeof 
   );
 }
 
-function makeStyles(c: ReturnType<typeof useColors>, topInset: number) {
+function makeStyles(c: ReturnType<typeof useColors>, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    content: { paddingHorizontal: 21, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 18, paddingBottom: Platform.OS === 'web' ? 118 : 32, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    content: { paddingHorizontal: 21, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 18, paddingBottom: Platform.OS === 'web' ? 118 : 88 + bottomInset, maxWidth: 600, width: '100%', alignSelf: 'center' },
     heading: { alignItems: 'flex-end', marginBottom: 20 },
     kicker: { color: c.primary, fontFamily: BOLD, fontSize: 13 },
     title: { color: c.foreground, fontFamily: BOLD, fontSize: 29, marginTop: 4 },

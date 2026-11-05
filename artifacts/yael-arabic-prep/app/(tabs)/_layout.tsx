@@ -8,6 +8,8 @@ import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
+import AppDock from '@/components/AppDock';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
@@ -38,11 +40,16 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }} />
         <NativeTabs.Trigger.Label>حسابي</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="menu">
+        <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.3x3', selected: 'square.grid.3x3.fill' }} />
+        <NativeTabs.Trigger.Label>القائمة</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
 
 function ClassicTabLayout() {
+  const insets = useSafeAreaInsets();
   const colors = useColors();
   const colorScheme = useColorScheme();
   const { preference } = useThemePreference();
@@ -52,6 +59,7 @@ function ClassicTabLayout() {
 
   return (
     <Tabs
+      tabBar={props => <AppDock {...props} />}
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
@@ -62,7 +70,7 @@ function ClassicTabLayout() {
           borderTopWidth: isWeb ? 1 : 0,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: WEB_TAB_BAR_HEIGHT } : {}),
+          height: isWeb ? WEB_TAB_BAR_HEIGHT : 56 + insets.bottom,
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -114,6 +122,7 @@ function ClassicTabLayout() {
           tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
         }}
       />
+      <Tabs.Screen name="menu" options={{ title: 'القائمة', tabBarIcon: ({ color }) => <Feather name="grid" size={22} color={color} /> }} />
     </Tabs>
   );
 }

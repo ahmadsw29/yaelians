@@ -51,4 +51,4 @@ Home-screen motion should be clearly noticeable and respond to scrolling without
 
 Buttons and selectors should use soft frosted glass, not glossy plastic-looking gradients.
 **Why:** The user requested premium Apple-like controls, rejected the shiny treatment, then explicitly chose “Soft frosted glass.”
-**How to apply:** Avoid bright shine bands and heavy shadows. Keep the colourful learning identity, legible labels in both themes, accepted scrolling, and reduced-transparency/motion support. Distinguish lightweight native fallbacks from actual native Liquid Glass.
+**How to apply:** Avoid bright shine bands and heavy shadows. Do not use per-button backdrop filters inside transformed scrolling cards: they caused visible repaint patches. Use clipped frosted tints instead. Preserve legibility, scrolling, and reduced-transparency/motion support; distinguish styling from native Liquid Glass.
