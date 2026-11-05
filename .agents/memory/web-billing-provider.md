@@ -31,3 +31,11 @@ Use Whop's documented hosted payout portal for connected-account onboarding inst
 **Why:** The connected-account mobile and browser dashboards expose different controls; Settings → Payments configures buyer payment methods, not merchant bank payouts.
 
 **How to apply:** Generate a short-lived account link with the `payouts_portal` use case through the installed connection. Deliver it privately to the owner, warn against sharing it, and never persist its token or put it in the app. The owner enters identity and bank information directly on Whop.
+
+Do not label every return from checkout as a payment still processing.
+**Why:** Cancelled or unconfirmed checkouts previously left learners on a permanent pending screen with no safe way to continue. Repeated payment attempts can also confuse users who were already charged.
+**How to apply:** Bound the initial return-check window, distinguish it from a provider-confirmed pending payment, and keep verification available before allowing checkout continuation. Automatic training entry still requires server-verified entitlement, never a success URL.
+
+The user wants the actual checkout simplified, ideally Apple Pay directly inside the app's website—not merely a clearer subscription page before an external form.
+**Why:** The user repeated that the provider checkout itself asks for too much information and rejected app-side page improvements as the solution to that problem.
+**How to apply:** Distinguish app-side convenience from provider checkout changes. Explain supported-integration limits honestly; never imply a decorative Apple Pay button is functional or that moving checkout overrides bank declines.

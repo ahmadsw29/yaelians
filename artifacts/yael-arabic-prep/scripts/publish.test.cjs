@@ -13,6 +13,31 @@ const appRoot = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(appRoot, '../..');
 const source = fs.readFileSync(path.join(appRoot, 'server/serve.js'), 'utf8');
 
+test('checkout convenience preserves hosted destination and verified-state boundaries', () => {
+  const ts = require('typescript');
+  const module = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(appRoot, 'lib/billing-flow.ts'), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, { exports: module.exports, module, URL });
+  const { hostedCheckoutUrl, billingScreenState } = module.exports;
+  const url = new URL(hostedCheckoutUrl('https://whop.com/checkout/example?existing=1', 'parent+learner@example.test'));
+  assert.equal(url.searchParams.get('email'), 'parent+learner@example.test');
+  assert.equal(url.searchParams.get('existing'), '1');
+  assert.equal(url.searchParams.has('email.disabled'), false);
+  assert.equal(url.searchParams.has('email.hidden'), false);
+  assert.equal(hostedCheckoutUrl('https://whop.com/checkout/example'), 'https://whop.com/checkout/example');
+  for (const bad of ['http://whop.com/checkout/x', 'https://whop.com.fake.test/x', 'https://fake.test/?next=whop.com', 'https://name:secret@whop.com/x', 'https://whop.com:8443/x']) {
+    assert.throws(() => hostedCheckoutUrl(bad));
+  }
+  assert.equal(billingScreenState('inactive', false, false, true), 'pending');
+  assert.equal(billingScreenState('inactive', false, false, false), 'inactive');
+  assert.equal(billingScreenState('pending', false, false, false), 'pending');
+  assert.equal(billingScreenState('active', false, false, true), 'active');
+  assert.equal(billingScreenState('active', false, true, false), 'error');
+  assert.equal(billingScreenState(undefined, false, false, false), 'error');
+  assert.equal(billingScreenState(undefined, true, false, false), 'checking');
+});
+
 test('web launch chrome follows light, dark and system appearance without depending on storage', () => {
   const html = fs.readFileSync(path.join(appRoot, 'public/index.html'), 'utf8');
   const bootstrap = html.match(/<script id="appearance-bootstrap">([\s\S]*?)<\/script>/)[1];

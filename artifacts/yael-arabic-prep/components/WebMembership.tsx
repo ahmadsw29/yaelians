@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ChunkyButton, usePlay } from '@/components/Playful';
@@ -8,6 +8,8 @@ import { ARABIC_BOLD_FONT } from '@/constants/typography';
 type State = 'checking' | 'inactive' | 'pending' | 'active' | 'error';
 type Props = {
   complimentary?: boolean;
+  email?: string;
+  opening?: boolean;
   checkoutEnabled: boolean;
   state: State; priceLabel: string | null; busy: boolean; verifyBusy: boolean; cancelBusy: boolean; message?: string;
   cancelAtPeriodEnd: boolean; periodEnd: string | null; canInstall: boolean; installHelp?: string;
@@ -25,6 +27,7 @@ const HEAD: Record<State, { title: string; text: string; kind: CreatureKind; ico
 };
 
 export default function WebMembership(props: Props) {
+  const [helpOpen, setHelpOpen] = useState(false);
   const { state, priceLabel, busy, verifyBusy, cancelBusy, message, cancelAtPeriodEnd, periodEnd, canInstall, installHelp } = props;
   const p = usePlay();
   const h = props.complimentary ? { ...HEAD.active, title: 'وصولك الكامل مفعّل' } : HEAD[state];
@@ -47,7 +50,7 @@ export default function WebMembership(props: Props) {
         <View style={[s.card, { backgroundColor: tint, borderColor: edge }]}>
           <View style={s.headRow}>
             <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-              <Creature kind={h.kind} mood={state === 'active' ? 'hype' : 'happy'} size={96} />
+              <Creature kind={h.kind} mood={state === 'active' ? 'hype' : 'happy'} size={72} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6 }}>
@@ -69,10 +72,22 @@ export default function WebMembership(props: Props) {
             <View style={[s.priceBox, { backgroundColor: p.card, borderColor: p.border }]}>
               <Text style={[s.small, { color: p.mutedForeground }]}>اشتراك شهري</Text>
               <Text style={[s.price, { color: priceLabel ? p.foreground : p.mutedForeground }]}>{priceLabel ? `${priceLabel} شهريًا` : 'السعر غير متاح حاليًا'}</Text>
-              <Text style={[s.small, { color: p.mutedForeground }]}>يتجدّد تلقائيًا كل 30 يومًا حتى تلغيه. لا توجد فترة تجريبية مجانية. الدفع يتم في صفحة دفع آمنة في المتصفح.</Text>
+              <Text style={[s.small, { color: p.mutedForeground }]}>كل الدورات والنماذج، وتدريب بلا حدود.</Text>
+              <Text style={[s.small, { color: p.mutedForeground }]}>يتجدّد كل 30 يومًا حتى تلغيه. لا توجد فترة تجريبية مجانية.</Text>
             </View>
-            <ChunkyButton testID="web-checkout" label={busy ? 'جارٍ فتح صفحة الدفع…' : props.checkoutEnabled ? 'اشترك الآن' : 'قريبًا — الدفع غير مفعّل'} icon="card" tone="sun"
-              disabled={busy || !priceLabel || !props.checkoutEnabled} onPress={props.onCheckout} />
+            <ChunkyButton testID="web-checkout" label={busy ? 'جارٍ فتح الدفع الآمن…' : props.checkoutEnabled ? `اشترك بـ ${priceLabel ?? '…'} شهريًا` : 'الدفع غير مفعّل حاليًا'} icon="card" tone="sun"
+              disabled={busy || verifyBusy || !priceLabel || !props.checkoutEnabled} onPress={props.onCheckout} />
+            <Text style={[s.small, { color: p.mutedForeground }]}>ستكمل الدفع الآمن لدى Whop، ثم نعيدك إلى تدريبك تلقائيًا. بيانات البطاقة لا تُحفظ في التطبيق.</Text>
+            {!!props.email && <View style={[s.receipt, { backgroundColor: p.card }]}>
+              <Ionicons name="mail-outline" size={18} color={p.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.small, { color: p.mutedForeground }]}>بريدك جاهز في صفحة الدفع، ويمكنك تغييره هناك</Text>
+                <Text testID="web-payment-email" selectable style={{ color: p.foreground, fontSize: 14, textAlign: 'right' }}>{props.email}</Text>
+              </View>
+            </View>}
+            <Pressable testID="web-already-paid" accessibilityRole="button" disabled={verifyBusy || busy} onPress={props.onVerify} style={s.helpButton}>
+              <Text style={[s.bold, { color: p.brandShade }]}>{verifyBusy ? 'جارٍ التحقّق…' : 'دفعت بالفعل؟ تحقّق من اشتراكك'}</Text>
+            </Pressable>
           </View>}
 
           {(state === 'pending' || state === 'error') &&
@@ -82,9 +97,23 @@ export default function WebMembership(props: Props) {
             {!!periodEnd && <Text style={[s.body, { color: p.foreground }]}>
               {cancelAtPeriodEnd ? `تم إلغاء التجديد. يبقى وصولك حتى ${periodEnd}.` : `يتجدّد اشتراكك تلقائيًا في ${periodEnd}.`}
             </Text>}
-            <ChunkyButton testID="web-open-app" label="افتح التدريب" icon="arrow-back" onPress={props.onOpenApp} />
+            <ChunkyButton testID="web-open-app" label={props.opening ? 'جارٍ فتح تدريبك…' : 'افتح التدريب'} disabled={props.opening} icon="arrow-back" onPress={props.onOpenApp} />
           </View>}
         </View>
+
+        {state !== 'active' && <View style={[s.help, { backgroundColor: p.card, borderColor: p.border }]}>
+          <Pressable testID="web-payment-help" accessibilityRole="button" accessibilityState={{ expanded: helpOpen }} onPress={() => setHelpOpen(value => !value)} style={s.helpButton}>
+            <Ionicons name={helpOpen ? 'chevron-up' : 'help-circle-outline'} size={22} color={p.brandShade} />
+            <Text style={[s.bold, { color: p.foreground }]}>تحتاج مساعدة في الدفع؟</Text>
+          </Pressable>
+          {helpOpen && <View testID="web-payment-help-content" style={{ gap: 10 }}>
+            <Text style={[s.body, { color: p.foreground }]}>• اختَر Apple Pay أو Google Pay إن ظهر أحدهما في صفحة الدفع لتقليل الكتابة. التوفّر يعتمد على الجهاز والبطاقة.</Text>
+            <Text style={[s.body, { color: p.foreground }]}>• إذا طلب البنك تأكيدًا، أكمِله في تطبيق البنك ثم ارجع لصفحة الدفع.</Text>
+            <Text style={[s.body, { color: p.foreground }]}>• رمز الأمان غير صحيح؟ راجع رمز CVC على البطاقة. رفض البنك أو رفض أمني؟ تواصل مع البنك أو جرّب وسيلة دفع أخرى؛ لا تكرّر المحاولة بسرعة.</Text>
+            <Text style={[s.body, { color: p.foreground }]}>• إذا خُصم المبلغ ولم يفتح التدريب، تحقّق من اشتراكك بدل أن تدفع مجددًا.</Text>
+            <Text style={[s.small, { color: p.mutedForeground }]}>لا ترسل رقم بطاقتك أو رمز الأمان لأي شخص.</Text>
+          </View>}
+        </View>}
 
         {state === 'active' && <>
           <View style={[s.card, { backgroundColor: p.card, borderColor: p.border }]}>
@@ -127,6 +156,9 @@ const s = StyleSheet.create({
   small: { fontSize: 13, lineHeight: 22, ...rtl },
   price: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 26, lineHeight: 42, ...rtl },
   priceBox: { borderWidth: 2, borderRadius: 18, padding: 14, gap: 4 },
+  receipt: { flexDirection: 'row-reverse', gap: 10, alignItems: 'center', borderRadius: 14, padding: 12 },
+  help: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 12 },
+  helpButton: { minHeight: 44, flexDirection: 'row-reverse', gap: 8, alignItems: 'center', justifyContent: 'center' },
   sk: { height: 16, borderRadius: 8, alignSelf: 'flex-end' },
   msg: { borderWidth: 1, borderRadius: 14, padding: 12, fontSize: 14, lineHeight: 24, overflow: 'hidden', ...rtl },
   footer: { flexDirection: 'row-reverse', justifyContent: 'center', gap: 24, borderTopWidth: 1, paddingVertical: 14 },
