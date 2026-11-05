@@ -11,6 +11,8 @@ import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
 import AppDock from '@/components/AppDock';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+export const unstable_settings = { initialRouteName: 'index' };
+
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
 // is a system-level appearance provided by iOS and cannot be overridden.
@@ -18,11 +20,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 function NativeTabLayout() {
   return (
     <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'house', selected: 'house.fill' }}
-        />
-        <NativeTabs.Trigger.Label>الرئيسية</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="menu">
+        <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.3x3', selected: 'square.grid.3x3.fill' }} />
+        <NativeTabs.Trigger.Label>القائمة</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="practice" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Icon
@@ -40,9 +40,9 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }} />
         <NativeTabs.Trigger.Label>حسابي</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="menu">
-        <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.3x3', selected: 'square.grid.3x3.fill' }} />
-        <NativeTabs.Trigger.Label>القائمة</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
+        <NativeTabs.Trigger.Label>الرئيسية</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

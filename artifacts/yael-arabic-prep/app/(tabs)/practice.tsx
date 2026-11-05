@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/expo';
 import {
   AccessibilityInfo,
+  Animated,
   AppState,
   Platform,
   Pressable,
@@ -11,7 +12,9 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import VocabularyStudyHub from '@/components/VocabularyStudyHub';
+import { trainingEntry } from '@/lib/training-entry';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +23,7 @@ import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getPracticeScreenSpacing, usesExpandedQuestionLayout } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
 import { usePracticeCompletionAnnouncement } from '@/hooks/usePracticeCompletionAnnouncement';
+import { useQuestionTransition } from '@/hooks/useQuestionTransition';
 import { READING_QUESTIONS, type ReadingQuestion } from '@/lib/study';
 import { VOCABULARY_BANK as WORD_BANK } from '@/lib/vocabulary-bank';
 import { reserveVocabularyReviewRound, saveVocabularyReviewAnswer } from '@/lib/vocabulary-deck';
@@ -49,35 +53,62 @@ const BOLD = ARABIC_BOLD_FONT;
 
 export default function PracticeScreen() {
   const { user } = useUser();
-  const { ready, plan, isPremium, startVocabularyRound } = usePlanAccess();
-  const router = useRouter();
-  const activityKey = useRef<string | null>(null);
-  if (!activityKey.current) activityKey.current = `vocabulary-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-  const [access, setAccess] = useState<'checking' | 'allowed' | 'limit' | 'blocked'>('checking');
-  const [round, setRound] = useState<{ order: number[]; number: number; deadline: number | null } | null>(null);
-  const [retry, setRetry] = useState(0);
+  return <VocabularyEntry key={user?.id ?? 'signed-out'} userId={user?.id} />;
+}
 
-  useEffect(() => {
-    let active = true;
-    if (!ready || !plan || !user?.id) return;
+function VocabularyEntry({ userId }: { userId?: string }) {
+  const { ready, plan, isPremium, startVocabularyRound } = usePlanAccess();
+  const activityKey = useRef<string | null>(null);
+  const [access, setAccess] = useState<'idle' | 'checking' | 'allowed' | 'limit' | 'blocked'>('idle');
+  const [round, setRound] = useState<{ order: number[]; number: number; deadline: number | null } | null>(null);
+  const [showHub, setShowHub] = useState(true);
+  const [completed, setCompleted] = useState(false);
+  const starting = useRef(false);
+  const focused = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    setShowHub(true);
+    return () => { focused.current = false; };
+  }, []));
+
+  async function begin() {
+    if (!ready || !plan || !userId || starting.current) return;
+    if (round && trainingEntry({ ...round, finished: completed }) === 'resume') {
+      setShowHub(false); return;
+    }
+    starting.current = true;
+    if (!activityKey.current || completed) activityKey.current = `vocabulary-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
     setAccess('checking');
-    void (async () => {
+    try {
       const response = isPremium ? null : await startVocabularyRound(activityKey.current!);
-      if (!active) return;
+      if (!alive.current) return;
       if (response && !response.allowed) { setAccess('limit'); return; }
       if (!isPremium && !response?.vocabularyRound) throw new Error('Missing timed round');
       const timer = response?.vocabularyRound;
       const deadline = timer ? Date.now() + Math.max(0, Date.parse(timer.expiresAt) - Date.parse(timer.serverNow)) : null;
-      const reservation = await reserveVocabularyReviewRound(user.id, WORD_BANK.map(q => q.word!), timer?.number);
-      if (active) { setRound({ ...reservation, deadline }); setAccess('allowed'); }
-    })().catch(() => { if (active) setAccess('blocked'); });
-    return () => { active = false; };
-  }, [startVocabularyRound, isPremium, plan, ready, user?.id, retry]);
-
-  if (!ready || !plan || access === 'checking' || access === 'blocked') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20 }}><Text>{access === 'blocked' ? 'تعذّر تجهيز الجولة. أعد المحاولة.' : 'جارٍ تجهيز التدريب…'}</Text>{access === 'blocked' && <Pressable accessibilityRole="button" onPress={() => setRetry(value => value + 1)}><Text>إعادة المحاولة</Text></Pressable>}</View>;
-  if (access === 'limit' && !isPremium) return <FreePracticePrompt />;
-  if (!round) return null;
-  return <PracticeSession key={user?.id} userId={user?.id} isPremium={isPremium} initialOrder={round.order} initialRoundNumber={round.number} deadline={round.deadline} activityKey={activityKey.current} />;
+      if (deadline !== null && deadline <= Date.now()) { setAccess('limit'); return; }
+      const reservation = await reserveVocabularyReviewRound(userId, WORD_BANK.map(q => q.word!), timer?.number);
+      if (alive.current) {
+        setRound({ ...reservation, deadline }); setCompleted(false);
+        setAccess('allowed'); setShowHub(!focused.current);
+      }
+    } catch { if (alive.current) setAccess('blocked'); }
+    finally { starting.current = false; }
+  }
+  const resumable = !!round && trainingEntry({ ...round, finished: completed }) === 'resume';
+  return <View style={{ flex: 1 }}>
+    {showHub && (access === 'limit' && !isPremium ? <FreePracticePrompt /> :
+      <VocabularyStudyHub isPremium={isPremium} ready={ready && !!plan && !!userId}
+        starting={access === 'checking'} error={access === 'blocked' ? 'تعذّر تجهيز الجولة. حاول مجددًا؛ تقدّمك محفوظ.' : undefined}
+        onStart={() => void begin()} onResume={resumable ? () => setShowHub(false) : undefined} />)}
+    {round && <View style={{ flex: 1, display: showHub ? 'none' : 'flex' }}>
+      <PracticeSession key={`${userId}:${round.number}`} userId={userId} isPremium={isPremium}
+        initialOrder={round.order} initialRoundNumber={round.number} deadline={round.deadline}
+        activityKey={activityKey.current} onCompletionChange={setCompleted} />
+    </View>}
+  </View>;
 }
 
 function FreePracticePrompt() {
@@ -102,7 +133,7 @@ function FreePracticePrompt() {
   </View>;
 }
 
-export function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey, readingBank = READING_QUESTIONS, initialMode = 'words' }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null; readingBank?: ReadingQuestion[]; initialMode?: 'words' | 'reading' }) {
+export function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey, readingBank = READING_QUESTIONS, initialMode = 'words', onCompletionChange }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null; readingBank?: ReadingQuestion[]; initialMode?: 'words' | 'reading'; onCompletionChange?: (complete: boolean) => void }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -127,6 +158,8 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
   const masteredWordIds = useRef<string[]>([]);
   const [celebrationKey, setCelebrationKey] = useState(0);
   const [complete, setComplete] = useState(false);
+  const questionMotion = useQuestionTransition(!complete);
+  useEffect(() => { onCompletionChange?.(complete); }, [complete, onCompletionChange]);
   const [saved, setSaved] = useState(false);
   const [completionCelebration, setCompletionCelebration] = useState<PracticeCelebrationVariant | null>(null);
   // The route owns the section; vocabulary and reading are separate sessions.
@@ -178,6 +211,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
   };
 
   const select = async (answer: string) => {
+    if (questionMotion.busy) return;
     if (complete || selecting.current) return;
     if (mode === 'words' && hintRef.current.includes(answer)) return;
     if (deadline && Date.now() >= deadline) { expire.current(); return; }
@@ -241,9 +275,13 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
     if (complete) { await finishRound(finalTotal.current ?? activeQuestions.length); return; }
     if (deadline && Date.now() >= deadline) { expire.current(); return; }
     if (index === activeQuestions.length - 1) { await finishRound(activeQuestions.length); return; }
-    setIndex((value) => value + 1);
-    setChoice(null);
-    resetHint();
+    if (!choice || loading || answerSaving || selecting.current) return;
+    questionMotion.advance(() => {
+      if (deadline && Date.now() >= deadline) { expire.current(); return; }
+      setIndex((value) => value + 1);
+      setChoice(null);
+      resetHint();
+    });
   };
 
   const finish = () => {
@@ -317,7 +355,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
       {answerFeedback && <Text accessibilityLiveRegion="polite" importantForAccessibility="yes"
         style={styles.accessibilityAnnouncement}>{answerFeedback.announcement}</Text>}
       <View style={mode === 'words' ? styles.compactFooterRow : undefined}>
-        <ChunkyButton testID="next-question" disabled={!choice || loading || answerSaving}
+        <ChunkyButton testID="next-question" disabled={!choice || loading || answerSaving || questionMotion.busy}
           onPress={next} tone={!answered || isCorrect ? 'success' : 'coral'} icon="arrow-back"
           label={index === activeQuestions.length - 1 ? 'إنهاء التدريب' : 'السؤال التالي'}
           style={mode === 'words' ? { flex: 1 } : undefined} />
@@ -362,6 +400,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
 
       {mode !== 'words' && <Text style={styles.lessonKicker}>اقرأ القطعة على مهلك</Text>}
 
+      <Animated.View testID="question-transition" style={questionMotion.promptStyle}>
       {mode === 'words' ? (
         <QuestionPrompt key={`word-${index}`} index={index} text={question.prompt} spokenWord={question.word} compact>
           <View style={[styles.wordStage, expanded && { paddingLeft: 0 }]}>
@@ -385,10 +424,11 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
           <QuestionPrompt index={index} text={question.prompt} />
         </>
       )}
+      </Animated.View>
 
       {mode === 'words' && <View testID="vocabulary-hint-area" style={{ alignItems: 'flex-end', marginBottom: 6 }}>
         <VocabularyHintButton key={`hint-${reviewRound}-${index}`} used={hintExcluded.length > 0}
-          disabled={answered || answerSaving || loading || secondsLeft === 0
+          disabled={answered || answerSaving || loading || questionMotion.busy || secondsLeft === 0
             || vocabularyHintExclusions(question.options, question.correctAnswer, question.word ?? '').length === 0}
           onPress={revealHint} />
       </View>}
@@ -397,9 +437,11 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
           const selected = choice === option;
           const answerState = getPracticeAnswerState(choice, option, question.correctAnswer);
           const eliminated = mode === 'words' && hintExcluded.includes(option);
-          const disabled = answered || answerSaving || eliminated;
+          const disabled = answered || answerSaving || eliminated || questionMotion.busy;
           return (
-            <HintedVocabularyOption key={`${reviewRound}-${index}-${option}`} eliminated={eliminated}
+            <Animated.View key={`${reviewRound}-${index}-${option}`} testID={`answer-transition-${optionIndex + 1}`}
+              style={questionMotion.answerStyle(optionIndex)}>
+            <HintedVocabularyOption eliminated={eliminated}
               highlighted={mode === 'words' && hintExcluded.length > 0 && !eliminated && !answered}>
             <Pressable
               key={option}
@@ -429,6 +471,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
               ]}>{option}</Text>
             </Pressable>
             </HintedVocabularyOption>
+            </Animated.View>
           );
         })}
       </View>

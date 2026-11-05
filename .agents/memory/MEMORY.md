@@ -10,6 +10,7 @@
 - [Study content and waiting windows](study-course-access.md) — Show trial users locked study previews; gate lesson bodies on the server; use small waiting windows with rotating characters.
 - [Adaptive restatement learning](restatement-learning.md) — Six-question spaced-review rounds: 6:30, then 6:00 from Semi-Master; no model chooser or celebrations for empty attempts.
 - [Vocabulary review](vocabulary-learning.md) — Space correct words, revisit mistakes sooner, and omit algorithm explanations at the start of both practice modes.
+- [Training entry and learning hubs](training-entry.md) — Explicit starts/resumes, optional previous-result review, and substantial untimed study material without losing progress.
 - [Flashcard learning](flashcard-learning.md) — Self-ratings are not quiz mastery; preserve the shared free vocabulary allowance.
 - [Translator companion](translator-assistant.md) — Persistent movable pet across signed-in screens; keep translations ephemeral unless explicitly saved.
 - [Rank pacing](progression-pacing.md) — User doubled the harder rank ladder; preserve earned XP and shared rank-based timers, with no calendar locks.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import SectionLearningNotes from '@/components/SectionLearningNotes';
 import {
   AccessibilityInfo, ActivityIndicator, Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent,
 } from 'react-native';
@@ -286,6 +287,7 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
           <ChunkyButton label={phase === 'starting' ? 'جارٍ البدء…' : 'ابدأ الجولة'} icon="arrow-back" disabled={phase === 'starting'}
             onPress={() => void start()} testID="flashcards-start" />
         )}
+        <SectionLearningNotes section="flashcards" />
       </ScrollView>
     );
   }

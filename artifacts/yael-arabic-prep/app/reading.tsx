@@ -10,6 +10,7 @@ import { ChunkyButton, usePlay } from '@/components/Playful';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { usePlanAccess } from '@/lib/PlanAccess';
 import { readingPacks, reserveReadingPack, type ReadingPack } from '@/lib/reading-practice';
+import SectionLearningNotes from '@/components/SectionLearningNotes';
 
 export default function ReadingScreen() {
   const p = usePlay();
@@ -81,6 +82,7 @@ export default function ReadingScreen() {
       disabled={!ready || !plan || phase === 'starting' || available === 0} onPress={() => void begin()} />}
     {phase === 'starting' && <ActivityIndicator color={p.sky} />}
     {ready && !available && <Text accessibilityRole="alert" style={{ color: p.coralInk }}>لا توجد نصوص قابلة للتدريب في خطتك حاليًا.</Text>}
+    <SectionLearningNotes section="reading" />
     <ChunkyButton tone="ghost" label="العودة للرئيسية" onPress={() => router.replace('/')} />
   </ScrollView>;
 }

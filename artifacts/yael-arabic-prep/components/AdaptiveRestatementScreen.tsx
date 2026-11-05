@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { trackDailyActivity } from '@/lib/daily-goals';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useUser } from '@clerk/expo';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import SectionLearningNotes from '@/components/SectionLearningNotes';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Creature } from '@/components/PetTeacher';
@@ -20,6 +21,7 @@ import { loadAdaptiveMemory, resetAdaptiveMemory, saveAdaptiveMemory } from '@/l
 import { completionFeedback } from '@/lib/completion-feedback';
 import { useStudy } from '@/lib/StudyProvider';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { trainingEntry } from '@/lib/training-entry';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
@@ -59,6 +61,9 @@ export default function AdaptiveRestatementScreen() {
   const pool = useMemo(() => [...bank.keys()].map(id => ({ id })), [bank]);
 
   const [phase, setPhase] = useState<Phase>('loading');
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const focused = useRef(false);
   const [memory, setMemory] = useState<AdaptiveMemory | null>(null);
   const [result, setResult] = useState<AdaptiveRound | null>(null);
   const [saveError, setSaveError] = useState(false);
@@ -102,11 +107,12 @@ export default function AdaptiveRestatementScreen() {
   const enterRound = useCallback(async (m: AdaptiveMemory) => {
     const round = m.active;
     if (!round) return;
+    setNow(Date.now());
     if (isPremium) { setPhase('round'); return; }
     setPhase('claiming');
     try {
       const allowed = await claimActivity('timed-section', round.id);
-      if (!alive.current) return;
+      if (!alive.current || !focused.current) return;
       if (allowed) setPhase('round');
       else router.replace('/plans?reason=daily-timed-limit');
     } catch {
@@ -118,7 +124,7 @@ export default function AdaptiveRestatementScreen() {
     if (!m.active) return;
     const snapshot = { ...m.active, finished: true };
     const ok = await commit(finishAdaptiveRound(m));
-    if (ok) { setResult(snapshot); setPhase('results'); }
+    if (ok && phaseRef.current === 'round' && focused.current) { setResult(snapshot); setPhase('results'); }
   }, [commit]);
 
   // Load on entry.
@@ -134,15 +140,9 @@ export default function AdaptiveRestatementScreen() {
       const m = r.kind === 'ready' ? r.memory : emptyAdaptiveMemory();
       lastCommitted.current = m;
       setMemory(m);
-      const a = m.active;
-      const legacy = !!a && (a.questionIds.length > 6 || a.deadline - a.startedAt > 390000);
-      if (a && !a.finished && legacy) { setLegacyNotice(true); await finishNow(m); return; }
-      if (a && !a.finished) {
-        if (Date.now() >= a.deadline) { await finishNow(m); return; }
-        await enterRound(m);
-      } else if (a && a.finished) {
-        setResult(a); setPhase('results');
-      } else setPhase('intro');
+      // Hydration never starts a clock or presents an old score as today's round.
+      setResult(null);
+      setPhase('intro');
     })();
     return () => { live = false; };
   }, [attempt, isLoaded, plan, ready, userId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -150,6 +150,11 @@ export default function AdaptiveRestatementScreen() {
   // Deadline watcher.
   const memRef = useRef(memory);
   memRef.current = memory;
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    if (memRef.current) { setResult(null); setPhase('intro'); }
+    return () => { focused.current = false; };
+  }, []));
   useEffect(() => {
     if (phase !== 'round') return;
     const t = setInterval(() => {
@@ -163,7 +168,10 @@ export default function AdaptiveRestatementScreen() {
 
   async function startNew() {
     if (!memory || busy) return;
-    const planned = planAdaptiveRound(memory, pool, makeRoundId(), Date.now(), undefined, xp);
+    const old = memory.active;
+    const legacy = !!old && (old.questionIds.length > 6 || old.deadline - old.startedAt > 390000);
+    const base = legacy || trainingEntry(old) === 'previous' ? finishAdaptiveRound(memory) : memory;
+    const planned = planAdaptiveRound(base, pool, makeRoundId(), Date.now(), undefined, xp);
     if (!planned.active || planned.active.questionIds.length === 0) return;
     const ok = await commit(planned);
     if (ok) { setResult(null); setLegacyNotice(false); await enterRound(planned); }
@@ -242,7 +250,13 @@ export default function AdaptiveRestatementScreen() {
         <ChunkyButton tone="brand" icon="refresh" label="إعادة المحاولة" testID="adaptive-retry-claim" onPress={() => memory && void enterRound(memory)} />
       </View>
 
-      : phase === 'intro' && memory ? <Intro p={p} xp={xp} memory={memory} poolSize={pool.length} isPremium={isPremium} busy={busy} onStart={() => void startNew()} />
+      : phase === 'intro' && memory ? <>
+        <Intro p={p} xp={xp} memory={memory} poolSize={pool.length} isPremium={isPremium} busy={busy}
+          onStart={() => void startNew()} />
+        {memory.active && trainingEntry(memory.active) === 'previous' &&
+          <ChunkyButton tone="ghost" label="عرض المحاولة السابقة" testID="adaptive-previous"
+            onPress={() => { setResult({ ...memory.active!, finished: true }); setPhase('results'); }} />}
+      </>
 
       : phase === 'round' && round && memory ? <RoundView p={p} round={round} bank={bank} busy={busy}
           onPick={(qid, i, correctIndex) => void commit(recordAdaptiveAnswer(memory, qid, i, correctIndex))}
@@ -251,7 +265,7 @@ export default function AdaptiveRestatementScreen() {
             if (next.active?.finished) {
               const snap = next.active;
               const ok = await commit(finishAdaptiveRound(next));
-              if (ok) { setResult(snap); setPhase('results'); }
+              if (ok && focused.current && phaseRef.current === 'round') { setResult(snap); setPhase('results'); }
             } else await commit(next);
           }} />
 
@@ -291,7 +305,10 @@ function Intro({ p, xp, memory, poolSize, isPremium, busy, onStart }: { p: P; xp
       <Text style={s.body}>الأسئلة من نماذج امتحانات حقيقية بنصّها الأصلي. الشروحات مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا.</Text>
       {!isPremium && <Text style={s.body}>في تجربة مجانية تُحتسب الجولة كقسمك الموقّت الوحيد لليوم.</Text>}
     </View>
-    <ChunkyButton tone="success" icon="arrow-back" label="ابدأ الجولة" testID="adaptive-start" disabled={busy || poolSize === 0} onPress={onStart} />
+    <ChunkyButton tone="success" icon="arrow-back"
+      label={trainingEntry(memory.active) === 'resume' ? 'متابعة الجولة المحفوظة' : 'ابدأ جولة جديدة'}
+      testID="adaptive-start" disabled={busy || poolSize === 0} onPress={onStart} />
+    <SectionLearningNotes section="restatement" />
   </View>;
 }
 

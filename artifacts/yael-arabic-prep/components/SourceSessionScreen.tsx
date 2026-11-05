@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import SectionLearningNotes from '@/components/SectionLearningNotes';
 import { timedDailyGoalEvents, type DailyGoalEvent } from '@/lib/daily-goal-events';
 import { trackDailyActivity } from '@/lib/daily-goals';
 import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useUser } from '@clerk/expo';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -50,10 +51,6 @@ export default function SourceSessionScreen() {
       router.replace('/source-session');
     }
   }, [defaultTraining, examId, mode, sectionRaw, focusRaw, router]);
-  const activityKey = useMemo(
-    () => `timed-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
-    [examId, mode, sectionRaw, focusRaw],
-  );
   const sourceExam = (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).find(e => e.id === examId);
   const exam = useMemo(() => sourceExam && focused ? restatementExam(sourceExam) : sourceExam, [sourceExam, focused]);
   const section = sectionRaw !== undefined && /^\d+$/.test(sectionRaw) ? Number(sectionRaw) : null;
@@ -68,7 +65,6 @@ export default function SourceSessionScreen() {
 
   const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
   useEffect(() => {
-    let active = true;
     if (!isLoaded || !accessReady || problem || !exam || !plan) return;
     if (isPremium) { setAccess('allowed'); return; }
     if (exam.id !== 'b17' || mode !== 'training') {
@@ -76,24 +72,17 @@ export default function SourceSessionScreen() {
       router.replace('/plans?reason=premium-exam');
       return;
     }
-    void claimActivity('timed-section', activityKey).then(allowed => {
-      if (!active) return;
-      if (allowed) setAccess('allowed');
-      else {
-        setAccess('blocked');
-      }
-    }).catch(() => {
-      if (active) setAccess('blocked');
-    });
-    return () => { active = false; };
-  }, [accessReady, activityKey, claimActivity, exam, isLoaded, isPremium, mode, plan, problem, router, section]);
+    // Eligibility only. Claim the allowance after an explicit Start/Resume.
+    setAccess('allowed');
+  }, [accessReady, exam, isLoaded, isPremium, mode, plan, problem, router]);
 
   if (!isLoaded || !accessReady || access === 'checking') return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   if (problem || !exam) return <InvalidScreen message={problem} />;
   if (!plan || (access !== 'allowed' && (exam.id !== 'b17' || mode !== 'training'))) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator color={c.primary} /></View>;
   const m = mode as SourceMode;
   const sec = m === 'training' ? section : null;
-  return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}:${focused ? 'restatement' : 'mixed'}`} userId={user?.id} exam={exam} mode={m} section={sec} focused={focused} canPractice={access === 'allowed'} />;
+  return <Session key={`${user?.id ?? 'guest'}:${exam.id}:${m}:${sec}:${focused ? 'restatement' : 'mixed'}`} userId={user?.id} exam={exam} mode={m} section={sec} focused={focused} canPractice={access === 'allowed'}
+    requestPractice={key => isPremium ? Promise.resolve(true) : claimActivity('timed-section', key)} />;
 }
 
 function Header({ title, caption, clock }: { title: string; caption: string; clock?: React.ReactNode }) {
@@ -132,7 +121,7 @@ function InvalidScreen({ message }: { message: string }) {
   </View>;
 }
 
-function Session({ userId, exam, mode, section, focused, canPractice }: { userId?: string; exam: ImportedExam; mode: SourceMode; section: number | null; focused: boolean; canPractice: boolean }) {
+function Session({ userId, exam, mode, section, focused, canPractice, requestPractice }: { userId?: string; exam: ImportedExam; mode: SourceMode; section: number | null; focused: boolean; canPractice: boolean; requestPractice: (key: string) => Promise<boolean> }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const s = makeStyles(c);
@@ -152,7 +141,48 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [now, setNow] = useState(Date.now());
   const [attempt, setAttempt] = useState(0);
+  const [entered, setEntered] = useState(false);
+  const enteredRef = useRef(false);
+  const [starting, setStarting] = useState(false);
+  const startingRef = useRef(false);
+  const newAttemptKey = useRef(`source-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const goalEvents = useRef(new Map<string, DailyGoalEvent>());
+  useFocusEffect(useCallback(() => {
+    enteredRef.current = false; setEntered(false);
+    return () => { enteredRef.current = false; };
+  }, []));
+
+  async function enterSaved() {
+    if (!current.current || startingRef.current) return;
+    startingRef.current = true; setStarting(true);
+    try {
+      const old = current.current;
+      const resumed = catchUp(old, Date.now());
+      if (!isDone(resumed) && (!canPractice || !await requestPractice(old.attemptId ?? newAttemptKey.current))) {
+        setNotice('لا تتوفر حصة تدريب الآن. محاولتك محفوظة ووقتها الأصلي لم يتغيّر.'); return;
+      }
+      if (!mounted.current) return;
+      current.current = resumed; setSession(resumed);
+      if (resumed !== old) persist(resumed);
+      enteredRef.current = true; setEntered(true); setNow(Date.now());
+    } catch { if (mounted.current) setNotice('تعذّر فتح المحاولة. لم نغيّر محفوظاتك؛ حاول مجددًا.'); }
+    finally { startingRef.current = false; if (mounted.current) setStarting(false); }
+  }
+
+  async function startFresh() {
+    if (!canPractice || startingRef.current) return;
+    startingRef.current = true; setStarting(true);
+    try {
+      const id = newAttemptKey.current;
+      if (!await requestPractice(id)) { setNotice('استخدمت القسم الموقوت المتاح اليوم. محفوظاتك باقية؛ ارجع غدًا أو راجع خطتك.'); return; }
+      if (!mounted.current) return;
+      setNotice(''); setNow(Date.now());
+      enteredRef.current = true; setEntered(true);
+      commit({ ...newSourceSession(exam, mode, section), attemptId: id });
+      newAttemptKey.current = `source-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    } catch { if (mounted.current) setNotice('تعذّر بدء التدريب. لم يبدأ مؤقّت جديد؛ حاول مجددًا.'); }
+    finally { startingRef.current = false; if (mounted.current) setStarting(false); }
+  }
 
   function persist(next: SourceSession | null) {
     const r = ++revision.current;
@@ -213,6 +243,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
 
   useEffect(() => {
     function tick() {
+      if (!enteredRef.current) return;
       const t = Date.now();
       setNow(t);
       const prev = current.current;
@@ -299,7 +330,7 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
 
   return (
     <View style={s.screen}>
-      <Header title={headerTitle} caption={mode === 'training' ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={clock} />
+      <Header title={headerTitle} caption={mode === 'training' ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={entered ? clock : undefined} />
       <KeyboardAwareScrollViewCompat bottomOffset={24} keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
         {loading ? <View style={{ gap: 12 }}>
@@ -319,7 +350,12 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
             {button('إعادة الحفظ', () => persist(current.current), 'source-retry-save', true)}
           </View> : session && <Text style={s.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ على هذا الجهاز'}</Text>}
 
-          {!session ? <>
+          {session && !entered ? <View style={s.card} testID="source-saved-entry">
+            <Text style={s.title}>محاولة سابقة محفوظة</Text>
+            <Text style={s.body}>هذه ليست جولة جديدة. يمكنك فتح محاولتك السابقة؛ وقتها الأصلي لا يبدأ من جديد.</Text>
+            {button(isDone(session) ? 'عرض المحاولة السابقة' : 'فتح المحاولة المحفوظة', () => void enterSaved(), 'source-open-saved', false, starting)}
+            <SectionLearningNotes section="exam" />
+          </View> : !session ? <>
             {!canPractice && <Text style={s.body}>التدريب غير متاح الآن: ربما استُخدم القسم اليومي أو تعذّر التحقق من الاتصال. يمكنك استعادة نتيجتك ومراجعتها؛ لا تبدأ محاولة جديدة.</Text>}
             <PetTeacher />
             {focused && <Text style={s.eyebrow}>تدريب إعادة صياغة</Text>}
@@ -337,7 +373,8 @@ function Session({ userId, exam, mode, section, focused, canPractice }: { userId
               <Text style={s.body}>هذا تدريب للاستعداد للامتحان، وليس واجهة امتحان YAELNET الفعلي. أعددنا حلولًا وشروحات بالعربية للتصحيح بعد التسليم؛ هي حلول مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا وقد تحتاج مراجعة معلّم.</Text>
               <Text style={s.caption}>لا تدخل الأسئلة المعلّمة «تحتاج مراجعة» في النتيجة. لا تُمنح علامة آلية للتعبير.</Text>
             </View>
-            {button('ابدأ • يبدأ الوقت الآن', () => { if (!canPractice) return; setNotice(''); setNow(Date.now()); commit(newSourceSession(exam, mode, section)); }, 'source-start', false, !canPractice)}
+            {button(starting ? 'جارٍ تجهيز المحاولة…' : 'ابدأ • يبدأ الوقت الآن', () => void startFresh(), 'source-start', false, !canPractice || starting)}
+            <SectionLearningNotes section="exam" />
           </> : active && !canPractice ? <View style={s.card}>
             <Text style={s.title}>محاولتك محفوظة</Text>
             <Text style={s.body}>التدريب غير متاح الآن. الوقت الأصلي يستمر؛ يمكنك حفظ النسخة أو استعادة النتائج دون بدء تدريب إضافي. حاول لاحقًا أو راجع خطتك.</Text>

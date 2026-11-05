@@ -3,13 +3,32 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test, vi } from 'vitest';
-import { DOCK_TABS, MENU_GROUPS, WEB_TAB_BAR_HEIGHT } from '../../artifacts/yael-arabic-prep/constants/navigation';
+import { DOCK_GROUP_OF, DOCK_TABS, MENU_GROUPS, WEB_TAB_BAR_HEIGHT } from '../../artifacts/yael-arabic-prep/constants/navigation';
 
-vi.mock('react-native', () => ({
+const motion = vi.hoisted(() => ({
+  reduce: false,
+  handles: [] as { start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }[],
+}));
+vi.mock('@/components/HomeMotion', () => ({ useReduceMotion: () => motion.reduce }));
+vi.mock('react-native', () => {
+  class Value {
+    value: number;
+    constructor(value: number) { this.value = value; }
+    setValue(value: number) { this.value = value; }
+    interpolate(config: unknown) { return config; }
+  }
+  const animation = () => {
+    const handle = { start: vi.fn(), stop: vi.fn() };
+    motion.handles.push(handle);
+    return handle;
+  };
+  return ({
   View: 'View', Text: 'Text', Pressable: 'Pressable',
+  Animated: { Value, View: 'AnimatedView', spring: animation, timing: animation, sequence: animation },
+  Easing: { quad: (value: number) => value, out: (fn: unknown) => fn },
   Platform: { OS: 'web', select: (options: any) => options.web ?? options.default },
   StyleSheet: { create: (s: unknown) => s, hairlineWidth: 1 },
-}));
+}); });
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Icon' }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 47, bottom: 34 }) }));
 vi.mock('@/components/Playful', () => ({
@@ -33,7 +52,8 @@ test('menu entries are unique, real existing destinations without source identif
     expect(existsSync(direct) || existsSync(tab)).toBe(true);
     expect(`${entry.title} ${entry.caption}`).not.toMatch(/\b[A-Z]-\d+\b|\.pdf\b/i);
   }
-  expect(Object.keys(DOCK_TABS)).toEqual(['index', 'practice', 'progress', 'profile', 'menu']);
+  expect(Object.keys(DOCK_TABS)).toEqual(['menu', 'practice', 'progress', 'index']);
+  expect(DOCK_GROUP_OF.profile).toBe('menu');
 });
 
 test('dock follows navigator selection and preserves preventable tab events', async () => {
@@ -50,7 +70,9 @@ test('dock follows navigator selection and preserves preventable tab events', as
     state: { routes, index: 0 }, navigation, descriptors: {},
   } as any)} />); });
   const button = (name: string) => tree.root.findByProps({ testID: `dock-tab-${name}` });
-  expect(tree.root.findAllByType('Pressable' as any)).toHaveLength(5);
+  expect(tree.root.findAllByType('Pressable' as any)).toHaveLength(4);
+  expect(tree.root.findAllByType('Pressable' as any).map(item => item.props.testID))
+    .toEqual(['dock-tab-menu', 'dock-tab-practice', 'dock-tab-progress', 'dock-tab-index']);
   expect(button('menu').props['aria-selected']).toBe(true);
   expect(button('index').props.accessibilityState.selected).toBe(false);
   expect(tree.root.findAllByType('View' as any)[0].props.style[1].height).toBe(WEB_TAB_BAR_HEIGHT);
@@ -63,7 +85,25 @@ test('dock follows navigator selection and preserves preventable tab events', as
   await act(async () => { button('progress').props.onPress(); });
   expect(navigation.navigate).not.toHaveBeenCalled();
   expect(navigation.emit).toHaveBeenLastCalledWith({ type: 'tabPress', target: 'key-progress', canPreventDefault: true });
-  await act(async () => { button('profile').props.onLongPress(); });
-  expect(navigation.emit).toHaveBeenLastCalledWith({ type: 'tabLongPress', target: 'key-profile' });
+  await act(async () => { button('progress').props.onLongPress(); });
+  expect(navigation.emit).toHaveBeenLastCalledWith({ type: 'tabLongPress', target: 'key-progress' });
+  await act(async () => { tree.update(<AppDock {...({
+    state: { routes, index: 1 }, navigation, descriptors: {},
+  } as any)} />); });
+  expect(button('menu').props['aria-selected']).toBe(true);
+  prevent = false;
+  await act(async () => { button('menu').props.onPress(); });
+  expect(navigation.navigate).toHaveBeenCalledWith('menu', { retained: 'menu' });
+  const squeeze = motion.handles.at(-1)!;
+  expect(squeeze.start).toHaveBeenCalled();
+  motion.reduce = true;
+  await act(async () => { tree.update(<AppDock {...({
+    state: { routes, index: 1 }, navigation, descriptors: {},
+  } as any)} />); });
+  const settledHandleCount = motion.handles.length;
+  await act(async () => { button('index').props.onPress(); });
+  expect(motion.handles).toHaveLength(settledHandleCount);
   await act(async () => { tree.unmount(); });
+  expect(squeeze.stop).toHaveBeenCalled();
+  motion.reduce = false;
 });

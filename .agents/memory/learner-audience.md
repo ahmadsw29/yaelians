@@ -45,9 +45,9 @@ Use Western digits `0123456789` throughout the app, not Arabic-Indic or Persian 
 **Why:** The user explicitly requested “1234567890 numbers only not arabic ones!”
 **How to apply:** Apply this to copy, goals, scores, timers, prices, dates, translation output, and design previews. Explicitly select Latin numbering for Arabic locale formatting; normalize digit input without changing saved numerical values.
 
-Home-screen motion should be clearly noticeable and respond to scrolling without changing the layout or obscuring study actions.
-**Why:** The user rejected the first restrained treatment as “unnoticable,” then confirmed the stronger scrolling was good. Earlier they reported touching cards and content covered by navigation.
-**How to apply:** Let reveals happen within the usable viewport, not mostly behind bottom navigation. Prefer contained opacity/transform effects over changing layout. Keep the initial view readable, finish the final card's reveal before scrolling runs out, and show everything without motion when Reduce Motion is enabled.
+Home and navigation motion should be clearly noticeable. Do not reduce existing app animations while restyling the menu or dock.
+**Why:** The user rejected restrained motion as “unnoticable,” accepted stronger scrolling, and rejected static navigation. He then called the animated menu “impressive” and requested the same feel for Next-question transitions.
+**How to apply:** Use expressive character motion, visible entrances and responsive navigation transitions without covering controls or shifting page layout. Keep scroll reveals inside the usable viewport, finish the final reveal before scrolling runs out, and settle everything visibly when Reduce Motion is enabled.
 
 Buttons and selectors should use soft frosted glass, not glossy plastic-looking gradients.
 **Why:** The user requested premium Apple-like controls, rejected the shiny treatment, then explicitly chose “Soft frosted glass.”

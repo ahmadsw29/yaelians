@@ -27,9 +27,11 @@ export const MENU_GROUPS: { key: string; title: string; items: MenuDestination[]
 
 /** Classic dock tabs, in visual (RTL) order. */
 export const DOCK_TABS: Record<string, { title: string; icon: string }> = {
-  index: { title: 'الرئيسية', icon: 'home' },
+  menu: { title: 'القائمة', icon: 'grid' },
   practice: { title: 'تدرّب', icon: 'book-open' },
   progress: { title: 'تقدّمي', icon: 'bar-chart-2' },
-  profile: { title: 'حسابي', icon: 'user' },
-  menu: { title: 'القائمة', icon: 'grid' },
+  index: { title: 'الرئيسية', icon: 'home' },
 };
+
+/** Routes without their own dock entry highlight a dock group instead. */
+export const DOCK_GROUP_OF: Record<string, string> = { profile: 'menu' };
