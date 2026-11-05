@@ -44,3 +44,7 @@ Reading comprehension must be a separate section, with its own home entry as the
 Use Western digits `0123456789` throughout the app, not Arabic-Indic or Persian digits, while retaining Arabic text and RTL layout.
 **Why:** The user explicitly requested “1234567890 numbers only not arabic ones!”
 **How to apply:** Apply this to copy, goals, scores, timers, prices, dates, translation output, and design previews. Explicitly select Latin numbering for Arabic locale formatting; normalize digit input without changing saved numerical values.
+
+Home-screen motion should be clearly noticeable and respond to scrolling without changing the layout or obscuring study actions.
+**Why:** The user asked for more scrolling animations and rejected the first restrained treatment as “unnoticable,” after previously reporting touching cards and content covered by navigation.
+**How to apply:** Let reveals happen within the usable viewport, not mostly behind bottom navigation. Prefer contained opacity/transform effects over changing layout. Keep the initial view readable, finish the final card's reveal before scrolling runs out, and show everything without motion when Reduce Motion is enabled.

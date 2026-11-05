@@ -1,13 +1,13 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useUser } from '@clerk/expo';
 import {
-  ActivityIndicator,
+  Animated,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,6 +25,7 @@ import { DailyGoalsSection } from '@/components/DailyGoals';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
 import { useDailyStudyTip } from '@/hooks/useDailyStudyTip';
+import { HomeMotionProvider, NATIVE_DRIVER, Reveal, RevealGroup, ScrollSway, useReduceMotion } from '@/components/HomeMotion';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
@@ -39,17 +40,29 @@ export default function HomeScreen() {
   const { stats, loading, refresh } = useStudy();
   useFocusEffect(useCallback(() => { refresh(); }, [user?.id]));
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const onScroll = useRef(Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: NATIVE_DRIVER })).current;
+  const { height: windowHeight } = useWindowDimensions();
+  const [measuredHeight, setMeasuredHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const viewport = measuredHeight || windowHeight;
+  const reduce = useReduceMotion();
   const styles = makeStyles(p, insets.top, insets.bottom);
   const accuracy = stats.answeredQuestions
     ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
     : 0;
 
   return (
-    <ScrollView
+    <Animated.ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      onLayout={event => setMeasuredHeight(event.nativeEvent.layout.height)}
+      onContentSizeChange={(_width, height) => setContentHeight(height)}
     >
+      <HomeMotionProvider scrollY={scrollY} viewport={viewport} contentHeight={contentHeight || undefined} reduce={reduce}>
       <StudySyncStatus />
       <View style={styles.topLine}>
         <View style={styles.brandMark}>
@@ -67,10 +80,10 @@ export default function HomeScreen() {
         <Text style={styles.title}>أهلًا{firstName ? ` ${firstName}` : ''}،{"\n"}نبدأ درس اليوم؟</Text>
         <Text style={styles.subtitle}>خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.</Text>
       </View>
-      <View style={styles.sections}>
-      <DailyGoalsSection />
+      <RevealGroup style={styles.sections}>
+      <Reveal testID="home-reveal-goals"><DailyGoalsSection /></Reveal>
 
-      <View style={styles.hero}>
+      <Reveal testID="home-reveal-vocabulary"><View style={styles.hero}>
         <View style={styles.heroCopy}>
           <View style={styles.lessonTag}><Text style={styles.lessonTagText}>جولة اليوم · 20 كلمة</Text></View>
           <Text style={styles.heroTitle}>كلمات تفتح{"\n"}لك المعنى</Text>
@@ -78,41 +91,41 @@ export default function HomeScreen() {
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <View style={styles.heroHalo} />
-          <Creature kind="zizo" mood="hype" size={128} />
+          <ScrollSway testID="home-sway-vocabulary"><Creature kind="zizo" mood="hype" size={128} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>מילה</Text></View>
         </View>
         <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
-      </View>
+      </View></Reveal>
 
-      <View style={styles.rHero}>
+      <Reveal testID="home-reveal-restatement"><View style={styles.rHero}>
         <View style={styles.heroCopy}>
           <Text style={styles.heroTitle}>قلها{"\n"}بطريقة أخرى</Text>
           <Text style={styles.heroSub}>تدرّب على إعادة الصياغة فقط، قسمًا بقسم</Text>
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <View style={styles.heroHalo} />
-          <Creature kind="rami" mood="hype" size={124} />
+          <ScrollSway><Creature kind="rami" mood="hype" size={124} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>במילים אחרות</Text></View>
         </View>
         <ChunkyButton tone="sun" icon="arrow-back" label="إعادة صياغة" testID="start-restatement" onPress={() => router.push('/restatement')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
-      </View>
-      <HomeReadingEntry />
+      </View></Reveal>
+      <Reveal testID="home-reveal-reading"><HomeReadingEntry /></Reveal>
 
-      <Pressable testID="home-study" accessibilityRole="button" accessibilityLabel="ركن الدراسة، دروس مع معلّمين من عالم الخيال" onPress={() => router.push('/study')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
-        <View style={styles.studyArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind="ghaima" mood="happy" size={64} /></View>
+      <Reveal testID="home-reveal-study"><Pressable testID="home-study" accessibilityRole="button" accessibilityLabel="ركن الدراسة، دروس مع معلّمين من عالم الخيال" onPress={() => router.push('/study')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
+        <View style={styles.studyArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><ScrollSway amount={8} tilt={10}><Creature kind="ghaima" mood="happy" size={64} /></ScrollSway></View>
         <View style={styles.tipCopy}>
           <Text style={styles.studyTitle}>ركن الدراسة</Text>
           <Text style={styles.studyBody}>دروس من كتابك يشرحها لك معلّمون من عالم الخيال</Text>
         </View>
         <Ionicons name="chevron-back" size={20} color={p.skyInk} />
-      </Pressable>
+      </Pressable></Reveal>
 
-      <HomeFlashcardsEntry />
+      <Reveal testID="home-reveal-flashcards"><HomeFlashcardsEntry /></Reveal>
 
-      <ExamShortcuts />
-      </View>
+      <Reveal testID="home-reveal-models"><ExamShortcuts /></Reveal>
+      </RevealGroup>
 
-      <View style={styles.sectionHeading}>
+      <Reveal testID="home-reveal-stats"><View style={styles.sectionHeading}>
         <Text style={styles.sectionTitle}>إنجازك</Text>
         <Pressable onPress={() => router.push('/progress')} accessibilityRole="button">
           <Text style={styles.seeAll}>كل التقدّم ←</Text>
@@ -122,17 +135,18 @@ export default function HomeScreen() {
         <StatCard icon="star" value={loading ? '—' : `${stats.xp}`} label="نقطة خبرة" color={p.sunShade} />
         <StatCard icon="checkmark-circle" value={loading ? '—' : `${accuracy}%`} label="إجابات صحيحة" color={p.success} />
         <StatCard icon="book" value={loading ? '—' : `${stats.masteredWords}`} label="كلمة تعلّمتها" color={p.sky} />
-      </View>
+      </View></Reveal>
 
-      <View style={styles.tipCard} testID="daily-study-tip">
-        <View style={styles.tipIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind="lumi" size={58} /></View>
+      <Reveal testID="home-reveal-tip"><View style={styles.tipCard} testID="daily-study-tip">
+        <View style={styles.tipIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><ScrollSway amount={5} tilt={9}><Creature kind="lumi" size={58} /></ScrollSway></View>
         <View style={styles.tipCopy}>
           <Text style={styles.tipTitle}>نصيحة اليوم</Text>
           <Text style={styles.tipBody} testID="daily-study-tip-text">{tip.text}</Text>
         </View>
-      </View>
+      </View></Reveal>
       <Text style={styles.footer}>تعلّم على مهلك، وأنت قادر على التقدّم.</Text>
-    </ScrollView>
+      </HomeMotionProvider>
+    </Animated.ScrollView>
   );
 }
 

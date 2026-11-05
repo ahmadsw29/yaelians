@@ -47,6 +47,7 @@ export default defineConfig({
           'study-tests/web-billing-policy.test.ts',
           'study-tests/web-billing.test.ts',
           'study-tests/pet-teacher-motion.test.ts',
+          'study-tests/home-scroll-motion.test.tsx',
           'study-tests/practice-celebrations.test.ts',
         ],
     fileParallelism: false,
