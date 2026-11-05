@@ -28,7 +28,7 @@ vi.mock('@/hooks/useHebrewSpeech', () => ({
   useHebrewSpeech: () => ({ status: 'idle', toggle() {}, error: null }),
 }));
 import { ChunkyButton, QuestionPrompt } from '../../artifacts/yael-arabic-prep/components/Playful';
-import { GlassPressable } from '../../artifacts/yael-arabic-prep/components/Glass';
+import { GlassPressable, frostedTint } from '../../artifacts/yael-arabic-prep/components/Glass';
 
 const flatten = (styles: unknown): Record<string, any> => Object.assign({},
   ...(Array.isArray(styles) ? styles.flat(Infinity) : [styles]).filter(Boolean));
@@ -100,11 +100,12 @@ describe('question bubble accessibility layout (native props, not device renderi
     const pressable = () => tree.root.findByType('Pressable' as any);
     expect(pressable().props.accessibilityLabel).toBe('متابعة');
     expect(pressable().props.accessibilityRole).toBe('button');
-    expect(tree.root.findAllByType('LinearGradient' as any)).toHaveLength(2);
+    expect(tree.root.findAllByType('LinearGradient' as any)).toHaveLength(0);
+    expect(flatten(pressable().props.style({ pressed: false })).shadowOpacity).toBeLessThan(0.05);
     await act(async () => { pressable().props.onPress(); });
     expect(onPress).toHaveBeenCalledOnce();
     const pressed = flatten(pressable().props.style({ pressed: true, focused: false }));
-    expect(pressed.transform).toEqual([{ scale: 0.97 }]);
+    expect(pressed.transform).toEqual([{ scale: 0.985 }]);
     const focused = flatten(pressable().props.style({ pressed: false, focused: true }));
     expect(focused.borderWidth).toBe(2);
     await act(async () => { tree.update(button(true)); });
@@ -117,5 +118,10 @@ describe('question bubble accessibility layout (native props, not device renderi
     expect(pressable().props['aria-checked']).toBe(true);
     expect(pressable().props.accessibilityState.checked).toBe(true);
     await act(async () => { tree.unmount(); });
+  });
+
+  it('uses one even frosted tint without adding gloss or changing transparent segments', () => {
+    expect(frostedTint('#17665c')).toBe('rgba(23,102,92,0.94)');
+    expect(frostedTint('rgba(255,255,255,0)')).toBe('rgba(255,255,255,0)');
   });
 });

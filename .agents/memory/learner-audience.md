@@ -49,6 +49,6 @@ Home-screen motion should be clearly noticeable and respond to scrolling without
 **Why:** The user rejected the first restrained treatment as “unnoticable,” then confirmed the stronger scrolling was good. Earlier they reported touching cards and content covered by navigation.
 **How to apply:** Let reveals happen within the usable viewport, not mostly behind bottom navigation. Prefer contained opacity/transform effects over changing layout. Keep the initial view readable, finish the final card's reveal before scrolling runs out, and show everything without motion when Reduce Motion is enabled.
 
-Buttons and selectors should feel premium and Apple Liquid Glass-inspired while retaining the learning app's colourful identity.
-**Why:** The user explicitly requested a more expensive look for “buttons and toggilers” after accepting the scrolling.
-**How to apply:** Keep labels legible in light and dark mode and respect reduced transparency/motion. Use inexpensive shared effects rather than heavy native blur on every control; distinguish glass-inspired fallbacks from actual native Liquid Glass support.
+Buttons and selectors should use soft frosted glass, not glossy plastic-looking gradients.
+**Why:** The user requested premium Apple-like controls, rejected the shiny treatment, then explicitly chose “Soft frosted glass.”
+**How to apply:** Avoid bright shine bands and heavy shadows. Keep the colourful learning identity, legible labels in both themes, accepted scrolling, and reduced-transparency/motion support. Distinguish lightweight native fallbacks from actual native Liquid Glass.

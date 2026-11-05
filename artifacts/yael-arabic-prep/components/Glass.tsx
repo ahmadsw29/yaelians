@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, Pressable, StyleSheet, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useReduceMotion } from '@/components/HomeMotion';
 
 /**
- * Glass-inspired controls. Deliberately no per-control blur: layered translucent
- * gradients + specular highlight + hairline rim work on iOS, Android and every
- * browser. When the OS asks for reduced transparency, surfaces become solid.
+ * Soft frosted controls: uniform translucent tint, a quiet edge and minimal
+ * elevation. No shine bands or glossy gradients. Native platforms use the same
+ * lightweight tint; supported browsers also blur the backdrop.
  */
 export function useReducedTransparency() {
   const [reduced, setReduced] = useState(() => Platform.OS === 'ios' || (
@@ -35,26 +34,31 @@ export function useReducedTransparency() {
 }
 
 export const glassTokens = (dark: boolean) => ({
-  rim: dark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.85)',
-  edge: dark ? 'rgba(0,0,0,0.35)' : 'rgba(23,51,47,0.10)',
-  sheenTop: dark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.62)',
-  sheenMid: 'rgba(255,255,255,0)',
-  clearFill: dark ? ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.04)'] as const : ['rgba(255,255,255,0.88)', 'rgba(255,255,255,0.55)'] as const,
+  rim: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.35)',
+  edge: dark ? 'rgba(255,255,255,0.10)' : 'rgba(23,51,47,0.10)',
+  clearFill: dark ? 'rgba(222,240,231,0.065)' : 'rgba(255,255,255,0.76)',
   shadow: dark ? '#000' : '#0f3a33',
   focus: dark ? '#85cbbb' : '#17665c',
 });
 
+/** Keep colour contrast while removing the old opaque, two-tone gloss. */
+export function frostedTint(color: string): string {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
+  const rgb = [1, 3, 5].map(start => parseInt(color.slice(start, start + 2), 16));
+  return `rgba(${rgb.join(',')},0.94)`;
+}
+
 type State = { pressed: boolean; hovered?: boolean; focused?: boolean };
 
 export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style, contentStyle, children, ...rest }: Omit<PressableProps, 'style' | 'children'> & {
-  /** two-stop tint; omit for clear glass */
+  /** Existing two-stop callers remain compatible; only the flat first tint is used. */
   fill?: readonly [string, string]; solid?: string; dark: boolean; radius?: number;
   style?: StyleProp<ViewStyle>; contentStyle?: StyleProp<ViewStyle>; children: React.ReactNode;
 }) {
   const reduced = useReducedTransparency();
   const reduceMotion = useReduceMotion();
   const t = glassTokens(dark);
-  const colorsFill = fill ?? t.clearFill;
+  const surfaceFill = fill ? frostedTint(fill[0]) : t.clearFill;
   const opaqueFill = solid ?? (fill?.[0] && !fill[0].startsWith('rgba') ? fill[0] : dark ? '#253c34' : '#fffdf8');
   return (
     <Pressable disabled={disabled} {...rest}
@@ -64,10 +68,10 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
         return [
           g.base, { borderRadius: radius, borderColor: t.edge, shadowColor: t.shadow },
           Platform.OS === 'web' && {
-            // Progressive enhancement; gradients remain usable without browser blur.
+            // Progressive enhancement; uniform frosted tint works without blur.
             backgroundColor: 'transparent',
-            backdropFilter: reduced ? 'none' : 'blur(16px) saturate(155%)',
-            WebkitBackdropFilter: reduced ? 'none' : 'blur(16px) saturate(155%)',
+            backdropFilter: reduced ? 'none' : 'blur(18px) saturate(125%)',
+            WebkitBackdropFilter: reduced ? 'none' : 'blur(18px) saturate(125%)',
             transitionProperty: 'transform, box-shadow, border-color',
             transitionDuration: reduceMotion ? '0ms' : '180ms',
           } as ViewStyle,
@@ -84,13 +88,9 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
         return <>
           <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
             style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
-            {reduced || disabled
-              ? <View style={[StyleSheet.absoluteFill, { backgroundColor: opaqueFill }]} />
-              : <LinearGradient colors={[colorsFill[0], colorsFill[1]]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />}
-            {!reduced && !disabled && <LinearGradient colors={[t.sheenTop, t.sheenMid]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 0.55 }}
-              style={[g.sheen, { borderTopLeftRadius: radius, borderTopRightRadius: radius, opacity: pressed ? 0.45 : 1 }]} />}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: reduced || disabled ? opaqueFill : surfaceFill }]} />
             <View style={[StyleSheet.absoluteFill, g.rim, { borderRadius: radius, borderColor: disabled ? 'transparent' : t.rim }]} />
-            {pressed && !disabled && <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,58,51,0.06)' }]} />}
+            {pressed && !disabled && <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(255,255,255,0.035)' : 'rgba(15,58,51,0.04)' }]} />}
           </View>
           <View style={[g.content, contentStyle]}>{children}</View>
         </>;
@@ -101,11 +101,10 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
 
 const g = StyleSheet.create({
   base: { borderWidth: StyleSheet.hairlineWidth, overflow: 'visible' },
-  lift: { shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  lift: { shadowOpacity: 0.045, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   flat: { shadowOpacity: 0, elevation: 0 },
-  hover: { transform: [{ translateY: -1 }], shadowOpacity: 0.22 },
-  pressed: { transform: [{ scale: 0.97 }], shadowOpacity: 0.08, shadowRadius: 6, elevation: 1 },
-  sheen: { position: 'absolute', top: 0, left: 0, right: 0, height: '60%' },
+  hover: { shadowOpacity: 0.08 },
+  pressed: { transform: [{ scale: 0.985 }], shadowOpacity: 0, elevation: 0 },
   rim: { borderWidth: 1 },
   content: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9 },
 });
