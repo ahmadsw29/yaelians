@@ -12,6 +12,7 @@ export default defineConfig({
       '@clerk/express': require.resolve('./server-auth.ts'),
       'react-native': require.resolve('./native.ts'),
       '@expo/vector-icons': require.resolve('../../artifacts/yael-arabic-prep/node_modules/@expo/vector-icons'),
+      'expo-linear-gradient': require.resolve('../../artifacts/yael-arabic-prep/node_modules/expo-linear-gradient'),
       '@react-native-async-storage/async-storage': require.resolve('./storage.ts'),
       '@clerk/expo': require.resolve('./auth.ts'),
     },

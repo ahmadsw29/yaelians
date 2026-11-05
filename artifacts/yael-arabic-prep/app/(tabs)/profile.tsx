@@ -9,6 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { AvatarConfig, avatarOptions, CartoonAvatar, getAvatarConfig } from '@/components/CartoonAvatar';
 import { AuthButton, AuthField, authError } from '@/components/AuthScreen';
 import { getProfileNames } from '@/lib/profile';
+import { GlassPressable } from '@/components/Glass';
 import { useAccountDeletion } from '@/lib/AccountDeletion';
 import { useStudy } from '@/lib/StudyProvider';
 import { getStudyStatsDisplay } from '@/lib/study-stats-display';
@@ -25,18 +26,22 @@ function ThemeSettings() {
   const { preference, setPreference } = useThemePreference();
   return <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <Text style={[styles.sectionTitle, { color: colors.foreground }]}>مظهر التطبيق</Text>
-    <View style={styles.themeRow}>
+    <View style={[styles.themeRow, { backgroundColor: colors.isDark ? 'rgba(0,0,0,0.25)' : colors.muted, borderColor: colors.border }]} accessibilityRole="radiogroup">
       {([
         { value: 'light', title: 'فاتح', icon: 'sun' },
         { value: 'dark', title: 'داكن', icon: 'moon' },
         { value: 'system', title: 'تلقائي', icon: 'smartphone' },
-      ] as const).map(option => <Pressable key={option.value} testID={`theme-${option.value}`} accessibilityRole="radio"
-        accessibilityLabel={`المظهر ${option.title}`} accessibilityState={{ selected: preference === option.value }}
-        onPress={() => setPreference(option.value)}
-        style={[styles.themeOption, { backgroundColor: preference === option.value ? colors.secondary : colors.background, borderColor: preference === option.value ? colors.primary : colors.border }]}>
-        <Feather name={option.icon} size={20} color={preference === option.value ? colors.primary : colors.mutedForeground} />
-        <Text style={{ color: colors.foreground, fontSize: 14 }}>{option.title}</Text>
-      </Pressable>)}
+      ] as const).map(option => {
+        const on = preference === option.value;
+        return <GlassPressable key={option.value} dark={colors.isDark} testID={`theme-${option.value}`} accessibilityRole="radio"
+          accessibilityLabel={`المظهر ${option.title}`} accessibilityState={{ selected: on, checked: on }} aria-checked={on}
+          onPress={() => setPreference(option.value)} radius={14}
+          fill={on ? undefined : ['rgba(255,255,255,0)', 'rgba(255,255,255,0)']}
+          style={[styles.themeOption, !on && styles.themeOff]} contentStyle={styles.themeInner}>
+          <Feather name={option.icon} size={20} color={on ? colors.primary : colors.mutedForeground} />
+          <Text style={{ color: on ? colors.foreground : colors.mutedForeground, fontSize: 14, fontWeight: on ? '700' : '500' }}>{option.title}</Text>
+        </GlassPressable>;
+      })}
     </View>
     <Text style={[styles.caption, { color: colors.mutedForeground }]}>يُحفظ اختيارك على هذا الجهاز.</Text>
   </View>;
@@ -287,8 +292,10 @@ const styles = StyleSheet.create({
   swatches: { flexDirection: 'row-reverse', gap: 12, flexWrap: 'wrap' },
   swatch: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   selectedDot: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  themeRow: { flexDirection: 'row-reverse', gap: 10 },
-  themeOption: { flex: 1, borderWidth: 1, borderRadius: 16, gap: 10, paddingVertical: 13, alignItems: 'center' },
+  themeRow: { flexDirection: 'row-reverse', gap: 4, padding: 4, borderRadius: 18, borderWidth: 1 },
+  themeOption: { flex: 1 },
+  themeOff: { borderColor: 'transparent', shadowOpacity: 0, elevation: 0 },
+  themeInner: { flexDirection: 'column', gap: 6, paddingVertical: 11 },
   feedback: { fontSize: 14, lineHeight: 24, textAlign: 'right' },
   sectionHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   textLink: { flexDirection: 'row-reverse', alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 2 },

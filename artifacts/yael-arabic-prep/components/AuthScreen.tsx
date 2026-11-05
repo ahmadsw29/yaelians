@@ -10,6 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { CartoonAvatar } from '@/components/CartoonAvatar';
 import { useColors } from '@/hooks/useColors';
+import { GlassPressable } from '@/components/Glass';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,10 +35,12 @@ export function AuthButton({ title, onPress, disabled, secondary, testID }: {
   title: string; onPress: () => void; disabled?: boolean; secondary?: boolean; testID?: string;
 }) {
   const colors = useColors();
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} testID={testID} onPress={onPress} disabled={disabled}
-    style={({ pressed }) => [styles.button, { backgroundColor: secondary ? colors.secondary : colors.primary, opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}>
+  const tint = secondary ? undefined : [colors.primary, colors.isDark ? '#5fa999' : '#0f4d45'] as const;
+  return <GlassPressable dark={colors.isDark} accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} testID={testID} onPress={onPress} disabled={disabled}
+    fill={tint} solid={secondary ? colors.secondary : colors.primary} radius={18}
+    style={[styles.button, disabled && { opacity: 0.5 }]} contentStyle={styles.buttonInner}>
     <Text style={[styles.buttonText, { color: secondary ? colors.secondaryForeground : colors.primaryForeground }]}>{title}</Text>
-  </Pressable>;
+  </GlassPressable>;
 }
 
 type Mode = 'sign-in' | 'sign-up' | 'reset';
@@ -239,8 +242,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, lineHeight: 23, textAlign: 'center' },
   field: { gap: 8 }, label: { fontSize: 14, fontWeight: '600', textAlign: 'right' },
   input: { borderWidth: 1, borderRadius: 16, minHeight: 54, paddingHorizontal: 16, fontSize: 16 },
-  button: { minHeight: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 14 },
-  buttonText: { fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  button: { minHeight: 52, justifyContent: 'center' },
+  buttonInner: { minHeight: 52, padding: 14 },
+  buttonText: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
   message: { textAlign: 'right', lineHeight: 23, fontSize: 14 },
   link: { textAlign: 'center', padding: 14, fontSize: 15, fontWeight: '600' },
   or: { textAlign: 'center' }, legal: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },

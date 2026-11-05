@@ -11,6 +11,7 @@ import { isValidDailyTargets, type DailyMetric, type DailyTargets } from '@/lib/
 import { usePlanAccess } from '@/lib/PlanAccess';
 import { ChunkyButton, ChunkyProgress, usePlay } from '@/components/Playful';
 import { Creature } from '@/components/PetTeacher';
+import { GlassPressable } from '@/components/Glass';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 type Play = ReturnType<typeof usePlay>;
@@ -85,12 +86,12 @@ export function DailyGoalsSection() {
                   : `${ar(done)} من ${ar(active.length)} أهداف منجزة`}
           </Text>
         </View>
-        <Pressable testID="daily-goals-edit" onPress={g.openEditor} accessibilityRole="button"
+        <GlassPressable testID="daily-goals-edit" dark={p.isDark} onPress={g.openEditor} accessibilityRole="button"
           accessibilityLabel={targets ? 'تعديل أهداف اليوم' : 'حدد أهداف اليوم'}
-          style={({ pressed }) => [st.editBtn, { backgroundColor: p.brandSoft, borderColor: p.brand }, pressed && { opacity: 0.7 }]}>
-          <Ionicons name={targets ? 'create' : 'flag'} size={17} color={p.brandShade} />
-          <Text style={[st.editText, { color: p.brandShade }]}>{targets ? 'تعديل' : 'حدد'}</Text>
-        </Pressable>
+          fill={[p.brandSoft, p.brandSoft]} radius={14} style={st.editBtn} contentStyle={st.editInner}>
+          <Ionicons name={targets ? 'create' : 'flag'} size={17} color={p.isDark ? p.brand : p.brandShade} />
+          <Text style={[st.editText, { color: p.isDark ? p.brand : p.brandShade }]}>{targets ? 'تعديل' : 'حدد'}</Text>
+        </GlassPressable>
       </View>
 
       {!!g.error && (
@@ -215,10 +216,10 @@ function GoalsSheet({ onClose, first }: { onClose: () => void; first: boolean })
                 const t = isPremium ? pr.premium : pr.free;
                 const on = same(draft, t);
                 return (
-                  <Pressable key={pr.id} onPress={() => { setSaveError(null); setDraft(t); }} accessibilityRole="radio" accessibilityState={{ checked: on }}
-                    style={[st.preset, { backgroundColor: on ? p.brand : p.card, borderColor: on ? p.brandShade : p.border }]}>
-                    <Text style={[st.editText, { color: on ? p.onBrand : p.foreground }]}>{pr.label}</Text>
-                  </Pressable>
+                  <GlassPressable key={pr.id} dark={p.isDark} onPress={() => { setSaveError(null); setDraft(t); }} accessibilityRole="radio" accessibilityState={{ checked: on }} aria-checked={on}
+                    fill={on ? [p.primary, p.isDark ? '#5fa999' : '#0f4d45'] : undefined} radius={14} style={st.preset} contentStyle={st.presetInner}>
+                    <Text style={[st.editText, { color: on ? p.primaryForeground : p.foreground }]}>{pr.label}</Text>
+                  </GlassPressable>
                 );
               })}
             </View>
@@ -294,7 +295,8 @@ const st = StyleSheet.create({
   small: { fontSize: 13, lineHeight: 22, textAlign: 'right', writingDirection: 'rtl' },
   tiny: { fontSize: 11, lineHeight: 18, textAlign: 'right', writingDirection: 'rtl' },
   foot: { fontSize: 11, lineHeight: 18, textAlign: 'center', writingDirection: 'rtl' },
-  editBtn: { minHeight: 44, flexDirection: 'row-reverse', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 12 },
+  editBtn: { minHeight: 44 },
+  editInner: { minHeight: 44, gap: 5, paddingHorizontal: 12 },
   editText: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 13, lineHeight: 22, writingDirection: 'rtl' },
   skeleton: { height: 52, borderRadius: 14, opacity: 0.6 },
   errorBox: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, borderRadius: 12, padding: 10 },
@@ -310,7 +312,8 @@ const st = StyleSheet.create({
   sheetHead: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
   closeBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
   presets: { flexDirection: 'row-reverse', gap: 8, flexWrap: 'wrap' },
-  preset: { flexGrow: 1, minHeight: 44, borderWidth: 2, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  preset: { flexGrow: 1, minHeight: 44 },
+  presetInner: { minHeight: 44, paddingHorizontal: 10 },
   stepRow: { flexDirection: 'row-reverse', alignItems: 'center', flexWrap: 'wrap', gap: 10, borderWidth: 2, borderRadius: 18, padding: 10 },
   stepCtl: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
   stepBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

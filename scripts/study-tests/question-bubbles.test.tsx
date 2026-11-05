@@ -4,12 +4,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { usesExpandedQuestionLayout } from '../../artifacts/yael-arabic-prep/lib/practice-layout';
 
 const dimensions = vi.hoisted(() => ({ width: 375, height: 812, scale: 1, fontScale: 1 }));
-vi.mock('react-native', () => ({
-  View: 'View', Text: 'Text', Pressable: 'Pressable',
+vi.mock('react-native', async () => {
+  const { createElement } = await import('react');
+  return ({
+  View: 'View', Text: 'Text',
+  Pressable: ({ children, ...props }: any) => createElement('Pressable', props, typeof children === 'function' ? children({ pressed: false }) : children),
   StyleSheet: { create: (s: unknown) => s },
-  Platform: { select: (s: { default: unknown }) => s.default },
+  Platform: { OS: 'web', select: (s: { default: unknown }) => s.default },
+  AccessibilityInfo: {
+    isReduceMotionEnabled: async () => false,
+    addEventListener: () => ({ remove() {} }),
+  },
   useWindowDimensions: () => dimensions,
-}));
+}); });
+vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Icon' }));
 vi.mock('@/hooks/useColors', () => ({ useColors: () => ({ isDark: false }) }));
 vi.mock('@/components/PetTeacher', () => ({
@@ -20,6 +28,7 @@ vi.mock('@/hooks/useHebrewSpeech', () => ({
   useHebrewSpeech: () => ({ status: 'idle', toggle() {}, error: null }),
 }));
 import { ChunkyButton, QuestionPrompt } from '../../artifacts/yael-arabic-prep/components/Playful';
+import { GlassPressable } from '../../artifacts/yael-arabic-prep/components/Glass';
 
 const flatten = (styles: unknown): Record<string, any> => Object.assign({},
   ...(Array.isArray(styles) ? styles.flat(Infinity) : [styles]).filter(Boolean));
@@ -78,5 +87,35 @@ describe('question bubble accessibility layout (native props, not device renderi
     expect(usesExpandedQuestionLayout(1.49)).toBe(false);
     expect(usesExpandedQuestionLayout(1.5)).toBe(true);
     expect(usesExpandedQuestionLayout(2)).toBe(true);
+  });
+
+  it('keeps glass buttons actionable, labelled and clearly disabled when required', async () => {
+    const onPress = vi.fn();
+    let tree!: ReactTestRenderer;
+    const button = (disabled: boolean) => <GlassPressable dark={false} disabled={disabled} testID="glass-action"
+      onPress={onPress} accessibilityRole="button" accessibilityLabel="متابعة" accessibilityState={{ disabled }}>
+      <span>متابعة</span>
+    </GlassPressable>;
+    await act(async () => { tree = create(button(false)); });
+    const pressable = () => tree.root.findByType('Pressable' as any);
+    expect(pressable().props.accessibilityLabel).toBe('متابعة');
+    expect(pressable().props.accessibilityRole).toBe('button');
+    expect(tree.root.findAllByType('LinearGradient' as any)).toHaveLength(2);
+    await act(async () => { pressable().props.onPress(); });
+    expect(onPress).toHaveBeenCalledOnce();
+    const pressed = flatten(pressable().props.style({ pressed: true, focused: false }));
+    expect(pressed.transform).toEqual([{ scale: 0.97 }]);
+    const focused = flatten(pressable().props.style({ pressed: false, focused: true }));
+    expect(focused.borderWidth).toBe(2);
+    await act(async () => { tree.update(button(true)); });
+    expect(pressable().props.disabled).toBe(true);
+    expect(pressable().props.accessibilityState.disabled).toBe(true);
+    expect(tree.root.findAllByType('LinearGradient' as any)).toHaveLength(0);
+    expect(flatten(pressable().props.style({ pressed: true })).shadowOpacity).toBe(0);
+    await act(async () => { tree.update(<GlassPressable dark={false} accessibilityRole="radio"
+      accessibilityState={{ checked: true }} aria-checked={true} onPress={onPress}><span>فاتح</span></GlassPressable>); });
+    expect(pressable().props['aria-checked']).toBe(true);
+    expect(pressable().props.accessibilityState.checked).toBe(true);
+    await act(async () => { tree.unmount(); });
   });
 });

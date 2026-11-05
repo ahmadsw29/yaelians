@@ -46,5 +46,9 @@ Use Western digits `0123456789` throughout the app, not Arabic-Indic or Persian 
 **How to apply:** Apply this to copy, goals, scores, timers, prices, dates, translation output, and design previews. Explicitly select Latin numbering for Arabic locale formatting; normalize digit input without changing saved numerical values.
 
 Home-screen motion should be clearly noticeable and respond to scrolling without changing the layout or obscuring study actions.
-**Why:** The user asked for more scrolling animations and rejected the first restrained treatment as “unnoticable,” after previously reporting touching cards and content covered by navigation.
+**Why:** The user rejected the first restrained treatment as “unnoticable,” then confirmed the stronger scrolling was good. Earlier they reported touching cards and content covered by navigation.
 **How to apply:** Let reveals happen within the usable viewport, not mostly behind bottom navigation. Prefer contained opacity/transform effects over changing layout. Keep the initial view readable, finish the final card's reveal before scrolling runs out, and show everything without motion when Reduce Motion is enabled.
+
+Buttons and selectors should feel premium and Apple Liquid Glass-inspired while retaining the learning app's colourful identity.
+**Why:** The user explicitly requested a more expensive look for “buttons and toggilers” after accepting the scrolling.
+**How to apply:** Keep labels legible in light and dark mode and respect reduced transparency/motion. Use inexpensive shared effects rather than heavy native blur on every control; distinguish glass-inspired fallbacks from actual native Liquid Glass support.

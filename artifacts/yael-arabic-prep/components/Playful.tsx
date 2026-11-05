@@ -8,6 +8,7 @@ import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { SpeakingTeacher } from '@/components/SpeakingTeacher';
 import { useHebrewSpeech } from '@/hooks/useHebrewSpeech';
 import { usesExpandedQuestionLayout } from '@/lib/practice-layout';
+import { GlassPressable } from '@/components/Glass';
 
 export function usePlay() {
   const c = useColors();
@@ -27,21 +28,21 @@ export function ChunkyButton({ label, onPress, tone = 'brand', icon, disabled, t
 }) {
   const p = usePlay();
   const fills: Record<Tone, [string, string, string]> = {
-    brand: [p.brand, p.brandShade, p.onBrand],
-    sun: [p.sun, p.sunShade, p.sunInk],
-    coral: [p.coral, p.coralShade, p.onBrand],
-    success: [p.success, p.successShade, p.onBrand],
+    brand: [p.primary, p.isDark ? '#5fa999' : '#0f4d45', p.primaryForeground],
+    sun: [p.isDark ? p.sun : '#ffdc84', p.sun, '#624000'],
+    coral: [p.coral, p.isDark ? '#ed7d60' : '#f17153', '#301b15'],
+    success: [p.isDark ? p.success : '#237848', p.isDark ? '#39ad6c' : '#185638', p.isDark ? p.onBrand : '#ffffff'],
     ghost: [p.card, p.border, p.foreground],
   };
   const [bg, shade, fg] = disabled ? [p.muted, p.track, p.mutedForeground] : fills[tone];
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled: !!disabled }}
-      testID={testID} disabled={disabled} onPress={onPress}
-      style={({ pressed }) => [s.button, { backgroundColor: bg, borderColor: shade, borderWidth: tone === 'ghost' ? 2 : 0, borderBottomWidth: pressed && !disabled ? 2 : 5 },
-        pressed && !disabled && { transform: [{ translateY: 3 }] }, style]}>
+    <GlassPressable dark={p.isDark} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled: !!disabled }}
+      testID={testID} disabled={disabled} onPress={onPress} radius={18}
+      fill={tone === 'ghost' ? undefined : [bg, shade]} solid={bg}
+      style={[s.button, disabled && { opacity: 0.6 }, style]} contentStyle={s.buttonContent}>
       <Text style={[s.label, { color: fg }]}>{label}</Text>
       {icon && <Ionicons name={icon} size={19} color={fg} />}
-    </Pressable>
+    </GlassPressable>
   );
 }
 
@@ -97,7 +98,8 @@ export function ChunkyProgress({ value, color }: { value: number; color?: string
 }
 
 const s = StyleSheet.create({
-  button: { minHeight: 54, borderRadius: 16, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 18, paddingVertical: 8 },
+  button: { minHeight: 54, justifyContent: 'center' },
+  buttonContent: { minHeight: 54, paddingHorizontal: 18, paddingVertical: 8 },
   label: { flexShrink: 1, minWidth: 0, textAlign: 'center', writingDirection: 'rtl', fontSize: 15, fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', lineHeight: 26, paddingVertical: 2, includeFontPadding: true },
   row: { flexDirection: 'row-reverse', alignItems: 'flex-end', gap: 8 },
   expandedRow: { flexDirection: 'column', alignItems: 'stretch' },
