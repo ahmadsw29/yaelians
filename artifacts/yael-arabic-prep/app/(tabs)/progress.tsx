@@ -22,6 +22,14 @@ export default function ProgressScreen() {
   const hiddenStats = loading || statsUnavailable;
   const displayedStats = getStudyStatsDisplay(stats, hiddenStats);
   const styles = makeStyles(c, insets.top, insets.bottom);
+  const today = new Date();
+  const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay(), 12);
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + i);
+    return date;
+  });
+  const practicedToday = !hiddenStats && stats.lastPracticeDate === today.toISOString().slice(0, 10);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -54,17 +62,21 @@ export default function ProgressScreen() {
       <Text style={styles.sectionTitle}>عاداتك الجميلة</Text>
       <View style={styles.weekCard}>
         <Text style={styles.weekTitle}>هذا الأسبوع</Text>
+        <Text style={styles.weekRange}>
+          {week[0].toLocaleDateString('ar', { day: 'numeric', month: 'short', numberingSystem: 'latn' })} – {week[6].toLocaleDateString('ar', { day: 'numeric', month: 'short', numberingSystem: 'latn' })}
+        </Text>
         <View style={styles.weekDays}>
-          {['أ', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'].map((day, i) => {
-            const today = new Date().getDay();
-            const practicedToday = !hiddenStats && stats.lastPracticeDate === new Date().toISOString().slice(0, 10);
-            const active = i === today && practicedToday;
+          {['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'].map((day, i) => {
+            const isToday = i === today.getDay();
+            const active = isToday && practicedToday;
             return (
-            <View key={`${day}-${i}`} style={styles.dayColumn}>
-              <View style={[styles.dayDot, active && styles.dayDotActive]}>
-                {active ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+            <View key={`${day}-${i}`} style={styles.dayColumn} accessible
+              accessibilityLabel={`${week[i].toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long', numberingSystem: 'latn' })}${isToday ? '، اليوم' : ''}${active ? '، تدرّبت اليوم' : ''}`}>
+              <View style={[styles.dayDot, isToday && styles.dayDotToday, active && styles.dayDotActive]}>
+                <Text style={[styles.dayNumber, active && { color: c.primaryForeground }]}>{week[i].getDate()}</Text>
+                {active && <View style={styles.dayCheck}><Ionicons name="checkmark" size={11} color={c.primaryForeground} /></View>}
               </View>
-              <Text style={styles.dayLabel}>{day}</Text>
+              <Text style={[styles.dayLabel, isToday && { color: c.primary }]}>{day}</Text>
             </View>
           )})}
         </View>
@@ -115,11 +127,15 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number, bottomIns
     sectionTitle: { color: c.foreground, fontFamily: BOLD, fontSize: 17, textAlign: 'right', marginBottom: 11 },
     weekCard: { borderRadius: 22, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, padding: 17, marginBottom: 17 },
     weekTitle: { color: c.foreground, fontFamily: BOLD, fontSize: 14, textAlign: 'right' },
+    weekRange: { color: c.mutedForeground, fontFamily: FONT, fontSize: 12, textAlign: 'right', writingDirection: 'rtl', marginTop: 6 },
     weekDays: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginTop: 16, marginBottom: 15 },
-    dayColumn: { alignItems: 'center', gap: 6 },
-    dayDot: { height: 28, width: 28, borderRadius: 10, backgroundColor: '#eeece4', alignItems: 'center', justifyContent: 'center' },
-    dayDotActive: { backgroundColor: '#e88c67' },
-    dayLabel: { color: c.mutedForeground, fontSize: 10, fontFamily: FONT },
+    dayColumn: { flex: 1, minWidth: 0, alignItems: 'center', gap: 7 },
+    dayDot: { height: 36, width: 30, borderRadius: 10, borderWidth: 1, borderColor: c.border, backgroundColor: c.muted, alignItems: 'center', justifyContent: 'center' },
+    dayDotToday: { borderColor: c.primary, borderWidth: 2 },
+    dayDotActive: { backgroundColor: c.primary },
+    dayNumber: { color: c.foreground, fontFamily: BOLD, fontSize: 15, fontVariant: ['tabular-nums'] },
+    dayCheck: { position: 'absolute', top: -5, right: -5, width: 16, height: 16, borderRadius: 8, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.card },
+    dayLabel: { color: c.foreground, fontSize: 10, fontFamily: FONT },
     weekNote: { backgroundColor: '#fbf1e5', borderRadius: 13, padding: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
     weekNoteText: { color: '#866141', fontFamily: FONT, fontSize: 11, flex: 1, textAlign: 'right' },
     encourage: { backgroundColor: '#fae9db', borderRadius: 20, padding: 16, alignItems: 'flex-end' },
