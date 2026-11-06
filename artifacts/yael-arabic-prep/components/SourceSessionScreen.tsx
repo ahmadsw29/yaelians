@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SectionLearningNotes from '@/components/SectionLearningNotes';
 import { timedDailyGoalEvents, type DailyGoalEvent } from '@/lib/daily-goal-events';
 import { trackDailyActivity } from '@/lib/daily-goals';
-import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, AppState, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useUser } from '@clerk/expo';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,8 @@ import type { ImportedExam } from '@/lib/solved-exams';
 import { restatementExam, restatementSessionKey } from '@/lib/restatement-practice';
 import { ANSWER_REVIEW_LABELS, getAnswerReviewState, type AnswerReviewState } from '@/lib/answer-review';
 import { play } from '@/constants/colors';
+import { useQuestionTransition } from '@/hooks/useQuestionTransition';
+import { Enter } from '@/components/EntranceMotion';
 import {
   SourceMode, SourceSession, TYPE_LABEL, advance, catchUp, isDone, isEssayStage, loadSourceSession,
   newSourceSession, parseSourceSession, saveSourceSession, stageCount, storageKey,
@@ -309,6 +311,8 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
   const srcFeedbackRaw = completionFeedback(correct, srcAnswered, review.length);
   const srcFeedback = srcFeedbackRaw === 'celebrate' && graded.length === 0 ? 'steady' : srcFeedbackRaw;
   const lastQ = questions.length - 1;
+  const motion = useQuestionTransition(entered && active && !!q && canPractice);
+  const go = (target: (x: SourceSession) => number) => motion.advance(() => edit(x => ({ ...x, question: target(x) })));
   const isLastStage = session ? session.stage === stageCount(session) - 1 : false;
 
   function button(label: string, onPress: () => void, testID: string, secondary = false, disabled = false) {
@@ -331,7 +335,7 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
   return (
     <View style={s.screen}>
       <Header title={headerTitle} caption={mode === 'training' ? `${sectionLabel} • 20 دقيقة` : `${sectionLabel} • من نماذجك المرفوعة`} clock={entered ? clock : undefined} />
-      <KeyboardAwareScrollViewCompat bottomOffset={24} keyboardShouldPersistTaps="handled"
+      <KeyboardAwareScrollViewCompat key={`${session?.stage ?? 'intro'}:${session?.question ?? 0}`} bottomOffset={24} keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? Math.max(34, insets.bottom) : insets.bottom) + 24 }]}>
         {loading ? <View style={{ gap: 12 }}>
           {[120, 64, 64, 64].map((h, i) => <View key={i} style={[s.skeleton, { height: h }]} />)}
@@ -350,30 +354,30 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
             {button('إعادة الحفظ', () => persist(current.current), 'source-retry-save', true)}
           </View> : session && <Text style={s.caption}>{saving ? 'جارٍ الحفظ على هذا الجهاز…' : 'محفوظ على هذا الجهاز'}</Text>}
 
-          {session && !entered ? <View style={s.card} testID="source-saved-entry">
+          {session && !entered ? <Enter from="pop"><View style={s.card} testID="source-saved-entry">
             <Text style={s.title}>محاولة سابقة محفوظة</Text>
             <Text style={s.body}>هذه ليست جولة جديدة. يمكنك فتح محاولتك السابقة؛ وقتها الأصلي لا يبدأ من جديد.</Text>
             {button(isDone(session) ? 'عرض المحاولة السابقة' : 'فتح المحاولة المحفوظة', () => void enterSaved(), 'source-open-saved', false, starting)}
             <SectionLearningNotes section="exam" />
-          </View> : !session ? <>
+          </View></Enter> : !session ? <>
             {!canPractice && <Text style={s.body}>التدريب غير متاح الآن: ربما استُخدم القسم اليومي أو تعذّر التحقق من الاتصال. يمكنك استعادة نتيجتك ومراجعتها؛ لا تبدأ محاولة جديدة.</Text>}
-            <PetTeacher />
+            <Enter from="pop"><PetTeacher /></Enter>
             {focused && <Text style={s.eyebrow}>تدريب إعادة صياغة</Text>}
-            <Text style={s.hero}>{mode === 'training' ? (focused ? `إعادة صياغة،\n20 دقيقة.` : `قسم واحد،\n20 دقيقة.`) : `النموذج كاملًا،\nبإيقاعه الحقيقي.`}</Text>
-            <View style={s.card}>
+            <Enter delay={90}><Text style={s.hero}>{mode === 'training' ? (focused ? `إعادة صياغة،\n20 دقيقة.` : `قسم واحد،\n20 دقيقة.`) : `النموذج كاملًا،\nبإيقاعه الحقيقي.`}</Text></Enter>
+            <Enter delay={170}><View style={s.card}>
               <Text style={s.title}>قبل أن تبدأ</Text>
               {mode === 'training'
                 ? <Text style={s.body}>{focused ? `${exam.sections[section ?? 0].length} سؤال إعادة صياغة خلال 20 دقيقة. دون تعبير كتابي.` : `${exam.sections[section ?? 0].length} سؤالًا متنوعًا خلال 20 دقيقة، دون تعبير كتابي.`}</Text>
                 : <Text style={s.body}>{exam.sections.length} أقسام بالترتيب الأصلي، 20 دقيقة لكل قسم، ثم 15 دقيقة لموضوع التعبير.</Text>}
               <Text style={s.body}>يمكنك التنقّل وتغيير اختيارك داخل القسم الحالي. التسليم أو انتهاء الوقت يغلق القسم نهائيًا.</Text>
               <Text style={s.body}>الوقت يستمر في الخلفية وبعد إغلاق الصفحة. الحفظ تلقائي على الجهاز فقط؛ يمكنك نسخ المحاولة إلى حسابك واستعادتها يدويًا على جهاز آخر.</Text>
-            </View>
-            <View style={s.notice}>
+            </View></Enter>
+            <Enter delay={250}><View style={s.notice}>
               <Text style={s.title}>عن هذا التدريب</Text>
               <Text style={s.body}>هذا تدريب للاستعداد للامتحان، وليس واجهة امتحان YAELNET الفعلي. أعددنا حلولًا وشروحات بالعربية للتصحيح بعد التسليم؛ هي حلول مولّدة بالذكاء الاصطناعي وليست مفتاحًا رسميًا وقد تحتاج مراجعة معلّم.</Text>
               <Text style={s.caption}>لا تدخل الأسئلة المعلّمة «تحتاج مراجعة» في النتيجة. لا تُمنح علامة آلية للتعبير.</Text>
-            </View>
-            {button(starting ? 'جارٍ تجهيز المحاولة…' : 'ابدأ • يبدأ الوقت الآن', () => void startFresh(), 'source-start', false, !canPractice || starting)}
+            </View></Enter>
+            <Enter delay={330} from="pop">{button(starting ? 'جارٍ تجهيز المحاولة…' : 'ابدأ • يبدأ الوقت الآن', () => void startFresh(), 'source-start', false, !canPractice || starting)}</Enter>
             <SectionLearningNotes section="exam" />
           </> : active && !canPractice ? <View style={s.card}>
             <Text style={s.title}>محاولتك محفوظة</Text>
@@ -385,15 +389,18 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
                 <Text style={s.eyebrow}>السؤال {session.question + 1} • {TYPE_LABEL[q.type] ?? q.type}{mode === 'full' ? ` • صفحة ${q.sourcePage}` : ''}</Text>
               </View>
               <View style={s.progressTrack}><View style={[s.progressFill, { width: `${((questions.length - unanswered) / questions.length) * 100}%` }]} /></View>
+              <Enter trigger={session.stage} from="side"><Animated.View style={[{ gap: 16 }, motion.promptStyle]}>
               {!!q.passage && <View style={s.card}>
                 <Text style={s.caption}>النص • اقرأ ثم أجب</Text>
                 <Text selectable style={s.hebrew}>{q.passage}</Text>
               </View>}
               <QuestionPrompt index={session.stage * 100 + session.question} hebrew text={`${q.number}. ${q.prompt}`} />
+              </Animated.View></Enter>
               <View style={{ gap: 10 }} accessibilityRole="radiogroup">{q.options.map((option, index) => {
                 const selected = answers[session.question] === index;
-                return <Pressable key={`${q.id}-${index}`} testID={`source-option-${index}`} accessibilityRole="radio"
+                return <Enter key={index} trigger={session.stage} delay={90 + index * 70}><Animated.View style={motion.answerStyle(Math.min(index, 3))}><Pressable testID={`source-option-${index}`} accessibilityRole="radio"
                   accessibilityState={{ checked: selected }} accessibilityLabel={`${index + 1}. ${option}`}
+                  disabled={motion.busy}
                   onPress={() => edit(x => {
                     const a = x.answers.map(r => [...r]);
                     a[x.stage][x.question] = index;
@@ -404,12 +411,12 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
                   <View style={[s.optionNumber, selected && { backgroundColor: c.primary }]}>
                     <Text style={[s.numberText, selected && { color: c.primaryForeground }]}>{index + 1}</Text>
                   </View>
-                </Pressable>;
+                </Pressable></Animated.View></Enter>;
               })}</View>
               <Text style={s.caption}>يمكنك تغيير اختيارك في أي وقت قبل التسليم.</Text>
               <View style={s.navigation}>
-                <View style={{ flex: 1 }}>{button('السابق', () => edit(x => ({ ...x, question: Math.max(0, x.question - 1) })), 'source-previous', true, session.question === 0)}</View>
-                <View style={{ flex: 1 }}>{button('التالي', () => edit(x => ({ ...x, question: Math.min(lastQ, x.question + 1) })), 'source-next', true, session.question === lastQ)}</View>
+                <View style={{ flex: 1 }}>{button('السابق', () => go(x => Math.max(0, x.question - 1)), 'source-previous', true, session.question === 0 || motion.busy)}</View>
+                <View style={{ flex: 1 }}>{button('التالي', () => go(x => Math.min(lastQ, x.question + 1)), 'source-next', true, session.question === lastQ || motion.busy)}</View>
               </View>
               <Text style={s.title}>خريطة القسم</Text>
               <Text style={s.caption}>الإطار = السؤال الحالي • التظليل = أُجيب عنه، وليس تصحيحًا</Text>
@@ -417,14 +424,15 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
                 <Pressable key={i} testID={`source-question-${i + 1}`} accessibilityRole="button"
                   accessibilityLabel={`السؤال ${i + 1}، ${a === null ? 'بلا إجابة' : 'أُجيب عنه'}`}
                   accessibilityState={{ selected: session.question === i }}
-                  onPress={() => edit(x => ({ ...x, question: i }))}
+                  disabled={motion.busy}
+                  onPress={() => { if (i !== session.question) go(() => i); }}
                   style={[s.chip, a !== null && { backgroundColor: c.secondary }, session.question === i && { borderColor: c.primary, borderWidth: 2 }]}>
                   <Text style={s.chipText}>{i + 1}</Text>
                 </Pressable>)}</View>
               {button(isLastStage ? 'تسليم وإنهاء التدريب' : 'تسليم القسم والانتقال', () => setConfirmation({ kind: 'submit', stage: session.stage }), 'source-submit')}
             </> : essayStage ? <>
-              <Text style={s.title}>اكتب موضوعًا باللغة العبرية</Text>
-              <View style={s.card}><Text selectable style={s.hebrew}>{exam.essayPrompt}</Text></View>
+              <Enter from="side"><Text style={s.title}>اكتب موضوعًا باللغة العبرية</Text></Enter>
+              <Enter delay={100}><View style={s.card}><Text selectable style={s.hebrew}>{exam.essayPrompt}</Text></View></Enter>
               <Text style={s.body}>نظّم أفكارك إلى مقدمة وعرض وخاتمة. لا علامة آلية للتعبير.</Text>
               <TextInput testID="source-essay" accessibilityLabel="مسوّدة التعبير بالعبرية" multiline textAlignVertical="top"
                 value={session.essay} onChangeText={essay => edit(x => ({ ...x, essay }))}
@@ -435,8 +443,8 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
           </> : <>
             <Text style={s.eyebrow}>{focused ? 'انتهى تدريب إعادة صياغة' : mode === 'training' ? 'انتهى تدريب 20 دقيقة' : `انتهت الجلسة • ${modelTitle}`}</Text>
             {completionCelebration && srcFeedback === 'celebrate' && <PracticeCelebration variant={completionCelebration} />}
-            <Text style={s.hero}>{srcFeedback === 'celebrate' ? `أنهيت التدريب.\nوقت المراجعة.` : srcFeedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات' : srcFeedback === 'review' ? 'جولة للمراجعة: راجع الأسئلة التي أخطأت فيها ثم حاول مجددًا' : 'تقدّم ثابت. راجع الأخطاء القليلة وواصل'}</Text>
-            <View style={s.card}>
+            <Enter from="pop"><Text style={s.hero}>{srcFeedback === 'celebrate' ? `أنهيت التدريب.\nوقت المراجعة.` : srcFeedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات' : srcFeedback === 'review' ? 'جولة للمراجعة: راجع الأسئلة التي أخطأت فيها ثم حاول مجددًا' : 'تقدّم ثابت. راجع الأخطاء القليلة وواصل'}</Text></Enter>
+            <Enter delay={120}><View style={s.card}>
               <Text style={s.title}>نتيجتك التدريبية</Text>
               <Text testID="source-score" style={s.score}>{correct} / {graded.length}</Text>
               <Text style={s.body}>{graded.length ? `${Math.round(correct / graded.length * 100)}٪ من الأسئلة القابلة للتصحيح` : 'لا توجد أسئلة قابلة للتصحيح في هذه الجلسة.'}</Text>
@@ -447,7 +455,7 @@ function Session({ userId, exam, mode, section, focused, canPractice, requestPra
               </View>
               {!!ungraded && <Text style={s.body}>{ungraded} سؤالًا يحتاج مراجعة، مستبعد من النتيجة.</Text>}
               <Text style={s.body}>تصحيح بحلول مولّدة بالذكاء الاصطناعي مع شرح بالعربية، وليست مفتاحًا رسميًا. هذه نسبة تدريبية، وليست علامة YAEL أو YAELNET ولا تقديرًا لها.</Text>
-            </View>
+            </View></Enter>
             {button(focused ? 'محاولة مرة أخرى' : 'محاولة جديدة', () => setConfirmation({ kind: 'reset' }), 'source-retake')}
             <View style={s.card}>
               <Text style={s.title}>تفاصيل المراجعة</Text>

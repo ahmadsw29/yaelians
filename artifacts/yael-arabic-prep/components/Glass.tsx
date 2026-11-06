@@ -76,7 +76,8 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
             // GPU backdrop sampling across animated/rounded card ancestors.
             isolation: 'isolate',
             transitionProperty: 'transform, box-shadow, border-color',
-            transitionDuration: reduceMotion ? '0ms' : '180ms',
+            transitionDuration: reduceMotion ? '0ms' : '220ms',
+            transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
           } as ViewStyle,
           live ? g.lift : g.flat,
           live && hovered && !reduceMotion && g.hover,
@@ -92,7 +93,7 @@ export function GlassPressable({ fill, solid, dark, disabled, radius = 18, style
           <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
             style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
             <View style={[StyleSheet.absoluteFill, g.rim, { borderRadius: radius, borderColor: disabled ? 'transparent' : t.rim }]} />
-            {pressed && !disabled && <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(255,255,255,0.035)' : 'rgba(15,58,51,0.04)' }]} />}
+            {pressed && !disabled && <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,58,51,0.07)' }]} />}
           </View>
           <View style={[g.content, contentStyle]}>{children}</View>
         </>;
@@ -105,8 +106,8 @@ const g = StyleSheet.create({
   base: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   lift: { shadowOpacity: 0.045, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   flat: { shadowOpacity: 0, elevation: 0 },
-  hover: { shadowOpacity: 0.08 },
-  pressed: { transform: [{ scale: 0.985 }], shadowOpacity: 0, elevation: 0 },
+  hover: { shadowOpacity: 0.1, transform: [{ translateY: -2 }, { scale: 1.015 }] },
+  pressed: { transform: [{ translateY: 1.5 }, { scale: 0.955 }], shadowOpacity: 0, elevation: 0 },
   rim: { borderWidth: 1 },
   content: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 9 },
 });

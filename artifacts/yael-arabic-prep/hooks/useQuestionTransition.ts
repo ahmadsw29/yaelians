@@ -4,15 +4,20 @@ import { useFocusEffect } from 'expo-router';
 import { NATIVE_DRIVER, useReduceMotion } from '@/components/HomeMotion';
 
 /** Changes the question only after departure; locks synchronously against repeated taps. */
-export function useQuestionTransition(enabled: boolean) {
+export function useQuestionTransition(enabled: boolean, enterOnMount = false) {
   const reduce = useReduceMotion();
-  const prompt = useRef(new Animated.Value(1)).current;
-  const answers = useRef(Array.from({ length: 4 }, () => new Animated.Value(1))).current;
-  const [stage, setStage] = useState<'idle' | 'exit' | 'enter'>('idle');
-  const locked = useRef(false);
+  const initialEntry = enabled && enterOnMount;
+  const prompt = useRef(new Animated.Value(initialEntry ? 0 : 1)).current;
+  const answers = useRef(Array.from({ length: 4 }, () => new Animated.Value(initialEntry ? 0 : 1))).current;
+  const [stage, setStage] = useState<'idle' | 'exit' | 'enter'>(initialEntry ? 'enter' : 'idle');
+  const locked = useRef(initialEntry);
   const mounted = useRef(true);
+  const active = useRef(enabled);
+  active.current = enabled;
+  const focused = useRef(false);
   const animation = useRef<Animated.CompositeAnimation | null>(null);
-  const pending = useRef<(() => void) | null>(null);
+  type Change = () => void | boolean | Promise<void | boolean>;
+  const pending = useRef<Change | null>(null);
   const generation = useRef(0);
   const settle = useCallback(() => {
     generation.current++;
@@ -27,14 +32,10 @@ export function useQuestionTransition(enabled: boolean) {
     mounted.current = true;
     return () => { mounted.current = false; settle(); };
   }, [settle]);
-  useFocusEffect(useCallback(() => () => settle(), [settle]));
-  useEffect(() => {
-    if (!enabled || reduce) {
-      const change = enabled ? pending.current : null;
-      settle();
-      change?.();
-    }
-  }, [enabled, reduce, settle]);
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    return () => { focused.current = false; settle(); };
+  }, [settle]));
 
   useEffect(() => {
     if (stage !== 'enter' || reduce || !enabled) return;
@@ -55,18 +56,28 @@ export function useQuestionTransition(enabled: boolean) {
     return () => entrance.stop();
   }, [stage, reduce, enabled, prompt, answers]);
 
-  const advance = (change: () => void) => {
-    if (!enabled || locked.current) return;
+  const applyChange = useCallback(async (change: Change, token: number, animate: boolean) => {
+    try {
+      const accepted = await change();
+      if (!mounted.current || token !== generation.current) return;
+      if (accepted === false || !animate) settle();
+      else setStage('enter');
+    } catch (error) {
+      if (mounted.current && token === generation.current) settle();
+      // Callers own the actionable save-error UI; never leave a failed update invisible.
+      console.error('Question update failed', error);
+    }
+  }, [settle]);
+  const advance = useCallback((change: Change) => {
+    if (!mounted.current || !active.current || !focused.current || locked.current) return;
     locked.current = true;
+    setStage('exit');
+    const token = ++generation.current;
     if (reduce) {
-      change();
-      // Keep the lock until the new question has committed, even without motion.
-      setStage('enter');
+      void applyChange(change, token, false);
       return;
     }
     pending.current = change;
-    setStage('exit');
-    const token = ++generation.current;
     const departure = Animated.parallel([prompt, ...answers].map(value =>
       Animated.timing(value, { toValue: 0, duration: 170, useNativeDriver: NATIVE_DRIVER })));
     animation.current = departure;
@@ -74,13 +85,16 @@ export function useQuestionTransition(enabled: boolean) {
       if (!finished || !mounted.current || token !== generation.current) return;
       const update = pending.current;
       pending.current = null;
-      update?.();
-      setStage('enter');
+      if (update) void applyChange(update, token, true);
     });
-  };
+  }, [enabled, reduce, applyChange, prompt, answers]);
   useEffect(() => {
-    if (reduce && stage === 'enter') { locked.current = false; setStage('idle'); }
-  }, [reduce, stage]);
+    if (!enabled || reduce) {
+      const change = enabled ? pending.current : null;
+      settle();
+      if (change) advance(change);
+    }
+  }, [enabled, reduce, settle, advance]);
   const style = (value: Animated.Value, distance: number) => ({
     opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
     transform: [

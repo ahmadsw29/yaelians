@@ -41,3 +41,7 @@ API code generation can briefly remove generated modules while Metro is watching
 Do not insert a transient progress-loading row above the practice question.
 **Why:** The user reported that “جاري تحميل التقدم” moved every question element downward and asked for a loading screen instead when waiting is necessary.
 **How to apply:** Keep cached background progress refreshes silent and question geometry stable. Use one full-screen loader for genuinely blocking initial loading, without hiding actionable errors or saved-lesson recovery notices.
+
+Managed Expo readiness can be satisfied by an orphaned older Metro listener, while the new launch waits at an alternate-port prompt.
+**Why:** A restart reported success and the preview returned HTTP 200, but two Expo launch trees existed and the managed launch had not taken ownership of the assigned port.
+**How to apply:** Verify listener ownership before further restarts. Reconcile the stale process rather than accepting an alternate port or adding a duplicate workflow; preserve the artifact-assigned port.

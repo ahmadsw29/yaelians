@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { trackDailyActivity } from '@/lib/daily-goals';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useUser } from '@clerk/expo';
 import { useFocusEffect, useRouter } from 'expo-router';
 import SectionLearningNotes from '@/components/SectionLearningNotes';
@@ -22,6 +22,8 @@ import { completionFeedback } from '@/lib/completion-feedback';
 import { useStudy } from '@/lib/StudyProvider';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { trainingEntry } from '@/lib/training-entry';
+import { useQuestionTransition } from '@/hooks/useQuestionTransition';
+import { Enter } from '@/components/EntranceMotion';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
@@ -71,6 +73,7 @@ export default function AdaptiveRestatementScreen() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const scroll = useRef<ScrollView>(null);
   const pending = useRef<AdaptiveMemory | null>(null);
   const lastCommitted = useRef<AdaptiveMemory | null>(null);
   const alive = useRef(true);
@@ -207,7 +210,7 @@ export default function AdaptiveRestatementScreen() {
         <Text style={[s.clockText, seconds <= 60 && { color: p.destructive }]}>{`${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`}</Text>
       </View>}
     </View>
-    <ScrollView contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? 34 : insets.bottom) + 24 }]} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={scroll} contentContainerStyle={[s.content, { paddingBottom: (Platform.OS === 'web' ? 34 : insets.bottom) + 24 }]} keyboardShouldPersistTaps="handled">
       {saveError && <View style={s.errorBox} testID="adaptive-save-error">
         <Text accessibilityRole="alert" style={s.body}>تعذّر الحفظ على هذا الجهاز، فلم نعتمد آخر خطوة بعد.</Text>
         <ChunkyButton tone="coral" icon="refresh" label="إعادة الحفظ" testID="adaptive-retry-save" disabled={busy} onPress={() => void retrySave()} />
@@ -261,12 +264,19 @@ export default function AdaptiveRestatementScreen() {
       : phase === 'round' && round && memory ? <RoundView p={p} round={round} bank={bank} busy={busy}
           onPick={(qid, i, correctIndex) => void commit(recordAdaptiveAnswer(memory, qid, i, correctIndex))}
           onNext={async () => {
+            if (!focused.current || phaseRef.current !== 'round' || busy) return false;
+            if (Date.now() >= round.deadline) { await finishNow(memory); return false; }
             const next = advanceAdaptiveQuestion(memory);
             if (next.active?.finished) {
               const snap = next.active;
               const ok = await commit(finishAdaptiveRound(next));
               if (ok && focused.current && phaseRef.current === 'round') { setResult(snap); setPhase('results'); }
-            } else await commit(next);
+              return ok;
+            } else {
+              const ok = await commit(next);
+              if (ok && focused.current) scroll.current?.scrollTo({ y: 0, animated: false });
+              return ok;
+            }
           }} />
 
       : phase === 'results' && result ? <>
@@ -285,7 +295,7 @@ function Intro({ p, xp, memory, poolSize, isPremium, busy, onStart }: { p: P; xp
   const items = Object.values(memory.items);
   const seen = items.length;
   const toRetry = items.filter(i => !i.lastCorrect).length;
-  return <View style={{ gap: 14 }} testID="adaptive-intro">
+  return <Enter from="side" style={{ gap: 14 }} testID="adaptive-intro">
     <View style={s.hero}>
       <View style={{ flex: 1, minWidth: 160, alignItems: 'flex-end' }}>
         <Text style={s.heroTitle}>نفس المعنى،{'\n'}بكلمات أخرى</Text>
@@ -309,7 +319,7 @@ function Intro({ p, xp, memory, poolSize, isPremium, busy, onStart }: { p: P; xp
       label={trainingEntry(memory.active) === 'resume' ? 'متابعة الجولة المحفوظة' : 'ابدأ جولة جديدة'}
       testID="adaptive-start" disabled={busy || poolSize === 0} onPress={onStart} />
     <SectionLearningNotes section="restatement" />
-  </View>;
+  </Enter>;
 }
 
 function Stat({ p, value, label }: { p: P; value: string; label: string }) {
@@ -319,7 +329,7 @@ function Stat({ p, value, label }: { p: P; value: string; label: string }) {
 
 function RoundView({ p, round, bank, busy, onPick, onNext }: {
   p: P; round: AdaptiveRound; bank: Map<string, ImportedQuestion>; busy: boolean;
-  onPick: (qid: string, i: number, correctIndex: number) => void; onNext: () => void;
+  onPick: (qid: string, i: number, correctIndex: number) => void; onNext: () => Promise<boolean>;
 }) {
   const s = makeStyles(p);
   const qid = round.questionIds[round.index];
@@ -330,9 +340,12 @@ function RoundView({ p, round, bank, busy, onPick, onNext }: {
   const speech = useHebrewSpeech(q?.prompt);
   const total = round.questionIds.length;
   const last = round.index === total - 1;
+  const motion = useQuestionTransition(true, true);
+  const transitioning = busy || motion.busy;
+  const next = () => { if (!transitioning) motion.advance(onNext); };
   if (!q || q.answer === null) return <View style={s.errorBox}>
     <Text style={s.body}>هذا السؤال لم يعد متاحًا في خطتك.</Text>
-    <ChunkyButton tone="brand" label={last ? 'إنهاء الجولة' : 'التالي'} testID="adaptive-next" disabled={busy} onPress={onNext} />
+    <ChunkyButton tone="brand" label={last ? 'إنهاء الجولة' : 'التالي'} testID="adaptive-next" disabled={transitioning} onPress={next} />
   </View>;
   const correctIndex = q.answer;
   const right = answered && picked === correctIndex;
@@ -344,6 +357,7 @@ function RoundView({ p, round, bank, busy, onPick, onNext }: {
         return <View key={id} style={[s.dot, { backgroundColor: bg }]} />;
       })}
     </View>
+    <Animated.View testID="adaptive-question-transition" style={[{ gap: 14 }, motion.promptStyle]}>
     <View style={s.row}>
       <View style={[s.reason, { backgroundColor: p.skySoft }]}>
         <Ionicons name={reason.icon} size={14} color={p.skyInk} />
@@ -364,29 +378,31 @@ function RoundView({ p, round, bank, busy, onPick, onNext }: {
         <Text style={[s.reasonText, { color: p.skyInk }]}>استمع</Text>
       </Pressable>
     </View>
+    </Animated.View>
     <View accessibilityRole="radiogroup" style={{ gap: 10 }}>
       {q.options.map((o, i) => {
         const isKey = answered && i === correctIndex;
         const isWrong = answered && i === picked && !isKey;
-        return <Pressable key={i} testID={`adaptive-option-${i}`} accessibilityRole="radio" disabled={answered || busy}
-          accessibilityState={{ checked: picked === i, disabled: answered }}
+        return <Animated.View key={`${qid}-${i}`} testID={`adaptive-answer-transition-${i}`} style={motion.answerStyle(i)}>
+        <Pressable testID={`adaptive-option-${i}`} accessibilityRole="radio" disabled={answered || transitioning}
+          accessibilityState={{ checked: picked === i, disabled: answered || transitioning }}
           accessibilityLabel={`${i + 1}. ${o}${isKey ? '، الإجابة الصحيحة' : isWrong ? '، اختيارك غير صحيح' : ''}`}
-          onPress={() => onPick(qid, i, correctIndex)}
+          onPress={() => { if (!transitioning) onPick(qid, i, correctIndex); }}
           style={[s.option, isKey && { borderColor: p.success, backgroundColor: p.successSoft }, isWrong && { borderColor: p.destructive, backgroundColor: p.coralSoft }]}>
           {(isKey || isWrong) && <Ionicons name={isKey ? 'checkmark-circle' : 'close-circle'} size={20} color={isKey ? p.successInk : p.coralInk} />}
           <Text selectable style={s.optionText}>{o}</Text>
-          <Text style={s.caption}>{i + 1}</Text>
-        </Pressable>;
+          <Text style={[s.caption, { width: 22, textAlign: 'center', writingDirection: 'ltr', fontVariant: ['tabular-nums'] }]}>{i + 1}</Text>
+        </Pressable></Animated.View>;
       })}
     </View>
-    {answered && <View style={[s.bubble, { flex: 0, backgroundColor: right ? p.successSoft : p.coralSoft, borderColor: right ? p.success : p.coral }]} testID={right ? 'adaptive-feedback-correct' : 'adaptive-feedback-wrong'}>
+    {answered && <Enter from="side"><View style={[s.bubble, { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', backgroundColor: right ? p.successSoft : p.coralSoft, borderColor: right ? p.success : p.coral }]} testID={right ? 'adaptive-feedback-correct' : 'adaptive-feedback-wrong'}>
       <Text accessibilityLiveRegion="polite" style={[s.title, { color: right ? p.successInk : p.coralInk }]}>
         {right ? 'صحيح، حافظت على المعنى' : `ليس تمامًا. الصحيح هو الخيار ${correctIndex + 1}، وسيعود هذا السؤال في جولتك القادمة.`}
       </Text>
       <Text selectable style={s.body}>{q.explanation}</Text>
       <Text style={s.caption}>شرح مولّد بالذكاء الاصطناعي، وليس مفتاحًا رسميًا.</Text>
-    </View>}
-    {answered && <ChunkyButton tone="brand" icon="arrow-back" label={last ? 'إنهاء الجولة' : 'التالي'} testID="adaptive-next" disabled={busy} onPress={onNext} />}
+    </View></Enter>}
+    {answered && <Enter from="pop" delay={100}><ChunkyButton tone="brand" icon="arrow-back" label={last ? 'إنهاء الجولة' : 'التالي'} testID="adaptive-next" disabled={transitioning} onPress={next} /></Enter>}
   </View>;
 }
 
@@ -404,7 +420,7 @@ function Results({ p, round, bank, isPremium, busy, onHome, onNew }: {
     : feedback === 'empty' ? 'ابدأ بمحاولة فعلية بدل التسليم بدون إجابات.'
     : feedback === 'review' ? 'جولة للمراجعة. الأسئلة التي أخطأت فيها ستعود في جولتك القادمة.'
     : 'جولة ثابتة. راجع الأخطاء أدناه، وستعود في الجولة القادمة.';
-  return <View style={{ gap: 14 }} testID="adaptive-results">
+  return <Enter from="side" style={{ gap: 14 }} testID="adaptive-results">
     {feedback === 'celebrate' && <PracticeCelebration variant={variant} />}
     <Text style={s.eyebrow}>انتهت الجولة</Text>
     <Text accessibilityLiveRegion="polite" style={s.heroDark}>{message}</Text>
@@ -423,7 +439,7 @@ function Results({ p, round, bank, isPremium, busy, onHome, onNew }: {
     <ChunkyButton tone="ghost" icon="arrow-back" label="العودة للرئيسية" testID="adaptive-home" onPress={onHome} />
     <ChunkyButton tone="success" icon="refresh" label="واصل التدريب بجولة جديدة" testID="adaptive-new-round" disabled={busy} onPress={onNew} />
     {!isPremium && <Text style={[s.caption, { textAlign: 'center' }]}>في تجربة مجانية: جولة موقّتة واحدة يوميًا. إن استُخدمت سننقلك لصفحة الخطط.</Text>}
-  </View>;
+  </Enter>;
 }
 
 function makeStyles(p: P) {
@@ -441,10 +457,10 @@ function makeStyles(p: P) {
     heroDark: { color: p.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 22, lineHeight: 34, textAlign: 'right', writingDirection: 'rtl' },
     eyebrow: { color: p.coralShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, textAlign: 'right' },
     title: { color: p.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 16, lineHeight: 26, textAlign: 'right', writingDirection: 'rtl' },
-    body: { color: p.foreground, fontFamily: FONT, fontSize: 15, lineHeight: 25, textAlign: 'right', writingDirection: 'rtl' },
+    body: { alignSelf: 'stretch', color: p.foreground, fontFamily: FONT, fontSize: 15, lineHeight: 25, textAlign: 'right', writingDirection: 'rtl' },
     caption: { color: p.mutedForeground, fontFamily: FONT, fontSize: 12, lineHeight: 19, textAlign: 'right', writingDirection: 'rtl' },
-    hebrew: { color: p.foreground, fontSize: 20, lineHeight: 34, textAlign: 'right', writingDirection: 'rtl' },
-    hebrewSmall: { color: p.foreground, fontSize: 17, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl' },
+    hebrew: { width: '100%', alignSelf: 'stretch', color: p.foreground, fontSize: 20, lineHeight: 34, textAlign: 'right', writingDirection: 'rtl' },
+    hebrewSmall: { width: '100%', color: p.foreground, fontSize: 17, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl' },
     info: { backgroundColor: p.coralSoft, borderRadius: 20, borderWidth: 2, borderBottomWidth: 5, borderColor: p.coral, padding: 14, gap: 8 },
     statRow: { flexDirection: 'row-reverse', gap: 8 },
     stat: { flex: 1, alignItems: 'center', gap: 2, padding: 10, borderRadius: 16, borderWidth: 2, borderBottomWidth: 4, borderColor: p.border, backgroundColor: p.card },
@@ -458,11 +474,11 @@ function makeStyles(p: P) {
     reason: { flexDirection: 'row-reverse', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
     reasonText: { fontFamily: BOLD, fontWeight: '800', fontSize: 12 },
     teacherRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-    bubble: { flex: 1, gap: 8, padding: 14, borderRadius: 18, borderWidth: 2, borderBottomWidth: 4 },
+    bubble: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto', minWidth: 0, gap: 8, padding: 14, borderRadius: 18, borderWidth: 2, borderBottomWidth: 4 },
     promptCard: { gap: 10, padding: 16, borderRadius: 20, borderWidth: 2, borderBottomWidth: 5, borderColor: p.border, backgroundColor: p.card },
     speak: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14 },
-    option: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 58, padding: 14, borderRadius: 18, borderWidth: 2, borderBottomWidth: 5, borderColor: p.border, backgroundColor: p.card },
-    optionText: { flex: 1, color: p.foreground, fontSize: 17, lineHeight: 28, textAlign: 'right', writingDirection: 'rtl' },
+    option: { flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', minHeight: 58, padding: 14, borderRadius: 18, borderWidth: 2, borderBottomWidth: 5, borderColor: p.border, backgroundColor: p.card },
+    optionText: { flex: 1, minWidth: 0, color: p.foreground, fontSize: 17, lineHeight: 28, textAlign: 'right', writingDirection: 'rtl' },
     reviewCard: { gap: 6, padding: 14, borderRadius: 18, borderWidth: 2, borderRightWidth: 6, backgroundColor: p.card },
   });
 }

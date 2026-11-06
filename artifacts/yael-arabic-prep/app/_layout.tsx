@@ -27,6 +27,7 @@ import { DailyGoalsProvider } from '@/lib/DailyGoalsProvider';
 import { DailyGoalsPrompt } from '@/components/DailyGoals';
 import { WebInstallProvider } from '@/lib/WebInstall';
 import { StartupStatus } from '@/components/StartupStatus';
+import { RouteEntrance } from '@/components/EntranceMotion';
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
@@ -103,6 +104,7 @@ function RootLayoutNav() {
 
   return (
     <>
+    <RouteEntrance path={pathname}>
     <Stack screenOptions={{ headerBackTitle: 'رجوع' }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
@@ -121,6 +123,7 @@ function RootLayoutNav() {
       <Stack.Screen name="restatement" options={{ headerShown: false }} />
       <Stack.Screen name="flashcards" options={{ headerShown: false }} />
     </Stack>
+    </RouteEntrance>
     {isLoaded && isSignedIn && userId && !redirectTo && !publicWeb && !billingWeb && (Platform.OS !== 'web' || plan === 'premium') && <FloatingTranslator key={`translator:${userId}`} userId={userId} />}
     <DailyGoalsPrompt key={`goals:${userId ?? 'guest'}`} enabled={!!(isLoaded && isSignedIn && userId && !redirectTo && planReady && plan && (Platform.OS !== 'web' || plan === 'premium') && firstSegment === '(tabs)' && segments[1] !== 'practice')} />
     {(redirectTo || verifyingAccess) && <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: palette.background, alignItems: 'center', justifyContent: 'center' }}>

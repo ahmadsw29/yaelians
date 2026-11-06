@@ -3,7 +3,7 @@ import SectionLearningNotes from '@/components/SectionLearningNotes';
 import {
   AccessibilityInfo, ActivityIndicator, Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChunkyButton, ChunkyProgress, usePlay } from '@/components/Playful';
@@ -30,6 +30,8 @@ for (const q of VOCABULARY_BANK) {
 const WORDS = [...CARDS.keys()];
 
 import { trackDailyActivity } from '@/lib/daily-goals';
+import { useQuestionTransition } from '@/hooks/useQuestionTransition';
+import { Enter } from '@/components/EntranceMotion';
 
 type Phase = 'intro' | 'starting' | 'claim-error' | 'limit' | 'session' | 'expired' | 'complete';
 type Tally = Record<FlashcardRating, number>;
@@ -63,6 +65,17 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const claimKey = useRef<string | null>(null);
   const savingRef = useRef(false);
+  const queuedNext = useRef<number | null>(null);
+  const motion = useQuestionTransition(phase === 'session');
+  useFocusEffect(useCallback(() => {
+    // A rating was already saved before its departure was cancelled by navigation.
+    // Resume on the next card, rather than rating the same saved card twice.
+    if (queuedNext.current !== null) {
+      setIndex(queuedNext.current);
+      setRevealed(false);
+      queuedNext.current = null;
+    }
+  }, [userId]));
 
   useEffect(() => {
     let alive = true;
@@ -116,6 +129,7 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
       }
       const [fresh, quiz] = await Promise.all([loadFlashcardMemory(userId), loadVocabularyReview(userId)]);
       const selected = selectFlashcards(WORDS, userId, fresh, Date.now(), 20, quiz).filter(w => CARDS.has(w));
+      queuedNext.current = null;
       setDeck(selected); setIndex(0); setRevealed(false); setSaveError(null);
       setTally({ forgot: 0, difficult: 0, easy: 0 });
       setDeadline(nextDeadline);
@@ -133,7 +147,7 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
   };
 
   const rate = async (rating: FlashcardRating) => {
-    if (savingRef.current || !revealed) return;
+    if (savingRef.current || motion.busy || !revealed) return;
     if (isExpired()) { checkExpiry(); return; }
     const word = deck[index];
     savingRef.current = true; setSaving(true); setSaveError(null);
@@ -142,8 +156,13 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
       trackDailyActivity(userId, 'words', word);
       setMemory(next);
       setTally(t => ({ ...t, [rating]: t[rating] + 1 }));
+      // Saved: only now does the revealed card leave, then the next card enters.
       if (index + 1 >= deck.length) setPhase('complete');
-      else { setIndex(index + 1); setRevealed(false); }
+      else {
+        const next = index + 1;
+        queuedNext.current = next;
+        motion.advance(() => { queuedNext.current = null; setIndex(next); setRevealed(false); });
+      }
     } catch {
       setSaveError(rating);
       AccessibilityInfo.announceForAccessibility('لم يُحفظ التقييم. البطاقة باقية، أعد المحاولة.');
@@ -173,10 +192,10 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
 
   const centered = (kind: 'lumi' | 'zizo' | 'nuna' | 'rami' | 'ghaima', title: string, body: string, actions: React.ReactNode, mood?: 'happy' | 'hype') => (
     <ScrollView contentContainerStyle={[s.center, { paddingBottom: bottom + 24 }]}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind={kind} mood={mood} size={110} /></View>
-      <Text style={[s.title, { color: p.foreground }]} accessibilityRole="header">{title}</Text>
-      <Text style={[s.body, { color: p.mutedForeground }]}>{body}</Text>
-      <View style={s.actions}>{actions}</View>
+      <Enter from="pop"><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Creature kind={kind} mood={mood} size={110} /></View></Enter>
+      <Enter delay={90}><Text style={[s.title, { color: p.foreground }]} accessibilityRole="header">{title}</Text></Enter>
+      <Enter delay={160}><Text style={[s.body, { color: p.mutedForeground }]}>{body}</Text></Enter>
+      <Enter delay={240} style={s.actions}>{actions}</Enter>
     </ScrollView>
   );
 
@@ -235,9 +254,11 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
           <Text style={[s.count, { color: p.mutedForeground }]}>{`${index + 1} / ${deck.length}`}</Text>
           <View style={{ flex: 1 }}><ChunkyProgress value={index / deck.length} /></View>
         </View>
-        <FlashCard key={`${userId}:${card.word}`} card={card} revealed={revealed} onReveal={reveal} disabled={saving} />
+        <Animated.View style={motion.promptStyle}>
+          <FlashCard key={`${userId}:${card.word}`} card={card} revealed={revealed} onReveal={reveal} disabled={saving || motion.busy} />
+        </Animated.View>
         {revealed ? (
-          <View style={s.rateWrap}>
+          <Animated.View style={[s.rateWrap, motion.answerStyle(0)]}>
             {saveError && (
               <View style={[s.alert, { backgroundColor: p.card, borderColor: p.coral }]} accessibilityLiveRegion="polite">
                 <Text style={[s.alertText, { color: p.foreground }]}>لم يُحفظ التقييم. بطاقتك باقية هنا.</Text>
@@ -246,24 +267,28 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
             )}
             <Text style={[s.rateHint, { color: p.mutedForeground }]}>كيف كانت معك؟</Text>
             <View style={s.rateRow}>
-              {RATINGS.map(r => (
-                <ChunkyButton key={r.rating} label={r.label} tone={r.tone} icon={r.icon} disabled={saving}
-                  onPress={() => void rate(r.rating)} testID={`flashcards-rate-${r.rating}`} style={s.rateBtn} />
+              {RATINGS.map((r, i) => (
+                <Enter key={r.rating} from="pop" delay={60 + i * 80} style={s.rateBtn}>
+                  <ChunkyButton label={r.label} tone={r.tone} icon={r.icon} disabled={saving || motion.busy}
+                    onPress={() => void rate(r.rating)} testID={`flashcards-rate-${r.rating}`} style={{ paddingHorizontal: 8 }} />
+                </Enter>
               ))}
             </View>
             {saving && <ActivityIndicator color={p.brand} accessibilityLabel="جارٍ الحفظ" />}
-          </View>
+          </Animated.View>
         ) : (
-          <ChunkyButton label="اكشف المعنى" icon="eye-outline" onPress={reveal} testID="flashcards-reveal" />
+          <Animated.View style={motion.answerStyle(1)}>
+            <Enter from="pop" trigger={index}><ChunkyButton label="اكشف المعنى" icon="eye-outline" disabled={motion.busy} onPress={reveal} testID="flashcards-reveal" /></Enter>
+          </Animated.View>
         )}
       </ScrollView>
     );
   } else {
     content = (
       <ScrollView contentContainerStyle={[s.intro, { paddingBottom: bottom + 24 }]}>
-        <View style={[s.introHero, { backgroundColor: p.card, borderColor: p.border }]}>
+        <Enter><View style={[s.introHero, { backgroundColor: p.card, borderColor: p.border }]}>
           <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={s.introArt}>
-            <Creature kind="lumi" mood="happy" size={104} />
+            <Enter from="pop" delay={120}><Creature kind="lumi" mood="happy" size={104} /></Enter>
             <View style={[s.chip, { backgroundColor: p.sun }]}><Text style={[s.chipText, { color: p.sunInk }]}>כרטיסיות</Text></View>
           </View>
           <Text style={[s.title, { color: p.foreground }]} accessibilityRole="header">اقلب، تذكّر، قيّم</Text>
@@ -272,20 +297,20 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
             <Text style={[s.statNum, { color: p.foreground }]}>{previewCount}</Text>
             <Text style={[s.statLabel, { color: p.mutedForeground }]}>بطاقة جاهزة لهذه الجولة</Text>
           </View>
-        </View>
-        <View style={[s.note, { borderColor: p.border }]}>
+        </View></Enter>
+        <Enter delay={180}><View style={[s.note, { borderColor: p.border }]}>
           <Ionicons name="information-circle-outline" size={18} color={p.mutedForeground} />
           <Text style={[s.noteText, { color: p.mutedForeground }]}>
             {isPremium
               ? 'جولات بلا حدود وبلا وقت. تقييماتك تُحفظ على هذا الجهاز فقط ولا تضيف نقاطًا.'
               : 'الضغط على ابدأ يستخدم جولة المفردات المجانية الوحيدة اليوم (5 دقائق)، وهي نفسها جولة الاختبار. التقييمات تُحفظ على هذا الجهاز فقط ولا تضيف نقاطًا.'}
           </Text>
-        </View>
+        </View></Enter>
         {previewCount === 0 ? (
           <Text style={[s.body, { color: p.mutedForeground }]}>لا بطاقات مستحقة الآن. ارجع لاحقًا.</Text>
         ) : (
-          <ChunkyButton label={phase === 'starting' ? 'جارٍ البدء…' : 'ابدأ الجولة'} icon="arrow-back" disabled={phase === 'starting'}
-            onPress={() => void start()} testID="flashcards-start" />
+          <Enter from="pop" delay={260}><ChunkyButton label={phase === 'starting' ? 'جارٍ البدء…' : 'ابدأ الجولة'} icon="arrow-back" disabled={phase === 'starting'}
+            onPress={() => void start()} testID="flashcards-start" /></Enter>
         )}
         <SectionLearningNotes section="flashcards" />
       </ScrollView>
