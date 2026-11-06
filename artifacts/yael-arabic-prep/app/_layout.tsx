@@ -118,7 +118,7 @@ function RootLayoutNav() {
       <Stack.Screen name="exam" options={{ headerShown: false }} />
       <Stack.Screen name="exam-library" options={{ headerShown: false }} />
       <Stack.Screen name="source-session" options={{ headerShown: false }} />
-      <Stack.Screen name="reading" options={{ headerShown: false }} />
+      <Stack.Screen name="reading" options={{ headerShown: false, scrollEdgeEffects: { top: 'hidden' } }} />
       <Stack.Screen name="study" options={{ headerShown: false }} />
       <Stack.Screen name="restatement" options={{ headerShown: false }} />
       <Stack.Screen name="flashcards" options={{ headerShown: false }} />

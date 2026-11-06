@@ -47,7 +47,7 @@ export default function ReadingScreen() {
   };
   if (phase === 'active' && round) {
     return <PracticeSession key={`${user?.id}:${round.number}`} userId={user?.id} isPremium={isPremium}
-      initialOrder={[]} initialRoundNumber={round.number} initialMode="reading" readingBank={round.pack.questions}
+      initialOrder={[]} initialRoundNumber={round.number} initialMode="reading" hasDock={false} readingBank={round.pack.questions}
       deadline={round.deadline} activityKey={activityKey.current} />;
   }
   return <ScrollView style={{ flex: 1, backgroundColor: p.background }}

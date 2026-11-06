@@ -103,7 +103,7 @@ export function useQuestionTransition(enabled: boolean, enterOnMount = false) {
     ],
   });
   return {
-    advance, busy: stage !== 'idle',
+    advance, busy: stage !== 'idle', departing: stage === 'exit',
     promptStyle: style(prompt, 62),
     answerStyle: (index: number) => style(answers[index], 40),
   };

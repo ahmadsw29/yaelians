@@ -50,9 +50,13 @@ test('exit precedes one advance, entrance locks repeated taps, and cleanup cance
   await act(async () => { motion.advance(change); motion.advance(change); });
   expect(change).not.toHaveBeenCalled();
   expect(motion.busy).toBe(true);
+  expect(motion.departing).toBe(true);
   const exit = driver.jobs[0];
   await act(async () => { exit.finish(); });
   expect(change).toHaveBeenCalledTimes(1);
+  // New content may be read/flipped while entrance runs; advancing stays locked.
+  expect(motion.busy).toBe(true);
+  expect(motion.departing).toBe(false);
   await act(async () => { motion.advance(change); });
   expect(change).toHaveBeenCalledTimes(1);
   await act(async () => { driver.jobs[1].finish(); });

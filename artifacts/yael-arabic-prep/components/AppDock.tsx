@@ -101,7 +101,11 @@ export default function AppDock({ state, navigation, descriptors }: BottomTabBar
                 onPress={() => {
                   bump();
                   const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-                  if (!exact && !e.defaultPrevented) navigation.navigate(route.name, route.params);
+                  // Listeners may reset selection; route.params is still the pre-event snapshot.
+                  if (!exact && !e.defaultPrevented) navigation.navigate(
+                    route.name,
+                    route.name === 'practice' ? { ...route.params, section: 'training' } : route.params,
+                  );
                 }}
                 onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
                 style={({ pressed }) => [s.tab, pressed && { opacity: 0.75 }]}>

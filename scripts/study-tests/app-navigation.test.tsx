@@ -46,7 +46,7 @@ test('menu entries are unique, real existing destinations without source identif
   ]);
   expect(new Set(entries.map(item => item.href)).size).toBe(entries.length);
   for (const entry of entries) {
-    const page = entry.href.slice(1);
+    const page = entry.href.slice(1).split('?')[0];
     const direct = fileURLToPath(new URL(`../../artifacts/yael-arabic-prep/app/${page}.tsx`, import.meta.url));
     const tab = fileURLToPath(new URL(`../../artifacts/yael-arabic-prep/app/(tabs)/${page}.tsx`, import.meta.url));
     expect(existsSync(direct) || existsSync(tab)).toBe(true);
@@ -63,7 +63,7 @@ test('dock follows navigator selection and preserves preventable tab events', as
     navigate: vi.fn(),
   };
   const routes = ['menu', 'profile', 'index', 'progress', 'practice', 'hidden'].map(name => ({
-    key: `key-${name}`, name, params: { retained: name },
+    key: `key-${name}`, name, params: { retained: name, ...(name === 'practice' ? { section: 'vocabulary' } : {}) },
   }));
   let tree!: ReactTestRenderer;
   await act(async () => { tree = create(<AppDock {...({
@@ -80,6 +80,9 @@ test('dock follows navigator selection and preserves preventable tab events', as
   expect(navigation.navigate).not.toHaveBeenCalled();
   await act(async () => { button('index').props.onPress(); });
   expect(navigation.navigate).toHaveBeenCalledWith('index', { retained: 'index' });
+  navigation.navigate.mockClear();
+  await act(async () => { button('practice').props.onPress(); });
+  expect(navigation.navigate).toHaveBeenCalledWith('practice', { retained: 'practice', section: 'training' });
   navigation.navigate.mockClear();
   prevent = true;
   await act(async () => { button('progress').props.onPress(); });

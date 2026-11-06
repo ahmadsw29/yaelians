@@ -22,9 +22,9 @@ export function presenterFor(index: number): CreatureKind {
 
 type Tone = 'brand' | 'sun' | 'coral' | 'success' | 'ghost';
 
-export function ChunkyButton({ label, onPress, tone = 'brand', icon, disabled, testID, accessibilityLabel, style }: {
+export function ChunkyButton({ label, onPress, tone = 'brand', icon, disabled, testID, accessibilityLabel, style, contentStyle }: {
   label: string; onPress: () => void; tone?: Tone; icon?: keyof typeof Ionicons.glyphMap; disabled?: boolean;
-  testID?: string; accessibilityLabel?: string; style?: StyleProp<ViewStyle>;
+  testID?: string; accessibilityLabel?: string; style?: StyleProp<ViewStyle>; contentStyle?: StyleProp<ViewStyle>;
 }) {
   const p = usePlay();
   const fills: Record<Tone, [string, string, string]> = {
@@ -39,7 +39,7 @@ export function ChunkyButton({ label, onPress, tone = 'brand', icon, disabled, t
     <GlassPressable dark={p.isDark} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled: !!disabled }}
       testID={testID} disabled={disabled} onPress={onPress} radius={18}
       fill={tone === 'ghost' ? undefined : [bg, shade]} solid={bg}
-      style={[s.button, disabled && { opacity: 0.6 }, style]} contentStyle={s.buttonContent}>
+      style={[s.button, disabled && { opacity: 0.6 }, style]} contentStyle={[s.buttonContent, contentStyle]}>
       <Text style={[s.label, { color: fg }]}>{label}</Text>
       {icon && <Ionicons name={icon} size={19} color={fg} />}
     </GlassPressable>

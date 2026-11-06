@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useAuth } from '@clerk/expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PetTeacher from '@/components/PetTeacher';
 import { useColors } from '@/hooks/useColors';
 import { IMPORTED_EXAMS } from '@/lib/solved-exams';
 import { usePlanAccess } from '@/lib/PlanAccess';
+import { loadExamLibraryProgress, type ExamLibraryProgress } from '@/lib/exam-library-progress';
+import { Enter } from '@/components/EntranceMotion';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
@@ -16,9 +19,22 @@ export default function ExamLibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isPremium } = usePlanAccess();
+  const { userId } = useAuth();
   const s = makeStyles(c);
   const [open, setOpen] = useState<string | null>(null);
-  const exams = (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).filter(exam => isPremium || exam.id === 'b17');
+  const exams = useMemo(() => (Array.isArray(IMPORTED_EXAMS) ? IMPORTED_EXAMS : []).filter(exam => isPremium || exam.id === 'b17'), [isPremium]);
+  const owner = userId ?? 'guest';
+  const [retry, setRetry] = useState(0);
+  const [progress, setProgress] = useState<{ owner: string; data: Record<string, ExamLibraryProgress> }>({ owner: '', data: {} });
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void Promise.all(exams.map(async exam =>
+      [exam.id, await loadExamLibraryProgress(userId ?? undefined, exam)] as const,
+    )).then(entries => {
+      if (active) setProgress({ owner, data: Object.fromEntries(entries) });
+    });
+    return () => { active = false; };
+  }, [exams, owner, userId, retry]));
 
   return (
     <View style={s.screen}>
@@ -36,6 +52,7 @@ export default function ExamLibraryScreen() {
           <Text style={s.label}>نماذجك، بطريقتين للتدرّب</Text>
           <Text style={s.body}>تدرّب على قسم واحد أو أكمل النموذج كله. الأسئلة من ملفاتك المرفوعة وبترتيبها الأصلي؛ هذا تدريب على محتواها وليس واجهة امتحان YAELNET الفعلي.</Text>
           <Text style={s.caption}>بعد التسليم: تصحيح وشروحات بالعربية بحلول أعدّها التطبيق، وليست مفتاحًا رسميًا. الأسئلة التي تحتاج مراجعة لا تدخل في النتيجة.</Text>
+          <Text style={s.caption}>التقدّم من محاولاتك المحفوظة على هذا الجهاز. علامة الإكمال تعني إنهاء النموذج، وليست علامة نجاح رسمية.</Text>
         </View>
         <PetTeacher quiet />
         {exams.length === 0 && <View style={s.card}>
@@ -46,16 +63,39 @@ export default function ExamLibraryScreen() {
         {exams.map(exam => {
           const expanded = open === exam.id;
           const total = exam.sections.reduce((n, sec) => n + sec.length, 0);
-          return <View key={exam.id} style={[s.card, expanded && { borderColor: c.primary }]}>
+          const saved = progress.owner === owner ? progress.data[exam.id] : undefined;
+          const summary = saved?.state === 'ready' ? saved.summary : null;
+          return <View key={exam.id} style={[s.card, expanded && { borderColor: c.primary }, summary?.completed && { borderColor: c.isDark ? '#4cc97f' : '#237848' }]}>
             <Pressable testID={`library-open-${exam.id}`} accessibilityRole="button" accessibilityState={{ expanded }}
-              accessibilityLabel={`نموذج ${exam.title}`} onPress={() => setOpen(expanded ? null : exam.id)} style={s.examRow}>
+              accessibilityLabel={`نموذج ${exam.title}${summary?.completed ? '، مكتمل' : ''}`} onPress={() => setOpen(expanded ? null : exam.id)} style={s.examRow}>
               <View style={s.badge}><Text style={s.badgeText}>{exam.title}</Text></View>
               <View style={{ flex: 1 }}>
                 <Text style={s.label}>نموذج {exam.title}</Text>
                 <Text style={s.caption}>{exam.sections.length} أقسام • {total} سؤالًا • {exam.essayPrompt ? 'مع موضوع تعبير' : 'دون موضوع تعبير'}</Text>
               </View>
+              {summary?.completed && <Ionicons testID={`library-complete-${exam.id}`} name="checkmark-circle" size={28} color={c.isDark ? '#4cc97f' : '#237848'} />}
               <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={c.mutedForeground} />
             </Pressable>
+            {!saved ? <Text style={s.caption}>جارٍ قراءة تقدّمك…</Text>
+              : saved.state === 'error' ? <View style={{ gap: 6 }}>
+                <Text accessibilityRole="alert" style={s.caption}>تعذّر قراءة تقدّم هذا النموذج. محاولتك المحفوظة لم تتغيّر.</Text>
+                <Pressable testID={`library-progress-retry-${exam.id}`} accessibilityRole="button" onPress={() => setRetry(value => value + 1)}>
+                  <Text style={[s.label, { color: c.primary }]}>إعادة قراءة التقدّم</Text>
+                </Pressable>
+              </View> : <Enter from="up" style={s.progressBox}>
+                <Text testID={`library-status-${exam.id}`} style={[s.progressStatus, summary?.completed && { color: c.isDark ? '#4cc97f' : '#237848' }]}>
+                  {summary?.completed ? 'مكتمل' : summary?.started ? 'غير مكتمل' : 'لم تبدأ بعد'}
+                </Text>
+                <Text style={s.caption}>{summary?.mode === 'full' ? 'تقدّم محاولتك الكاملة • أسئلة أُجيب عنها' : 'تقدّم الأقسام • أسئلة أُجيب عنها'}</Text>
+                {summary?.sections.map((section, index) => <View key={index} testID={`library-progress-${exam.id}-${index}`} style={s.progressRow}>
+                  <Text style={s.caption}>القسم {index + 1}</Text>
+                  <Text style={[s.progressCount, { color: c.foreground }]}>{section.answered} / {section.total}</Text>
+                  <View style={[s.progressTrack, { backgroundColor: c.secondary }]}>
+                    <View style={{ height: '100%', width: `${section.total ? section.answered / section.total * 100 : 0}%`, backgroundColor: c.primary, borderRadius: 4, alignSelf: 'flex-end' }} />
+                  </View>
+                </View>)}
+                {summary?.essay && <Text style={s.caption}>{summary.essay === 'submitted' ? 'التعبير: تمّ تسليم المسوّدة' : summary.essay === 'draft' ? 'التعبير: مسوّدة محفوظة' : 'التعبير: لم يُكتب بعد'}</Text>}
+              </Enter>}
             {expanded && <View style={{ gap: 10 }}>
               <Text style={s.caption}>الملف: {exam.sourceFilename}</Text>
               {exam.sections.map((sec, i) => <Pressable key={i} testID={`library-train-${exam.id}-${i}`} accessibilityRole="button"
@@ -94,6 +134,11 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     notice: { padding: 16, gap: 8, borderRadius: c.radius, backgroundColor: c.secondary },
     card: { padding: 16, gap: 12, borderRadius: c.radius, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
     examRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+    progressBox: { gap: 8 },
+    progressStatus: { fontFamily: BOLD, fontSize: 13, lineHeight: 22, textAlign: 'right', color: c.mutedForeground, writingDirection: 'rtl' },
+    progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    progressTrack: { flex: 1, height: 6, borderRadius: 4, overflow: 'hidden' },
+    progressCount: { minWidth: 58, fontSize: 13, lineHeight: 22, fontWeight: '700', textAlign: 'left', writingDirection: 'ltr', fontVariant: ['tabular-nums'] },
     badge: { minWidth: 56, height: 44, borderRadius: 14, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
     badgeText: { fontFamily: BOLD, fontSize: 13, color: c.primary },
     option: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, padding: 12, borderRadius: c.radius, borderWidth: 1, borderColor: c.border, backgroundColor: c.background },

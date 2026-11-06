@@ -13,3 +13,7 @@ Flashcards and Words should be partially connected, not identical practice modes
 Flashcards share the existing free vocabulary round rather than creating an additional unlimited practice route.
 **Why:** The user previously explicitly closed a free vocabulary replay loophole and limited free vocabulary to one five-minute daily round; adding a new presentation should not undo that decision.
 **How to apply:** Preserve the shared daily allowance unless the user explicitly changes free-plan access.
+
+Newly shown flashcards must be immediately flippable, including during their entrance animation.
+**Why:** The user objected to having to wait after a card appeared before revealing its meaning.
+**How to apply:** Keep the flip and entrance animations, but do not use their completion as a reveal prerequisite. The user also wants visibly animated progress growth; that feedback must stay decorative, respect reduced motion, and never delay card interaction. Retain persistence and duplicate-rating guards separately.

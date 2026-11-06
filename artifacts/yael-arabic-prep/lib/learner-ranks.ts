@@ -24,3 +24,29 @@ export function getLearnerRank(value: number) {
     progress: nextRank ? Math.min(1, (xp - rank.minXp) / (nextRank.minXp - rank.minXp)) : 1,
   };
 }
+
+/** Suggestions only: rank never grants access or starts an exam clock. */
+export function getRankTrainingRecommendation(value: number) {
+  const { rank } = getLearnerRank(value);
+  const amateur = LEARNER_RANKS.find(r => r.id === 'amateur')!;
+  const realStudent = LEARNER_RANKS.find(r => r.id === 'real-student')!;
+  if (rank.minXp < amateur.minXp) return null;
+  if (rank.minXp < realStudent.minXp) return {
+    kind: 'section' as const, href: '/source-session' as const,
+    rankTitle: rank.title,
+    title: 'جاهز لتحدّي 20 دقيقة؟',
+    description: 'وصلت إلى Amateur! جرّب قسمًا كاملًا يجمَع مهاراتك.',
+    timing: ['20 دقيقة'],
+    detail: '22 سؤالًا متنوعًا، ثم نتيجتك ومراجعة إجاباتك عند إنهاء القسم.',
+    buttonLabel: 'جرّب قسمًا كاملًا',
+  };
+  return {
+    kind: 'full' as const, href: '/exam' as const,
+    rankTitle: rank.title,
+    title: 'جاهز لتجربة الامتحان كاملًا؟',
+    description: 'من Real Student وما بعده، جرّب محاكاة كاملة بإيقاع الامتحان.',
+    timing: ['3 × 20 دقيقة', '15 دقيقة كتابة', '75 دقيقة بالمجموع'],
+    detail: '3 أقسام، ثم موضوع بالعبرية. بعد إنهاء المحاكاة تظهر نتيجتك لكل قسم والنتيجة الإجمالية؛ مسوّدة الكتابة للمراجعة دون علامة آلية.',
+    buttonLabel: 'جرّب محاكاة كاملة',
+  };
+}

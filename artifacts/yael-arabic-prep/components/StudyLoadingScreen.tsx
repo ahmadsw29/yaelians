@@ -4,9 +4,9 @@ import { useStudy } from '@/lib/StudyProvider';
 import { useColors } from '@/hooks/useColors';
 import { Creature, CREATURE_NAMES, type CreatureKind } from '@/components/PetTeacher';
 import { reserveWaitingCharacter } from '@/lib/loading-characters';
-import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+// This screen can appear before custom fonts finish downloading.
+const FONT = Platform.OS === 'web' ? 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' : undefined;
 const useNative = Platform.OS !== 'web';
 
 /** Mounted once beside navigation, never in each tab or in the question layout. */
@@ -22,7 +22,7 @@ export function StudyLoadingScreen() {
 function WaitingWindow() {
   const c = useColors();
   const [kind, setKind] = useState<CreatureKind | null>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(true);
   const sway = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -47,7 +47,7 @@ function WaitingWindow() {
   const scale = sway.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.04, 1] });
   const name = kind ? CREATURE_NAMES[kind] : '';
 
-  return <View testID="study-loading-screen" style={[s.backdrop, { backgroundColor: c.isDark ? 'rgba(4,10,9,0.55)' : 'rgba(20,32,28,0.32)' }]}>
+  return <View testID="study-loading-screen" style={[s.backdrop, { backgroundColor: c.background }]}>
     <View testID="study-loading-window" accessibilityViewIsModal accessible accessibilityRole="progressbar"
       accessibilityLabel={`جارٍ تحميل تقدّمك${name ? `، ${name} ينتظر معك` : ''}`}
       style={[s.window, { backgroundColor: c.card, borderColor: c.border }]}>
@@ -57,21 +57,21 @@ function WaitingWindow() {
           <Creature kind={kind} mood="happy" size={96} />
         </Animated.View> : <View style={{ width: 96, height: 96 }} />}
       </View>
-      <Text style={[s.title, { color: c.foreground }]}>{name ? `${name} يجهّز تدريبك` : 'لحظة واحدة'}</Text>
+      <Text testID="study-loading-title" style={[s.title, { color: c.foreground }]}>{name ? `${name} يجهّز تدريبك` : 'لحظة واحدة'}</Text>
       <View style={s.row}>
-        <ActivityIndicator size="small" color={c.primary} />
-        <Text accessibilityLiveRegion="polite" style={[s.body, { color: c.mutedForeground }]}>جارٍ تحميل تقدّمك…</Text>
+        <ActivityIndicator size="small" color={c.primary} style={{ flexShrink: 0 }} />
+        <Text testID="study-loading-caption" accessibilityLiveRegion="polite" style={[s.body, { color: c.mutedForeground }]}>جارٍ تحميل تقدّمك…</Text>
       </View>
     </View>
   </View>;
 }
 
 const s = StyleSheet.create({
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  backdrop: { flex: 1, width: '100%', alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', padding: 24 },
   window: { width: '100%', maxWidth: 280, alignItems: 'center', gap: 10, paddingVertical: 20, paddingHorizontal: 18, borderRadius: 24, borderWidth: 2, borderBottomWidth: 6 },
   art: { width: 120, height: 112, alignItems: 'center', justifyContent: 'center' },
   halo: { position: 'absolute', width: 104, height: 104, borderRadius: 52 },
-  title: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 17, textAlign: 'center', writingDirection: 'rtl' },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-  body: { fontFamily: FONT, fontSize: 13, textAlign: 'center', writingDirection: 'rtl' },
+  title: { alignSelf: 'stretch', fontFamily: FONT, fontWeight: '800', fontSize: 17, lineHeight: 26, textAlign: 'center', writingDirection: 'rtl' },
+  row: { alignSelf: 'stretch', minHeight: 26, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  body: { flexShrink: 1, minWidth: 0, fontFamily: FONT, fontSize: 13, lineHeight: 22, textAlign: 'center', writingDirection: 'rtl' },
 });

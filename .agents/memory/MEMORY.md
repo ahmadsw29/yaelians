@@ -1,8 +1,10 @@
 - [Account and avatar decisions](accounts.md) — Custom avatars, tenant name restrictions, and safe deletion/testing constraints.
 - [Live Expo updates](live-expo.md) — Create dependencies before routing to new screens; keep auth initialization visible.
+- [Native header legibility](native-header-legibility.md) — Check native scroll-edge effects as well as CSS when fixed iPhone training controls look blurry.
 - [Study progress migration](study-sync.md) — Legacy import is explicit; timed-result recovery must stay separate from learning counters.
 - [Offline outbox recovery](offline-outbox-recovery.md) — Archive the exact damaged queue before replacing it; recover only individually validated lessons after an explicit choice.
 - [Uploaded exam solutions](exam-solutions.md) — User wants us to solve uploaded questions; distinguish generated solutions from official keys.
+- [Model progress display](model-progress.md) — Green completion checks and per-section answered counts appear on collapsed model cards, without mixing attempts.
 - [Study sync testing](study-testing.md) — Keep concurrency tests on isolated real PostgreSQL; identity adapters do not test authentication.
 - [Expo native component test boundary](practice-marker-testing.md) — Pure behavior and mocked prop tests are not native layout evidence; browser font-scale checks need explicit text enlargement.
 - [Learner audience and tutor](learner-audience.md) — Ages 17–24; an energetic fantasy pet and question-presenting characters, no progress-bar mascot; masculine Arabic copy.
@@ -11,9 +13,9 @@
 - [Adaptive restatement learning](restatement-learning.md) — Six-question spaced-review rounds: 6:30, then 6:00 from Semi-Master; no model chooser or celebrations for empty attempts.
 - [Vocabulary review](vocabulary-learning.md) — Space correct words, revisit mistakes sooner, and omit algorithm explanations at the start of both practice modes.
 - [Training entry and learning hubs](training-entry.md) — Explicit starts/resumes, optional previous-result review, and substantial untimed study material without losing progress.
-- [Flashcard learning](flashcard-learning.md) — Self-ratings are not quiz mastery; preserve the shared free vocabulary allowance.
+- [Flashcard learning](flashcard-learning.md) — Immediate flipping during entrances; self-ratings are not quiz mastery, and the free vocabulary allowance remains shared.
 - [Translator companion](translator-assistant.md) — Persistent movable pet across signed-in screens; keep translations ephemeral unless explicitly saved.
-- [Rank pacing](progression-pacing.md) — User doubled the harder rank ladder; preserve earned XP and shared rank-based timers, with no calendar locks.
+- [Rank pacing and suggestions](progression-pacing.md) — Preserve XP and shared timers; recommend one timed section at Amateur and a full exam from Real Student.
 - [Daily learning goals](daily-learning-goals.md) — Numerical goals by section and models; device-local days, no extra access or mastery from choosing targets.
 - [Web billing provider](web-billing-provider.md) — Coordinate Whop SDK/API versions, scoped permissions, and environment-specific checkout activation.
 - [Publishing generated assets](publishing-assets.md) — Git exclusions and deployment exclusions differ; required build outputs must remain in the published image.

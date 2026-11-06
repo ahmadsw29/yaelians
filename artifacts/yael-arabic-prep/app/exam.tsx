@@ -15,6 +15,7 @@ import { completionFeedback } from '@/lib/completion-feedback';
 import { nextPracticeCelebration, type PracticeCelebrationVariant } from '@/lib/practice-celebrations';
 import { useColors } from '@/hooks/useColors';
 import { EXAM_SECTIONS, ESSAY_PROMPT } from '@/lib/exam-content';
+import { scoreExamSections } from '@/lib/exam-results';
 import SourceSessionBackup from '@/components/SourceSessionBackup';
 import type { SourceSession } from '@/lib/source-session';
 
@@ -409,6 +410,13 @@ function ExamSession({ userId }: { userId?: string }) {
               <Text style={styles.body}>{66 - correct - skipped} إجابات غير صحيحة • {skipped} أسئلة بلا إجابة</Text>
               <Text style={styles.body}>هذه نسبة تدريبية لجميع الأقسام الثلاثة، وليست علامة YAEL رسمية ولا تقديرًا لها. في الامتحان الحقيقي يُحتسب قسمان من الاختيار من متعدد، ويقيّم مصحّحون التعبير الكتابي؛ لا نحاكي معادلة العلامة.</Text>
             </View>
+            {scoreExamSections(EXAM_SECTIONS, session.answers).map((score, index) => (
+              <View key={index} testID={`exam-section-score-${index + 1}`} style={styles.card}>
+                <Text style={styles.title}>نتيجة القسم {index + 1}</Text>
+                <Text style={[styles.title, { writingDirection: 'ltr' }]}>{score.correct} / {score.total} • {score.percent}%</Text>
+                <Text style={styles.body}>{score.wrong} إجابات غير صحيحة • {score.skipped} أسئلة بلا إجابة</Text>
+              </View>
+            ))}
             <Text style={styles.title}>راجع الأخطاء والأسئلة المتروكة ({mistakes.length})</Text>
             {mistakes.length === 0 && <Text style={styles.body}>أجبت عن جميع أسئلة الاختيار من متعدد بصورة صحيحة في هذه المحاولة.</Text>}
             {mistakes.map(({ q, section, index, selected }) => <View key={q.id} style={styles.card}>

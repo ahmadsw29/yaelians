@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { getPracticeScreenSpacing } from '../../artifacts/yael-arabic-prep/lib/practice-layout';
 
 describe('practice safe areas', () => {
+  it('reserves only the home-indicator inset for standalone reading with no dock', () => {
+    expect(getPracticeScreenSpacing('ios', 62, 34, true, false)).toEqual({ paddingTop: 62, paddingBottom: 34 });
+    expect(getPracticeScreenSpacing('ios', 47, 34, false, false).paddingBottom).toBe(34);
+    expect(getPracticeScreenSpacing('android', 24, 24, false, false).paddingBottom).toBe(24);
+    expect(getPracticeScreenSpacing('web', 0, 0, false, false).paddingBottom).toBe(0);
+    expect(getPracticeScreenSpacing('web', 44, 34, false, false).paddingBottom).toBe(34);
+  });
   it('keeps the progress header below the iPhone status area', () => {
     expect(getPracticeScreenSpacing('ios', 62, 34, true).paddingTop).toBe(62);
   });

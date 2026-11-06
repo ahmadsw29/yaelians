@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { getLearnerRank, LEARNER_RANKS, MASTER_XP } from '../../artifacts/yael-arabic-prep/lib/learner-ranks';
+import { getLearnerRank, getRankTrainingRecommendation, LEARNER_RANKS, MASTER_XP } from '../../artifacts/yael-arabic-prep/lib/learner-ranks';
 
 test('every XP boundary awards the correct title without changing earned XP', () => {
   for (let i = 0; i < LEARNER_RANKS.length; i++) {
@@ -22,4 +22,18 @@ test('thresholds are doubled without calendar locks or XP deductions', () => {
   expect(gaps.every((gap, index) => index === 0 || gap >= gaps[index - 1])).toBe(true);
   expect(getLearnerRank(6000).rank.id).toBe('amateur');
   expect(getLearnerRank(MASTER_XP).rank.id).toBe('master');
+});
+
+test('home suggestions follow shared rank boundaries without unlocking or starting sessions', () => {
+  for (const xp of [0, 999, 1000, 3999, -1, NaN]) expect(getRankTrainingRecommendation(xp)).toBeNull();
+  for (const xp of [4000, 4790, 8999]) {
+    expect(getRankTrainingRecommendation(xp)).toMatchObject({
+      kind: 'section', href: '/source-session', timing: ['20 دقيقة'],
+    });
+  }
+  for (const xp of [9000, 15999, 16000, 24000, 100000]) {
+    expect(getRankTrainingRecommendation(xp)).toMatchObject({
+      kind: 'full', href: '/exam', timing: ['3 × 20 دقيقة', '15 دقيقة كتابة', '75 دقيقة بالمجموع'],
+    });
+  }
 });

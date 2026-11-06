@@ -12,8 +12,9 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import VocabularyStudyHub from '@/components/VocabularyStudyHub';
+import TrainingHub from '@/components/TrainingHub';
 import { trainingEntry } from '@/lib/training-entry';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -53,10 +54,33 @@ const BOLD = ARABIC_BOLD_FONT;
 
 export default function PracticeScreen() {
   const { user } = useUser();
-  return <VocabularyEntry key={user?.id ?? 'signed-out'} userId={user?.id} />;
+  const router = useRouter();
+  // Both classic and native tab navigators emit this event, including a selected-tab re-tap.
+  type TabNavigation = ReturnType<typeof useNavigation> & {
+    addListener(event: 'tabPress', callback: () => void): () => void;
+  };
+  const navigation = useNavigation<TabNavigation>();
+  useEffect(() => navigation.addListener('tabPress', () => {
+    router.setParams({ section: 'training' });
+  }), [navigation, router]);
+  return <TrainingEntry key={user?.id ?? 'signed-out'} userId={user?.id} />;
 }
 
-function VocabularyEntry({ userId }: { userId?: string }) {
+function TrainingEntry({ userId }: { userId?: string }) {
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const words = section === 'vocabulary';
+  const [visitedWords, setVisitedWords] = useState(words);
+  useEffect(() => { if (words) setVisitedWords(true); }, [words]);
+  return <View style={{ flex: 1 }}>
+    {!words && <TrainingHub />}
+    {(words || visitedWords) && <View style={{ flex: 1, display: words ? 'flex' : 'none' }}
+      accessibilityElementsHidden={!words} importantForAccessibility={words ? 'auto' : 'no-hide-descendants'}>
+      <VocabularyEntry userId={userId} visible={words} />
+    </View>}
+  </View>;
+}
+
+function VocabularyEntry({ userId, visible }: { userId?: string; visible: boolean }) {
   const { ready, plan, isPremium, startVocabularyRound } = usePlanAccess();
   const activityKey = useRef<string | null>(null);
   const [access, setAccess] = useState<'idle' | 'checking' | 'allowed' | 'limit' | 'blocked'>('idle');
@@ -68,10 +92,10 @@ function VocabularyEntry({ userId }: { userId?: string }) {
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useFocusEffect(useCallback(() => {
-    focused.current = true;
+    focused.current = visible;
     setShowHub(true);
     return () => { focused.current = false; };
-  }, []));
+  }, [visible]));
 
   async function begin() {
     if (!ready || !plan || !userId || starting.current) return;
@@ -133,7 +157,7 @@ function FreePracticePrompt() {
   </View>;
 }
 
-export function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey, readingBank = READING_QUESTIONS, initialMode = 'words', onCompletionChange }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null; readingBank?: ReadingQuestion[]; initialMode?: 'words' | 'reading'; onCompletionChange?: (complete: boolean) => void }) {
+export function PracticeSession({ userId, isPremium, initialOrder, initialRoundNumber, deadline, activityKey, readingBank = READING_QUESTIONS, initialMode = 'words', hasDock = true, onCompletionChange }: { userId?: string; isPremium: boolean; initialOrder: number[]; initialRoundNumber: number; deadline: number | null; activityKey: string | null; readingBank?: ReadingQuestion[]; initialMode?: 'words' | 'reading'; hasDock?: boolean; onCompletionChange?: (complete: boolean) => void }) {
   const { save, loading } = useStudy();
   const saving = useRef(false);
   const [saveError, setSaveError] = useState(false);
@@ -144,7 +168,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
   const styles = makeStyles(p, insets.top);
   const { fontScale } = useWindowDimensions();
   const expanded = usesExpandedQuestionLayout(fontScale);
-  const screenSpacing = getPracticeScreenSpacing(Platform.OS, insets.top, insets.bottom, isLiquidGlassAvailable());
+  const screenSpacing = getPracticeScreenSpacing(Platform.OS, insets.top, insets.bottom, isLiquidGlassAvailable(), hasDock);
   const [bodyHeight, setBodyHeight] = useState(0);
   const [parkHeight, setParkHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
@@ -315,7 +339,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
   if (complete) {
     const feedback = completionFeedback(correct, completedTotal ?? 0, activeQuestions.length);
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.completionScreen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 112 }]}>
+      <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.completionScreen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + (hasDock ? 112 : 24) }]}>
         {Platform.OS === 'web' && <Text accessibilityLiveRegion="polite" style={styles.accessibilityAnnouncement}>
           {completionAnnouncement}
         </Text>}
@@ -350,7 +374,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
 
   const answered = choice !== null;
   const footer = (
-    <View style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: 8 }]}>
+    <View testID="practice-session-footer" style={[styles.footer, answered && { backgroundColor: isCorrect ? p.successSoft : p.coralSoft, borderTopColor: isCorrect ? p.success : p.coral }, { paddingBottom: 8 }]}>
       {reviewError && <Text accessibilityLiveRegion="polite" style={{ color: p.coralInk, textAlign: 'center' }}>تعذّر حفظ الإجابة. اضغط اختيارك مرة أخرى للمحاولة؛ لم نغيّر محفوظاتك السابقة.</Text>}
       {answerFeedback && <Text accessibilityLiveRegion="polite" importantForAccessibility="yes"
         style={styles.accessibilityAnnouncement}>{answerFeedback.announcement}</Text>}
@@ -367,8 +391,8 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
     <View testID="practice-top-bar" style={styles.topBar}>
       <StudySyncStatus />
       <View style={styles.header}>
-        <Pressable onPress={() => router.push('/')} accessibilityRole="button" accessibilityLabel="العودة للرئيسية" hitSlop={10} style={styles.backButton}>
-          <Ionicons name="close" size={26} color={c.mutedForeground} />
+        <Pressable testID="practice-close" onPress={() => router.push('/')} accessibilityRole="button" accessibilityLabel="العودة للرئيسية" hitSlop={6} style={styles.backButton}>
+          <Ionicons name="close" size={24} color={c.foreground} />
         </Pressable>
         <View
           accessible
@@ -379,7 +403,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
         >
           <ChunkyProgress value={progressPosition.percent / 100} />
         </View>
-        <Text style={styles.progressCount}>{index + 1}/{activeQuestions.length}</Text>
+        <Text testID="practice-progress-count" style={styles.progressCount}>{index + 1}/{activeQuestions.length}</Text>
         {secondsLeft !== null && <Text testID="vocabulary-countdown" accessibilityLabel={`الوقت المتبقي: ${Math.floor(secondsLeft / 60)} دقيقة و${secondsLeft % 60} ثانية`} style={[styles.progressCount, { minWidth: 44 }]}>{formatVocabularyTime(secondsLeft)}</Text>}
       </View>
 
@@ -494,11 +518,11 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
   const c = p;
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    topBar: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(54, topInset) : 4, maxWidth: 600, width: '100%', alignSelf: 'center' },
+    topBar: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 4, maxWidth: 600, width: '100%', alignSelf: 'center', backgroundColor: c.background, zIndex: 1 },
     content: { paddingHorizontal: PRACTICE_HORIZONTAL_PADDING, paddingTop: 2, paddingBottom: 8, maxWidth: 600, width: '100%', alignSelf: 'center' },
-    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 6 },
-    backButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-    progressCount: { color: p.successInk, fontSize: 13, fontFamily: BOLD, fontWeight: '800', minWidth: 40, textAlign: 'center' },
+    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginBottom: 8 },
+    backButton: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
+    progressCount: { color: c.foreground, fontSize: 15, lineHeight: 22, fontFamily: BOLD, fontWeight: '800', fontVariant: ['tabular-nums'], writingDirection: 'ltr', minWidth: 40, textAlign: 'center' },
     categoryBar: { backgroundColor: c.muted, borderRadius: 16, padding: 3, marginBottom: 8, minHeight: 44, justifyContent: 'center' },
     categoryBadge: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 5, borderRadius: 12, backgroundColor: p.skySoft, borderWidth: 2, borderColor: p.sky, borderBottomWidth: 4 },
     categoryText: { flexShrink: 1, minWidth: 0, textAlign: 'right', writingDirection: 'rtl', color: p.skyInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22 },

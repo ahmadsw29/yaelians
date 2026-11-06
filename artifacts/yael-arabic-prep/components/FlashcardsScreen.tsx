@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SectionLearningNotes from '@/components/SectionLearningNotes';
 import {
-  AccessibilityInfo, ActivityIndicator, Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent,
+  AccessibilityInfo, ActivityIndicator, Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChunkyButton, ChunkyProgress, usePlay } from '@/components/Playful';
+import { ChunkyButton, usePlay } from '@/components/Playful';
+import FlashcardProgress from '@/components/FlashcardProgress';
 import { Creature } from '@/components/PetTeacher';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { useHebrewSpeech } from '@/hooks/useHebrewSpeech';
@@ -43,6 +44,9 @@ const RATINGS: { rating: FlashcardRating; label: string; tone: 'coral' | 'sun' |
 const newKey = () => `flashcards-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 
 export default function FlashcardsScreen({ userId }: { userId: string }) {
+  const { fontScale, width } = useWindowDimensions();
+  // Narrow screens need full-width rows to keep labels clear of the floating pet.
+  const expandedRatings = fontScale > 1.4 || width < 360;
   const p = usePlay();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -142,6 +146,8 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
   }, [memory, previewCount, isPremium, startVocabularyRound, userId]);
 
   const reveal = () => {
+    // Only the outgoing/saving card is locked; the incoming card is usable immediately.
+    if (savingRef.current || motion.departing) return;
     if (isExpired()) { checkExpiry(); return; }
     setRevealed(true);
   };
@@ -250,12 +256,9 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
     const card = CARDS.get(deck[index])!;
     content = (
       <ScrollView contentContainerStyle={[s.session, { paddingBottom: bottom + 24 }]}>
-        <View style={s.progressRow}>
-          <Text style={[s.count, { color: p.mutedForeground }]}>{`${index + 1} / ${deck.length}`}</Text>
-          <View style={{ flex: 1 }}><ChunkyProgress value={index / deck.length} /></View>
-        </View>
+        <FlashcardProgress completed={index} total={deck.length} />
         <Animated.View style={motion.promptStyle}>
-          <FlashCard key={`${userId}:${card.word}`} card={card} revealed={revealed} onReveal={reveal} disabled={saving || motion.busy} />
+          <FlashCard key={`${userId}:${card.word}`} card={card} revealed={revealed} onReveal={reveal} disabled={saving || motion.departing} />
         </Animated.View>
         {revealed ? (
           <Animated.View style={[s.rateWrap, motion.answerStyle(0)]}>
@@ -266,11 +269,12 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
               </View>
             )}
             <Text style={[s.rateHint, { color: p.mutedForeground }]}>كيف كانت معك؟</Text>
-            <View style={s.rateRow}>
+            <View style={[s.rateRow, expandedRatings && { flexDirection: 'column', flexWrap: 'nowrap' }]}>
               {RATINGS.map((r, i) => (
-                <Enter key={r.rating} from="pop" delay={60 + i * 80} style={s.rateBtn}>
+                <Enter key={r.rating} from="pop" delay={60 + i * 80} style={[s.rateBtn, expandedRatings && s.expandedRateBtn]}>
                   <ChunkyButton label={r.label} tone={r.tone} icon={r.icon} disabled={saving || motion.busy}
-                    onPress={() => void rate(r.rating)} testID={`flashcards-rate-${r.rating}`} style={{ paddingHorizontal: 8 }} />
+                    onPress={() => void rate(r.rating)} testID={`flashcards-rate-${r.rating}`}
+                    contentStyle={[s.rateContent, expandedRatings && s.expandedRateContent]} />
                 </Enter>
               ))}
             </View>
@@ -278,7 +282,7 @@ export default function FlashcardsScreen({ userId }: { userId: string }) {
           </Animated.View>
         ) : (
           <Animated.View style={motion.answerStyle(1)}>
-            <Enter from="pop" trigger={index}><ChunkyButton label="اكشف المعنى" icon="eye-outline" disabled={motion.busy} onPress={reveal} testID="flashcards-reveal" /></Enter>
+            <Enter from="pop" trigger={index}><ChunkyButton label="اكشف المعنى" icon="eye-outline" disabled={saving || motion.departing} onPress={reveal} testID="flashcards-reveal" /></Enter>
           </Animated.View>
         )}
       </ScrollView>
@@ -446,8 +450,6 @@ const s = StyleSheet.create({
   note: { flexDirection: 'row-reverse', gap: 8, borderWidth: 1, borderStyle: 'dashed', borderRadius: 16, padding: 12 },
   noteText: { flex: 1, fontSize: 13, lineHeight: 22, textAlign: 'right', writingDirection: 'rtl' },
   session: { padding: 16, gap: 16 },
-  progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
-  count: { fontWeight: '800', fontSize: 13, fontVariant: ['tabular-nums'] },
   cardWrap: { gap: 12 },
   face: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 28, borderWidth: 3, borderBottomWidth: 8, paddingHorizontal: 18, justifyContent: 'center', backfaceVisibility: 'hidden', overflow: 'hidden' },
   faceInner: { alignItems: 'center', gap: 8 },
@@ -465,7 +467,10 @@ const s = StyleSheet.create({
   rateWrap: { gap: 10 },
   rateHint: { fontSize: 13, textAlign: 'center', writingDirection: 'rtl' },
   rateRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
-  rateBtn: { flexGrow: 1, flexBasis: 96, paddingHorizontal: 8 },
+  rateBtn: { flexGrow: 1, flexBasis: 0, minWidth: 0 },
+  expandedRateBtn: { flexGrow: 0, flexBasis: 'auto', alignSelf: 'stretch' },
+  rateContent: { flexDirection: 'column-reverse', minHeight: 82, paddingHorizontal: 8, gap: 4 },
+  expandedRateContent: { flexDirection: 'row-reverse', minHeight: 64, paddingHorizontal: 12, gap: 10 },
   alert: { borderWidth: 2, borderRadius: 16, padding: 12, gap: 8 },
   alertText: { fontSize: 14, lineHeight: 22, textAlign: 'right', writingDirection: 'rtl' },
   tallyRow: { flexDirection: 'row-reverse', gap: 8 },

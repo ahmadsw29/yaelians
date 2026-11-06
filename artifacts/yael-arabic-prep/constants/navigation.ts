@@ -9,7 +9,7 @@ export type MenuDestination = {
 /** Grouped app menu destinations (labels only, no source/model codes). */
 export const MENU_GROUPS: { key: string; title: string; items: MenuDestination[] }[] = [
   { key: 'learn', title: 'تعلّم وتدرّب', items: [
-    { key: 'practice', href: '/practice', title: 'المفردات', caption: 'جولة كلمات قصيرة', icon: 'book-open', tone: 'brand' },
+    { key: 'practice', href: '/practice?section=vocabulary', title: 'المفردات', caption: 'جولة كلمات قصيرة', icon: 'book-open', tone: 'brand' },
     { key: 'restatement', href: '/restatement', title: 'إعادة الصياغة', caption: 'قلها بطريقة أخرى', icon: 'repeat', tone: 'coral' },
     { key: 'reading', href: '/reading', title: 'فهم المقروء', caption: 'نصوص وأسئلة', icon: 'file-text', tone: 'sky' },
     { key: 'flashcards', href: '/flashcards', title: 'البطاقات', caption: 'راجع بسرعة', icon: 'layers', tone: 'sun' },

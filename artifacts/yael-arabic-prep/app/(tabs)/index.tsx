@@ -26,6 +26,8 @@ import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
 import { useDailyStudyTip } from '@/hooks/useDailyStudyTip';
 import { HomeMotionProvider, NATIVE_DRIVER, Reveal, RevealGroup, ScrollSway, useReduceMotion } from '@/components/HomeMotion';
+import { Enter } from '@/components/EntranceMotion';
+import { getRankTrainingRecommendation } from '@/lib/learner-ranks';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
@@ -38,6 +40,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const tip = useDailyStudyTip();
   const { stats, loading, refresh } = useStudy();
+  const recommendation = getRankTrainingRecommendation(stats.xp);
   useFocusEffect(useCallback(() => { refresh(); }, [user?.id]));
 
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -80,11 +83,21 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.greeting}>
+      <Enter trigger={recommendation?.kind ?? 'lesson'} style={styles.greeting}>
         <Text style={styles.eyebrow}>رحلتك نحو علامة أفضل</Text>
-        <Text style={styles.title}>أهلًا{firstName ? ` ${firstName}` : ''}،{"\n"}نبدأ درس اليوم؟</Text>
-        <Text style={styles.subtitle}>خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.</Text>
-      </View>
+        <Text testID="home-training-heading" style={styles.title}>أهلًا{firstName ? ` ${firstName}` : ''}،{"\n"}{recommendation?.title ?? 'نبدأ درس اليوم؟'}</Text>
+        <Text style={styles.subtitle}>{recommendation?.description ?? 'خطوة صغيرة بالعبرية، فرق كبير بالـ YAEL.'}</Text>
+        {recommendation && <View testID={`home-rank-recommendation-${recommendation.kind}`} style={[styles.rankSuggestion, { backgroundColor: p.card, borderColor: p.border }]}>
+          <View style={styles.timingChips}>{recommendation.timing.map(label =>
+            <View key={label} style={[styles.timingChip, { backgroundColor: p.brandSoft }]}>
+              <Text style={[styles.timingText, { color: p.isDark ? p.brand : p.brandShade }]}>{label}</Text>
+            </View>)}</View>
+          <Text style={[styles.recommendationDetail, { color: p.foreground }]}>{recommendation.detail}</Text>
+          <ChunkyButton label={recommendation.buttonLabel} icon="timer-outline"
+            testID="home-rank-training-open" onPress={() => router.push(recommendation.href)} />
+          <Text style={[styles.recommendationFootnote, { color: p.mutedForeground }]}>تعرّف على التدريب أولًا؛ الوقت يبدأ فقط عند ضغط «ابدأ» داخله.</Text>
+        </View>}
+      </Enter>
       <RevealGroup style={styles.sections}>
       <Reveal testID="home-reveal-goals"><DailyGoalsSection /></Reveal>
 
@@ -99,7 +112,7 @@ export default function HomeScreen() {
           <ScrollSway testID="home-sway-vocabulary"><Creature kind="zizo" mood="hype" size={128} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>מילה</Text></View>
         </View>
-        <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
+        <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice?section=vocabulary')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
       </View></Reveal>
 
       <Reveal testID="home-reveal-restatement"><View style={styles.rHero}>
@@ -180,7 +193,13 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset
     greeting: { alignItems: 'flex-end', marginBottom: 16 },
     eyebrow: { color: p.brandShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, marginBottom: 6 },
     title: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', textAlign: 'right', fontSize: 28, lineHeight: 38 },
-    subtitle: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, textAlign: 'right', marginTop: 6 },
+    subtitle: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, lineHeight: 24, textAlign: 'right', writingDirection: 'rtl', marginTop: 6 },
+    rankSuggestion: { alignSelf: 'stretch', marginTop: 14, borderWidth: 1, borderRadius: 22, padding: 16, gap: 12 },
+    timingChips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
+    timingChip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6 },
+    timingText: { fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22, textAlign: 'center', writingDirection: 'rtl' },
+    recommendationDetail: { fontSize: 14, lineHeight: 25, textAlign: 'right', writingDirection: 'rtl' },
+    recommendationFootnote: { fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
     sections: { gap: 24, marginBottom: 24 },
     hero: { backgroundColor: p.brand, borderRadius: 26, borderBottomWidth: 7, borderColor: p.brandShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
     rHero: { backgroundColor: p.coral, borderRadius: 26, borderBottomWidth: 7, borderColor: p.coralShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },

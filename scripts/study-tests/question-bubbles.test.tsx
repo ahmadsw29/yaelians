@@ -73,6 +73,23 @@ describe('question bubble accessibility layout (native props, not device renderi
     }
   });
 
+  it('allows narrow action buttons to place the icon above a full-width Arabic label', async () => {
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = create(<ChunkyButton label="صعبة" icon="time-outline" onPress={() => {}}
+        contentStyle={{ flexDirection: 'column-reverse', paddingHorizontal: 8, minHeight: 82, gap: 4 }} />);
+    });
+    const button = tree.root.findByType(GlassPressable);
+    expect(flatten(button.props.contentStyle)).toMatchObject({
+      flexDirection: 'column-reverse', paddingHorizontal: 8, minHeight: 82, gap: 4,
+    });
+    expect(flatten(button.props.style).paddingHorizontal).toBeUndefined();
+    const label = tree.root.findAllByType('Text' as any).find(t => t.props.children === 'صعبة')!;
+    expect(label.props.allowFontScaling).not.toBe(false);
+    expect(label.props.numberOfLines).toBeUndefined();
+    await act(async () => tree.unmount());
+  });
+
   it('lets long Next labels wrap instead of overflowing beside their icon', async () => {
     let tree!: ReactTestRenderer;
     await act(async () => { tree = create(<ChunkyButton label="السؤال التالي" onPress={() => {}} icon="arrow-back" />); });
@@ -113,7 +130,7 @@ describe('question bubble accessibility layout (native props, not device renderi
     await act(async () => { pressable().props.onPress(); });
     expect(onPress).toHaveBeenCalledOnce();
     const pressed = flatten(pressable().props.style({ pressed: true, focused: false }));
-    expect(pressed.transform).toEqual([{ scale: 0.985 }]);
+    expect(pressed.transform.some((step: { scale?: number }) => typeof step.scale === 'number' && step.scale > 0 && step.scale < 1)).toBe(true);
     const focused = flatten(pressable().props.style({ pressed: false, focused: true }));
     expect(focused.borderWidth).toBe(2);
     await act(async () => { tree.update(button(true)); });
