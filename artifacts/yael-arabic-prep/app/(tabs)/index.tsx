@@ -23,14 +23,14 @@ import ExamShortcuts from '@/components/ExamShortcuts';
 import HomeFlashcardsEntry from '@/components/HomeFlashcardsEntry';
 import HomeReadingEntry from '@/components/HomeReadingEntry';
 import { DailyGoalsSection } from '@/components/DailyGoals';
-import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
 import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
 import { useDailyStudyTip } from '@/hooks/useDailyStudyTip';
 import { HomeMotionProvider, NATIVE_DRIVER, Reveal, RevealGroup, ScrollSway, useReduceMotion } from '@/components/HomeMotion';
 import { Enter } from '@/components/EntranceMotion';
 import { getRankTrainingRecommendation } from '@/lib/learner-ranks';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+const FONT = ARABIC_FONT;
 const BOLD = ARABIC_BOLD_FONT;
 
 export default function HomeScreen() {

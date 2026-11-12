@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { usePlanAccess } from '@/lib/PlanAccess';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 const FREE_BENEFITS = ['جولة مفردات واحدة لخمس دقائق كل يوم', 'قسم امتحان محدد بوقت واحد كل يوم', 'الوصول إلى نموذج B-17'];
 const PREMIUM_BENEFITS = ['جميع الدورات والمفردات', 'جلسات امتحان بلا حدود', 'مكتبة النماذج كاملة'];
@@ -94,27 +95,27 @@ const styles = StyleSheet.create({
   page: { paddingHorizontal: 20, gap: 16, width: '100%', maxWidth: 620, alignSelf: 'center' },
   topRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', gap: 15, paddingBottom: 2 },
   titleCopy: { flex: 1, gap: 5 },
-  eyebrow: { fontFamily: BOLD, fontSize: 13, textAlign: 'right' },
-  title: { fontFamily: BOLD, fontSize: 26, lineHeight: 36, textAlign: 'right' },
+  eyebrow: { fontFamily: BOLD, fontWeight: '700', fontSize: 13, textAlign: 'right' },
+  title: { fontFamily: BOLD, fontWeight: '700', fontSize: 26, lineHeight: 36, textAlign: 'right' },
   subtitle: { fontFamily: FONT, fontSize: 13, textAlign: 'right' },
   icon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   card: { padding: 20, gap: 17, borderWidth: 1, borderRadius: 24 },
   premiumCard: { borderWidth: 0 },
   cardHeader: { flexDirection: 'row-reverse', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   priceCopy: { gap: 2, alignItems: 'flex-end' },
-  planName: { fontFamily: BOLD, fontSize: 17, textAlign: 'right' },
-  price: { fontFamily: BOLD, fontSize: 29, textAlign: 'right' },
+  planName: { fontFamily: BOLD, fontWeight: '700', fontSize: 17, textAlign: 'right' },
+  price: { fontFamily: BOLD, fontWeight: '700', fontSize: 29, textAlign: 'right' },
   period: { fontFamily: FONT, fontSize: 13 },
   badge: { borderRadius: 14, minHeight: 32, paddingHorizontal: 11, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 5 },
-  badgeText: { fontFamily: BOLD, fontSize: 12 },
+  badgeText: { fontFamily: BOLD, fontWeight: '700', fontSize: 12 },
   benefitList: { gap: 12 },
   benefit: { flexDirection: 'row-reverse', alignItems: 'center', gap: 9 },
   benefitText: { fontFamily: FONT, fontSize: 14, lineHeight: 22, flex: 1, textAlign: 'right' },
   freeButton: { minHeight: 52, borderRadius: 16, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  freeButtonText: { fontFamily: BOLD, fontSize: 14 },
+  freeButtonText: { fontFamily: BOLD, fontWeight: '700', fontSize: 14 },
   setupNote: { flexDirection: 'row-reverse', gap: 8, padding: 12, borderRadius: 14, alignItems: 'flex-start' },
   setupText: { flex: 1, fontFamily: FONT, fontSize: 12, lineHeight: 20, textAlign: 'right' },
   premiumButton: { minHeight: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  premiumButtonText: { fontFamily: BOLD, fontSize: 14 },
+  premiumButtonText: { fontFamily: BOLD, fontWeight: '700', fontSize: 14 },
   footnote: { fontFamily: FONT, fontSize: 12, lineHeight: 20, textAlign: 'center' },
 });

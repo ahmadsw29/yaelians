@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useColors, useThemePreference } from '@/hooks/useColors';
+import { setBrowserIcons } from './browser-icons';
+import { ARABIC_FONT } from '@/constants/typography';
 
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 const Context = createContext({ canInstall: false, help: '', install: async () => {} });
@@ -14,6 +16,7 @@ export function WebInstallProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     document.title = 'Yaelians';
+    setBrowserIcons(document);
     const ensureMeta = (name: string, content: string) => {
       let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
       if (!meta) {
@@ -31,6 +34,7 @@ export function WebInstallProvider({ children }: { children: React.ReactNode }) 
     document.documentElement.style.backgroundColor = colors.background;
     document.documentElement.style.colorScheme = colors.isDark ? 'dark' : 'light';
     document.body.style.backgroundColor = colors.background;
+    document.body.style.fontFamily = ARABIC_FONT ?? 'sans-serif';
     try { localStorage.setItem('yael-web-appearance', preference); } catch { /* Private browsing may deny storage. */ }
   }, [colors.background, colors.isDark, preference]);
   useEffect(() => {

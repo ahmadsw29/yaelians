@@ -9,3 +9,7 @@ The user asked for the YAEL website to look more advanced, using Contratest's we
 The user chose “Yaelians” as the name for the whole app.
 **Why:** The user said, “make the whole app by the name of 'Yaelians' i like it”.
 **How to apply:** Use Yaelians as the product brand. Keep YAEL when referring to the actual exam, and preserve existing technical app identifiers so rebranding does not break saved data or links.
+
+Browser branding must cover Expo-injected icons, not only the static HTML template.
+**Why:** Safari still showed the old tab/bookmark icon after the in-app logo changed; Expo-generated HTML declared a separate favicon.
+**How to apply:** Keep browser icon declarations consistent and provide conventional favicon and Apple touch fallbacks. Saved Safari bookmark icons can remain cached; do not promise immediate updates to existing saved items.

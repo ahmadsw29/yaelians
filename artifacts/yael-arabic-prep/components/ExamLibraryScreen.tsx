@@ -11,8 +11,9 @@ import { usePlanAccess } from '@/lib/PlanAccess';
 import { loadExamLibraryProgress, type ExamLibraryProgress } from '@/lib/exam-library-progress';
 import { Enter } from '@/components/EntranceMotion';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 export default function ExamLibraryScreen() {
   const c = useColors();
@@ -125,24 +126,24 @@ function makeStyles(c: ReturnType<typeof useColors>) {
     screen: { flex: 1, backgroundColor: c.background },
     header: { paddingHorizontal: 20, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 14, borderBottomWidth: 1, borderBottomColor: c.border },
     content: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20, gap: 14 },
-    eyebrow: { fontFamily: BOLD, fontSize: 13, color: c.primary, textAlign: 'right' },
-    hero: { fontFamily: BOLD, fontSize: 30, lineHeight: 42, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
-    title: { fontFamily: BOLD, fontSize: 18, color: c.foreground, textAlign: 'right' },
-    label: { fontFamily: BOLD, fontSize: 15, lineHeight: 24, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
+    eyebrow: { fontFamily: BOLD, fontWeight: '700', fontSize: 13, color: c.primary, textAlign: 'right' },
+    hero: { fontFamily: BOLD, fontWeight: '700', fontSize: 30, lineHeight: 42, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
+    title: { fontFamily: BOLD, fontWeight: '700', fontSize: 18, color: c.foreground, textAlign: 'right' },
+    label: { fontFamily: BOLD, fontWeight: '700', fontSize: 15, lineHeight: 24, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
     body: { fontFamily: FONT, fontSize: 14, lineHeight: 24, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
     caption: { fontFamily: FONT, fontSize: 12, lineHeight: 20, color: c.mutedForeground, textAlign: 'right', writingDirection: 'rtl' },
     notice: { padding: 16, gap: 8, borderRadius: c.radius, backgroundColor: c.secondary },
     card: { padding: 16, gap: 12, borderRadius: c.radius, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
     examRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
     progressBox: { gap: 8 },
-    progressStatus: { fontFamily: BOLD, fontSize: 13, lineHeight: 22, textAlign: 'right', color: c.mutedForeground, writingDirection: 'rtl' },
+    progressStatus: { fontFamily: BOLD, fontWeight: '700', fontSize: 13, lineHeight: 22, textAlign: 'right', color: c.mutedForeground, writingDirection: 'rtl' },
     progressRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     progressTrack: { flex: 1, height: 6, borderRadius: 4, overflow: 'hidden' },
     progressCount: { minWidth: 58, fontSize: 13, lineHeight: 22, fontWeight: '700', textAlign: 'left', writingDirection: 'ltr', fontVariant: ['tabular-nums'] },
     badge: { minWidth: 56, height: 44, borderRadius: 14, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-    badgeText: { fontFamily: BOLD, fontSize: 13, color: c.primary },
+    badgeText: { fontFamily: BOLD, fontWeight: '700', fontSize: 13, color: c.primary },
     option: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, padding: 12, borderRadius: c.radius, borderWidth: 1, borderColor: c.border, backgroundColor: c.background },
     primary: { minHeight: 50, padding: 13, borderRadius: c.radius, backgroundColor: c.primary, justifyContent: 'center' },
-    primaryText: { fontFamily: BOLD, fontSize: 14, lineHeight: 22, color: c.primaryForeground, textAlign: 'center' },
+    primaryText: { fontFamily: BOLD, fontWeight: '700', fontSize: 14, lineHeight: 22, color: c.primaryForeground, textAlign: 'center' },
   });
 }

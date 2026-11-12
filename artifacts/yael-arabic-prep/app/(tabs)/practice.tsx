@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getPracticeScreenSpacing, usesExpandedQuestionLayout } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
 import { usePracticeCompletionAnnouncement } from '@/hooks/usePracticeCompletionAnnouncement';
@@ -49,7 +49,7 @@ import {
   selectPracticeAnswer,
 } from '@/lib/progress-marker';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+const FONT = ARABIC_FONT;
 const BOLD = ARABIC_BOLD_FONT;
 
 export default function PracticeScreen() {
@@ -500,7 +500,7 @@ export function PracticeSession({ userId, isPremium, initialOrder, initialRoundN
         })}
       </View>
       {mode === 'reading' && answered && !!question.meaning && <View style={[styles.readingCard, { marginTop: 12 }]}>
-        <Text style={{ color: p.skyInk, fontFamily: BOLD, writingDirection: 'rtl', textAlign: 'right', lineHeight: 25 }}>{question.meaning}</Text>
+        <Text style={{ color: p.skyInk, fontFamily: BOLD, fontWeight: '700', writingDirection: 'rtl', textAlign: 'right', lineHeight: 25 }}>{question.meaning}</Text>
       </View>}
       {mode === 'words' && !expanded && <View testID="practice-celebration-space"
         onLayout={event => setParkHeight(event.nativeEvent.layout.height)}
@@ -532,9 +532,9 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number) {
     transliteration: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'center', fontSize: 13, marginTop: 2 },
     sentenceBox: { backgroundColor: c.muted, borderRadius: 12, padding: 6, alignItems: 'flex-end' },
     sentenceLabel: { color: c.mutedForeground, fontSize: 10, lineHeight: 12, fontFamily: FONT, marginBottom: 1 },
-    sentence: { color: c.foreground, fontFamily: BOLD, fontSize: 14, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
+    sentence: { color: c.foreground, fontFamily: BOLD, fontWeight: '700', fontSize: 14, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
     readingCard: { backgroundColor: c.card, borderRadius: 20, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, padding: 16, marginBottom: 14, alignItems: 'flex-end', gap: 8 },
-    readingHebrew: { color: c.foreground, fontSize: 19, lineHeight: 32, fontFamily: BOLD, textAlign: 'right', writingDirection: 'rtl' },
+    readingHebrew: { color: c.foreground, fontSize: 19, lineHeight: 32, fontFamily: BOLD, fontWeight: '700', textAlign: 'right', writingDirection: 'rtl' },
     readingHint: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, backgroundColor: p.skySoft, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 5 },
     readingHintText: { flexShrink: 1, minWidth: 0, textAlign: 'right', writingDirection: 'rtl', color: p.skyInk, fontSize: 11, fontFamily: BOLD, fontWeight: '700' },
     options: { gap: 6 },

@@ -33,8 +33,9 @@ async function loadGuestBackup() {
 const SECTION_MS = 20 * 60 * 1000;
 const ESSAY_MS = 15 * 60 * 1000;
 const SOURCE = 'https://www.nite.org.il/other-tests/yael/format?lang=en';
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 type Session = {
   version: 1;
@@ -458,37 +459,37 @@ function makeStyles(c: ReturnType<typeof useColors>) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
     header: { paddingHorizontal: 20, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 14, borderBottomWidth: 1, borderBottomColor: c.border },
-    headerTitle: { fontFamily: BOLD, fontSize: 18, color: c.foreground, textAlign: 'right' },
+    headerTitle: { fontFamily: BOLD, fontWeight: '700', fontSize: 18, color: c.foreground, textAlign: 'right' },
     content: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20, gap: 16 },
-    eyebrow: { fontFamily: BOLD, fontSize: 13, color: c.primary, textAlign: 'right', writingDirection: 'rtl' },
-    hero: { fontFamily: BOLD, fontSize: 34, lineHeight: 46, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
-    title: { fontFamily: BOLD, fontSize: 19, lineHeight: 29, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
+    eyebrow: { fontFamily: BOLD, fontWeight: '700', fontSize: 13, color: c.primary, textAlign: 'right', writingDirection: 'rtl' },
+    hero: { fontFamily: BOLD, fontWeight: '700', fontSize: 34, lineHeight: 46, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
+    title: { fontFamily: BOLD, fontWeight: '700', fontSize: 19, lineHeight: 29, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
     body: { fontFamily: FONT, fontSize: 15, lineHeight: 26, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
     caption: { fontFamily: FONT, fontSize: 12, lineHeight: 21, color: c.mutedForeground, textAlign: 'right', writingDirection: 'rtl' },
     hebrew: { fontSize: 19, lineHeight: 33, color: c.foreground, textAlign: 'right', writingDirection: 'rtl' },
     card: { padding: 20, gap: 12, borderRadius: c.radius, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
     notice: { padding: 16, gap: 10, borderRadius: c.radius, backgroundColor: c.secondary },
     error: { padding: 16, gap: 12, borderRadius: c.radius, backgroundColor: c.card, borderWidth: 1, borderColor: c.destructive },
-    link: { fontFamily: BOLD, fontSize: 14, lineHeight: 24, color: c.primary, textAlign: 'right', textDecorationLine: 'underline' },
+    link: { fontFamily: BOLD, fontWeight: '700', fontSize: 14, lineHeight: 24, color: c.primary, textAlign: 'right', textDecorationLine: 'underline' },
     button: { minHeight: 50, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 13, borderRadius: 16, borderBottomWidth: 5, borderColor: c.isDark ? c.background : c.text, backgroundColor: c.primary },
     secondaryButton: { backgroundColor: c.card, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border },
-    buttonText: { fontFamily: BOLD, fontSize: 15, lineHeight: 24, textAlign: 'center', color: c.primaryForeground },
+    buttonText: { fontFamily: BOLD, fontWeight: '700', fontSize: 15, lineHeight: 24, textAlign: 'center', color: c.primaryForeground },
     row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
     clock: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 9 },
-    clockText: { fontFamily: BOLD, fontSize: 20, color: c.primary, fontVariant: ['tabular-nums'], writingDirection: 'ltr' },
+    clockText: { fontFamily: BOLD, fontWeight: '700', fontSize: 20, color: c.primary, fontVariant: ['tabular-nums'], writingDirection: 'ltr' },
     progressTrack: { height: 14, borderRadius: 7, backgroundColor: c.border, overflow: 'hidden' },
     progressFill: { height: 14, borderRadius: 7, alignSelf: 'flex-end', backgroundColor: c.primary },
     option: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderRadius: c.radius, borderWidth: 2, borderBottomWidth: 5, borderColor: c.border, backgroundColor: c.card },
     optionText: { flex: 1, fontSize: 18, lineHeight: 29, textAlign: 'right', writingDirection: 'rtl', color: c.foreground },
     optionNumber: { minWidth: 30, minHeight: 30, flexShrink: 0, padding: 2, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: c.muted },
-    numberText: { fontFamily: BOLD, color: c.foreground, fontSize: 13 },
+    numberText: { fontFamily: BOLD, fontWeight: '700', color: c.foreground, fontSize: 13 },
     navigation: { flexDirection: 'row-reverse', gap: 12 },
     questionGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
     questionChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, borderBottomWidth: 4, borderColor: c.border, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
-    chipText: { fontFamily: BOLD, fontSize: 14, color: c.foreground },
+    chipText: { fontFamily: BOLD, fontWeight: '700', fontSize: 14, color: c.foreground },
     essayInput: { minHeight: 320, padding: 18, borderRadius: c.radius, borderWidth: 1, borderColor: c.input, backgroundColor: c.card, color: c.foreground, fontSize: 19, lineHeight: 32, textAlign: 'right', writingDirection: 'rtl' },
-    score: { fontFamily: BOLD, fontSize: 48, color: c.primary, textAlign: 'right', writingDirection: 'ltr' },
-    answer: { fontFamily: BOLD, fontSize: 16, lineHeight: 28, color: c.primary, textAlign: 'right', writingDirection: 'rtl' },
+    score: { fontFamily: BOLD, fontWeight: '700', fontSize: 48, color: c.primary, textAlign: 'right', writingDirection: 'ltr' },
+    answer: { fontFamily: BOLD, fontWeight: '700', fontSize: 16, lineHeight: 28, color: c.primary, textAlign: 'right', writingDirection: 'rtl' },
     confirmation: { gap: 14, padding: 20, borderRadius: c.radius, borderWidth: 2, borderColor: c.primary, backgroundColor: c.card },
   });
 }

@@ -8,10 +8,10 @@ import { Creature, type CreatureKind } from '@/components/PetTeacher';
 import { GlassPressable } from '@/components/Glass';
 import { Enter } from '@/components/EntranceMotion';
 import { HomeMotionProvider, Reveal, ScrollSway, useReduceMotion, NATIVE_DRIVER } from '@/components/HomeMotion';
-import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
 import { WEB_TAB_BAR_HEIGHT } from '@/constants/navigation';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+const FONT = ARABIC_FONT;
 type Tone = 'brand' | 'sky' | 'sun' | 'coral';
 type Item = { key: string; testID: string; href: string; title: string; tag: string; caption: string; icon: string; tone: Tone; pet: CreatureKind };
 

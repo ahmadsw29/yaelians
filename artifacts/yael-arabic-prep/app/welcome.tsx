@@ -1,4 +1,5 @@
 import React from 'react';
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -7,8 +8,8 @@ import { CartoonAvatar } from '@/components/CartoonAvatar';
 import { BrandMark } from '@/components/BrandMark';
 import { useColors } from '@/hooks/useColors';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 export default function WelcomeScreen() {
   const c = useColors();
@@ -39,18 +40,18 @@ const styles = StyleSheet.create({
   page: { paddingHorizontal: 22, gap: 15, width: '100%', maxWidth: 560, alignSelf: 'center' },
   brand: { flexDirection: 'row-reverse', alignItems: 'center', gap: 9, justifyContent: 'center', marginBottom: 2 },
   brandIcon: { width: 35, height: 35, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  brandName: { fontFamily: BOLD, fontSize: 14, letterSpacing: 0.4 },
+  brandName: { fontFamily: BOLD, fontWeight: '700', fontSize: 14, letterSpacing: 0.4 },
   hero: { borderRadius: 28, padding: 24, gap: 13, alignItems: 'center' },
   avatar: { backgroundColor: 'rgba(255,255,255,0.55)', borderRadius: 48, padding: 5 },
-  kicker: { fontFamily: BOLD, fontSize: 14, textAlign: 'center' },
-  title: { fontFamily: BOLD, fontSize: 31, lineHeight: 43, textAlign: 'center', writingDirection: 'rtl' },
+  kicker: { fontFamily: BOLD, fontWeight: '700', fontSize: 14, textAlign: 'center' },
+  title: { fontFamily: BOLD, fontWeight: '700', fontSize: 31, lineHeight: 43, textAlign: 'center', writingDirection: 'rtl' },
   description: { fontFamily: FONT, fontSize: 15, lineHeight: 25, textAlign: 'center', writingDirection: 'rtl', maxWidth: 400 },
   features: { alignSelf: 'stretch', gap: 11, paddingTop: 5 },
   feature: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
   featureText: { fontFamily: FONT, fontSize: 14, textAlign: 'right' },
   primaryButton: { minHeight: 56, borderRadius: 18, paddingHorizontal: 18, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 9 },
-  primaryText: { fontFamily: BOLD, fontSize: 16 },
+  primaryText: { fontFamily: BOLD, fontWeight: '700', fontSize: 16 },
   secondaryButton: { minHeight: 52, borderRadius: 18, borderWidth: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18 },
-  secondaryText: { fontFamily: BOLD, fontSize: 14 },
+  secondaryText: { fontFamily: BOLD, fontWeight: '700', fontSize: 14 },
   footnote: { fontFamily: FONT, fontSize: 12, textAlign: 'center', lineHeight: 20 },
 });

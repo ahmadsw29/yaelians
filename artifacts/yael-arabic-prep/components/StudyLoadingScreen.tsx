@@ -4,9 +4,9 @@ import { useStudy } from '@/lib/StudyProvider';
 import { useColors } from '@/hooks/useColors';
 import { Creature, CREATURE_NAMES, type CreatureKind } from '@/components/PetTeacher';
 import { reserveWaitingCharacter } from '@/lib/loading-characters';
+import { ARABIC_FONT } from '@/constants/typography';
 
-// This screen can appear before custom fonts finish downloading.
-const FONT = Platform.OS === 'web' ? 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' : undefined;
+const FONT = ARABIC_FONT;
 const useNative = Platform.OS !== 'web';
 
 /** Mounted once beside navigation, never in each tab or in the question layout. */

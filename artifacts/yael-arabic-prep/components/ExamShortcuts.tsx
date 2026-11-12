@@ -2,6 +2,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
 
 export default function ExamShortcuts() {
   const c = useColors();
@@ -34,6 +35,6 @@ const styles = StyleSheet.create({
   group: { gap: 14 },
   card: { flexDirection: 'row-reverse', alignItems: 'center', padding: 16, gap: 12, borderWidth: 1, borderRadius: 22, minHeight: 88 },
   copy: { flex: 1, gap: 5 },
-  title: { fontFamily: Platform.OS === 'web' ? 'Inter_700Bold' : undefined, fontSize: 18, textAlign: 'right', writingDirection: 'rtl' },
-  detail: { fontFamily: Platform.OS === 'web' ? 'Inter_400Regular' : undefined, fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
+  title: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '700', fontSize: 18, textAlign: 'right', writingDirection: 'rtl' },
+  detail: { fontFamily: ARABIC_FONT, fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
 });

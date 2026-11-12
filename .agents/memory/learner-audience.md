@@ -31,6 +31,10 @@ Use the same Arabic typeface in practice questions, answers, and navigation as o
 
 **How to apply:** Keep Arabic typography shared instead of giving question bubbles and buttons separate font choices.
 
+Apply the chosen typography across the entire app and public website, including body text, buttons, menus, inputs, and supporting screens—not just headings.
+**Why:** The user pointed out that the public landing page still used the wrong font and said, “don't do things partly!”
+**How to apply:** Audit explicit font assignments across all screens when changing typography. Apple-system typography must use native/local Apple fonts with Arabic-capable sans-serif fallbacks elsewhere; do not assign Latin-only Inter faces to Arabic copy or claim Linux browser previews verify native Apple rendering.
+
 Vocabulary practice should show progress, the vocabulary category, the word and example, all four answers, and Next together without scrolling at normal text size. Keep Next near the bottom navigation, not far above it.
 
 **Why:** The user explicitly corrected an oversized bottom gap and said he wants everything visible on one page without scrolling.

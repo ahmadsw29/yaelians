@@ -13,9 +13,9 @@ import { Creature, CREATURE_NAMES, type CreatureKind } from '@/components/PetTea
 import { ChunkyButton, usePlay } from '@/components/Playful';
 import { useHebrewSpeech } from '@/hooks/useHebrewSpeech';
 import { getStudyAuthOptions } from '@/lib/study-auth';
-import { ARABIC_BOLD_FONT } from '@/constants/typography';
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+const FONT = ARABIC_FONT;
 const BOLD = ARABIC_BOLD_FONT;
 const PREMIUM_PRICE = '₪48.90';
 type P = ReturnType<typeof usePlay>;

@@ -9,8 +9,9 @@ import { useStudy } from '@/lib/StudyProvider';
 import { getStudyStatsDisplay } from '@/lib/study-stats-display';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+import { ARABIC_FONT, ARABIC_BOLD_FONT } from '@/constants/typography';
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 export default function ProgressScreen() {
   const { user } = useUser();
@@ -110,36 +111,36 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number, bottomIns
     screen: { flex: 1, backgroundColor: c.background },
     content: { paddingHorizontal: 21, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 18, paddingBottom: Platform.OS === 'web' ? 118 : 88 + bottomInset, maxWidth: 600, width: '100%', alignSelf: 'center' },
     heading: { alignItems: 'flex-end', marginBottom: 20 },
-    kicker: { color: c.primary, fontFamily: BOLD, fontSize: 13 },
-    title: { color: c.foreground, fontFamily: BOLD, fontSize: 29, marginTop: 4 },
+    kicker: { color: c.primary, fontFamily: BOLD, fontWeight: '700', fontSize: 13 },
+    title: { color: c.foreground, fontFamily: BOLD, fontWeight: '700', fontSize: 29, marginTop: 4 },
     subtitle: { color: c.mutedForeground, fontFamily: FONT, fontSize: 13, textAlign: 'right', marginTop: 5 },
     summary: { backgroundColor: '#17665c', borderRadius: 24, padding: 19, marginBottom: 17 },
     summaryTop: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
     summaryIcon: { width: 39, height: 39, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
     summaryCopy: { alignItems: 'flex-end', flex: 1 },
     summaryLabel: { color: '#d4e7df', fontFamily: FONT, fontSize: 12 },
-    summaryValue: { color: '#fffdf8', fontFamily: BOLD, fontSize: 25, marginTop: 2 },
+    summaryValue: { color: '#fffdf8', fontFamily: BOLD, fontWeight: '700', fontSize: 25, marginTop: 2 },
     xpSmall: { fontSize: 12, color: '#d4e7df', fontFamily: FONT },
     progressLine: { height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 4, marginTop: 16, overflow: 'hidden' },
     progressLineFill: { height: '100%', backgroundColor: '#f0bd72', borderRadius: 4 },
     nextGoal: { color: '#d4e7df', fontFamily: FONT, fontSize: 11, textAlign: 'right', marginTop: 8 },
     statGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
-    sectionTitle: { color: c.foreground, fontFamily: BOLD, fontSize: 17, textAlign: 'right', marginBottom: 11 },
+    sectionTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '700', fontSize: 17, textAlign: 'right', marginBottom: 11 },
     weekCard: { borderRadius: 22, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, padding: 17, marginBottom: 17 },
-    weekTitle: { color: c.foreground, fontFamily: BOLD, fontSize: 14, textAlign: 'right' },
+    weekTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '700', fontSize: 14, textAlign: 'right' },
     weekRange: { color: c.mutedForeground, fontFamily: FONT, fontSize: 12, textAlign: 'right', writingDirection: 'rtl', marginTop: 6 },
     weekDays: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginTop: 16, marginBottom: 15 },
     dayColumn: { flex: 1, minWidth: 0, alignItems: 'center', gap: 7 },
     dayDot: { height: 36, width: 30, borderRadius: 10, borderWidth: 1, borderColor: c.border, backgroundColor: c.muted, alignItems: 'center', justifyContent: 'center' },
     dayDotToday: { borderColor: c.primary, borderWidth: 2 },
     dayDotActive: { backgroundColor: c.primary },
-    dayNumber: { color: c.foreground, fontFamily: BOLD, fontSize: 15, fontVariant: ['tabular-nums'] },
+    dayNumber: { color: c.foreground, fontFamily: BOLD, fontWeight: '700', fontSize: 15, fontVariant: ['tabular-nums'] },
     dayCheck: { position: 'absolute', top: -5, right: -5, width: 16, height: 16, borderRadius: 8, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.card },
     dayLabel: { color: c.foreground, fontSize: 10, fontFamily: FONT },
     weekNote: { backgroundColor: '#fbf1e5', borderRadius: 13, padding: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
     weekNoteText: { color: '#866141', fontFamily: FONT, fontSize: 11, flex: 1, textAlign: 'right' },
     encourage: { backgroundColor: '#fae9db', borderRadius: 20, padding: 16, alignItems: 'flex-end' },
-    encourageTitle: { color: '#8e4e36', fontFamily: BOLD, fontSize: 14 },
+    encourageTitle: { color: '#8e4e36', fontFamily: BOLD, fontWeight: '700', fontSize: 14 },
     encourageText: { color: '#805f50', fontFamily: FONT, fontSize: 12, lineHeight: 18, textAlign: 'right', marginTop: 4 },
   });
 }
@@ -147,7 +148,7 @@ function makeStyles(c: ReturnType<typeof useColors>, topInset: number, bottomIns
 const metricStyles = StyleSheet.create({
   card: { width: '48%', flexGrow: 1, minHeight: 121, borderRadius: 19, backgroundColor: '#fffdf8', borderWidth: 1, borderColor: '#e8e3d8', padding: 13, alignItems: 'flex-end', justifyContent: 'space-between' },
   icon: { width: 33, height: 33, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  value: { color: '#17332f', fontFamily: BOLD, fontSize: 22, marginTop: 6 },
+  value: { color: '#17332f', fontFamily: BOLD, fontWeight: '700', fontSize: 22, marginTop: 6 },
   unit: { fontSize: 12, fontFamily: FONT, color: '#74817a' },
   label: { color: '#74817a', fontFamily: FONT, fontSize: 11, textAlign: 'right' },
 });

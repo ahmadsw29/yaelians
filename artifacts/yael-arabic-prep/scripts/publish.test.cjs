@@ -58,6 +58,81 @@ test('Yaelians logo assets exist at the configured install and browser sizes', (
   assert.match(html, /rel="icon" type="image\/png" href="\/yaelians-icon-192.png"/);
 });
 
+test('browser icon setup replaces Expo and Safari legacy links without duplicates', () => {
+  const ts = require('typescript');
+  const module = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(
+    fs.readFileSync(path.join(appRoot, 'lib/browser-icons.ts'), 'utf8'),
+    { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  ).outputText, { exports: module.exports });
+  const links = [];
+  const head = { appendChild(link) { link.parentNode = head; links.push(link); } };
+  const createLink = () => ({
+    rel: '', attrs: {}, parentNode: null,
+    getAttribute(name) { return this.attrs[name] ?? null; },
+    setAttribute(name, value) { this.attrs[name] = value; },
+    remove() { links.splice(links.indexOf(this), 1); this.parentNode = null; },
+  });
+  for (const rel of ['icon', 'shortcut icon', 'apple-touch-icon', 'apple-touch-icon-precomposed']) {
+    const link = createLink();
+    link.rel = rel;
+    link.setAttribute('href', '/old-icon.png');
+    head.appendChild(link);
+  }
+  const doc = {
+    head, createElement: createLink,
+    querySelectorAll(selector) {
+      const rels = selector.includes('shortcut') ? ['icon', 'shortcut icon'] : ['apple-touch-icon', 'apple-touch-icon-precomposed'];
+      return links.filter(link => rels.includes(link.rel));
+    },
+  };
+  module.exports.setBrowserIcons(doc);
+  module.exports.setBrowserIcons(doc);
+  assert.equal(links.length, 2);
+  assert.equal(links.find(link => link.rel === 'icon').attrs.href, '/yaelians-icon-192.png?v=yaelians-logo-1');
+  assert.equal(links.find(link => link.rel === 'apple-touch-icon').attrs.sizes, '180x180');
+  for (const link of links) assert.equal(link.type, 'image/png');
+  const ico = fs.readFileSync(path.join(appRoot, 'public/favicon.ico'));
+  assert.equal(ico.readUInt16LE(2), 1);
+  assert.equal(ico.readUInt16LE(4), 4);
+  const install = fs.readFileSync(path.join(appRoot, 'lib/WebInstall.tsx'), 'utf8');
+  assert.match(install, /setBrowserIcons\(document\)/);
+});
+
+test('Arabic typography uses Apple system fonts with sans fallbacks and no Latin-only Inter overrides', () => {
+  const ts = require('typescript');
+  const js = ts.transpileModule(
+    fs.readFileSync(path.join(appRoot, 'constants/typography.ts'), 'utf8'),
+    { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  ).outputText;
+  for (const platform of ['web', 'ios', 'android']) {
+    const module = { exports: {} };
+    vm.runInNewContext(js, {
+      exports: module.exports,
+      require: () => ({ Platform: { select: values => values[platform] ?? values.default } }),
+    });
+    const { ARABIC_FONT, ARABIC_BOLD_FONT } = module.exports;
+    assert.equal(ARABIC_FONT, ARABIC_BOLD_FONT);
+    if (platform === 'web') {
+      assert.ok(ARABIC_FONT.startsWith('-apple-system'));
+      assert.ok(ARABIC_FONT.includes('"SF Arabic"'));
+      assert.ok(ARABIC_FONT.endsWith('sans-serif'));
+    } else assert.equal(ARABIC_FONT, platform === 'ios' ? 'System' : 'sans-serif');
+  }
+  const scan = dir => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) scan(file);
+      else if (/\.tsx?$/.test(file)) {
+        assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /Inter_\d+(?:Regular|Medium|SemiBold|Bold)/, file);
+      }
+    }
+  };
+  for (const dir of ['app', 'components', 'lib', 'constants']) scan(path.join(appRoot, dir));
+  const root = fs.readFileSync(path.join(appRoot, 'app/_layout.tsx'), 'utf8');
+  assert.doesNotMatch(root, /useFonts|fontsLoaded|@expo-google-fonts/);
+});
+
 test('Arabic number and date displays always use Western digits', () => {
   const ts = require('typescript');
   const module = { exports: {} };

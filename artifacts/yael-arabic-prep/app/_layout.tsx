@@ -5,13 +5,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  useFonts,
-} from '@expo-google-fonts/inter';
 import { Stack, usePathname, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
@@ -134,22 +127,10 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
-
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
-  // Browser text can render with system fallbacks while fonts download.
-  // Do not serialize authentication and navigation behind four font requests.
-  if (Platform.OS !== 'web' && !fontsLoaded && !fontError) return <StartupMessage />;
+    // System typography needs no downloaded font files on any platform.
+    SplashScreen.hideAsync();
+  }, []);
 
   return (
     <SafeAreaProvider>
