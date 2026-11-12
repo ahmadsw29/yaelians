@@ -20,3 +20,4 @@
 - [Web billing provider](web-billing-provider.md) — Coordinate Whop SDK/API versions, scoped permissions, and environment-specific checkout activation.
 - [Publishing generated assets](publishing-assets.md) — Git exclusions and deployment exclusions differ; required build outputs must remain in the published image.
 - [Desired custom domain](custom-domain.md) — User chose yael-prep.com; verify ownership and connection before treating it as live.
+- [Website visual direction](website-visual-direction.md) — Contratest is the user's reference for a more advanced YAEL website.

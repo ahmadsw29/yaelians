@@ -11,8 +11,9 @@ export default function Website() {
   const catalog = useQuery({ queryKey: ['billing-catalog'], queryFn: () => getBillingCatalog(), retry: false });
   return <WebWelcome
     priceLabel={catalog.data?.priceLabel ?? null}
+    checkoutEnabled={catalog.data?.checkoutEnabled ?? false}
     loading={catalog.isPending}
-    error={catalog.isError ? 'تعذّر تحميل السعر. أعد المحاولة، ولن يبدأ أي اشتراك دون تأكيدك في صفحة الدفع.' : undefined}
+    error={catalog.isError ? 'تعذّر تحميل حالة الاشتراك. أعد المحاولة؛ يمكنك إنشاء حساب أو تسجيل الدخول في الأثناء.' : undefined}
     onRetry={() => void catalog.refetch()}
     onStart={() => router.push(isSignedIn ? '/subscribe' : '/(auth)/sign-up')}
     onSignIn={() => router.push(isSignedIn ? '/subscribe' : '/(auth)/sign-in')}

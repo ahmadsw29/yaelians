@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ChunkyButton, usePlay } from '@/components/Playful';
 import { Creature, type CreatureKind } from '@/components/PetTeacher';
+import { Enter } from '@/components/EntranceMotion';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 type State = 'checking' | 'inactive' | 'pending' | 'active' | 'error';
@@ -41,20 +42,24 @@ export default function WebMembership(props: Props) {
   return (
     <ScrollView style={{ backgroundColor: p.background }} contentContainerStyle={s.page}>
       <View style={s.wrap}>
-        <View style={s.nav}>
-          <Text style={[s.logo, { color: p.brandShade }]}>YAEL</Text>
+        <Enter><View style={[s.nav, { backgroundColor: p.card, borderColor: p.border }]}>
+          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, flex: 1 }}>
+            <View style={[s.mark, { backgroundColor: p.brand }]}><Text style={[s.bold, { color: p.onBrand, fontSize: 17 }]}>Y</Text></View>
+            <Text style={[s.logo, { color: p.foreground }]}>YAEL</Text>
+          </View>
           <Pressable testID="web-account" accessibilityRole="button" onPress={props.onAccount} style={s.ghost}>
             <Text style={[s.bold, { color: p.foreground }]}>حسابي</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={props.onSignOut} style={[s.ghost, { borderColor: p.border, backgroundColor: p.card }]}>
             <Text style={[s.bold, { color: p.foreground }]}>تسجيل الخروج</Text>
           </Pressable>
-        </View>
+        </View></Enter>
 
-        <View style={[s.card, { backgroundColor: tint, borderColor: edge }]}>
+        <Enter delay={90}><View style={[s.card, s.hero, { backgroundColor: tint, borderColor: edge }]}>
+          <View pointerEvents="none" style={[s.orb, { backgroundColor: edge, opacity: p.isDark ? 0.18 : 0.1 }]} />
           <View style={s.headRow}>
             <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-              <Creature kind={h.kind} mood={state === 'active' ? 'hype' : 'happy'} size={72} />
+              <Creature kind={h.kind} mood={state === 'active' ? 'hype' : 'happy'} size={92} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6 }}>
@@ -115,9 +120,9 @@ export default function WebMembership(props: Props) {
             </Text>}
             <ChunkyButton testID="web-open-app" label={props.opening ? 'جارٍ فتح تدريبك…' : 'افتح التدريب'} disabled={props.opening} icon="arrow-back" onPress={props.onOpenApp} />
           </View>}
-        </View>
+        </View></Enter>
 
-        {state !== 'active' && <View style={[s.help, { backgroundColor: p.card, borderColor: p.border }]}>
+        {state !== 'active' && <Enter delay={170}><View style={[s.help, { backgroundColor: p.card, borderColor: p.border }]}>
           <Pressable testID="web-payment-help" accessibilityRole="button" accessibilityState={{ expanded: helpOpen }} onPress={() => setHelpOpen(value => !value)} style={s.helpButton}>
             <Ionicons name={helpOpen ? 'chevron-up' : 'help-circle-outline'} size={22} color={p.brandShade} />
             <Text style={[s.bold, { color: p.foreground }]}>تحتاج مساعدة في الدفع؟</Text>
@@ -129,9 +134,9 @@ export default function WebMembership(props: Props) {
             <Text style={[s.body, { color: p.foreground }]}>• إذا خُصم المبلغ ولم يفتح التدريب، تحقّق من اشتراكك بدل أن تدفع مجددًا.</Text>
             <Text style={[s.small, { color: p.mutedForeground }]}>لا ترسل رقم بطاقتك أو رمز الأمان لأي شخص.</Text>
           </View>}
-        </View>}
+        </View></Enter>}
 
-        {state === 'active' && <>
+        {state === 'active' && <Enter delay={170} style={{ gap: 16 }}>
           <View style={[s.card, { backgroundColor: p.card, borderColor: p.border }]}>
             <Text style={[s.h2, { color: p.foreground }]}>ثبّت YAEL على جهازك</Text>
             <Text style={[s.body, { color: p.mutedForeground }]}>تطبيق ويب يُضاف إلى شاشتك الرئيسية من المتصفح، وليس تنزيلًا من متجر التطبيقات.</Text>
@@ -145,7 +150,7 @@ export default function WebMembership(props: Props) {
             <Text style={[s.body, { color: p.mutedForeground }]}>عند الإلغاء يتوقف التجديد، ويبقى وصولك حتى نهاية الفترة المدفوعة.</Text>
             <ChunkyButton testID="web-cancel" label={cancelBusy ? 'جارٍ الإلغاء…' : 'إلغاء التجديد'} tone="coral" disabled={cancelBusy} onPress={props.onCancel} />
           </View>}
-        </>}
+        </Enter>}
 
         <View style={[s.footer, { borderColor: p.border }]}>
           <Pressable accessibilityRole="link" onPress={props.onPrivacy}><Text style={[s.link, { color: p.mutedForeground }]}>سياسة الخصوصية</Text></Pressable>
@@ -159,21 +164,24 @@ export default function WebMembership(props: Props) {
 const rtl = { textAlign: 'right' as const, writingDirection: 'rtl' as const };
 const s = StyleSheet.create({
   page: { padding: 16, alignItems: 'center' },
-  wrap: { width: '100%', maxWidth: 620, gap: 16 },
-  nav: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+  wrap: { width: '100%', maxWidth: 720, gap: 18 },
+  nav: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 999, padding: 8 },
+  mark: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] },
+  hero: { borderWidth: 2, borderBottomWidth: 2, borderRadius: 36, padding: 24, overflow: 'hidden' },
+  orb: { position: 'absolute', left: -110, top: -110, width: 300, height: 300, borderRadius: 999 },
   logo: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 24, letterSpacing: 3 },
-  ghost: { minHeight: 44, borderWidth: 2, borderBottomWidth: 4, borderRadius: 14, paddingHorizontal: 14, justifyContent: 'center' },
+  ghost: { minHeight: 44, borderWidth: 1, borderColor: 'transparent', borderRadius: 999, paddingHorizontal: 14, justifyContent: 'center' },
   bold: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 14, ...rtl },
-  card: { borderWidth: 2, borderBottomWidth: 6, borderRadius: 26, padding: 18, gap: 14 },
+  card: { borderWidth: 1, borderRadius: 28, padding: 20, gap: 14 },
   headRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
-  h1: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 22, lineHeight: 36, flexShrink: 1, ...rtl },
+  h1: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 26, lineHeight: 42, flexShrink: 1, ...rtl },
   h2: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 19, lineHeight: 32, ...rtl },
   body: { fontSize: 15, lineHeight: 26, ...rtl },
   small: { fontSize: 13, lineHeight: 22, ...rtl },
   price: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 26, lineHeight: 42, ...rtl },
   priceBox: { borderWidth: 2, borderRadius: 18, padding: 14, gap: 4 },
   receipt: { flexDirection: 'row-reverse', gap: 10, alignItems: 'center', borderRadius: 14, padding: 12 },
-  help: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 12 },
+  help: { borderWidth: 1, borderRadius: 24, padding: 14, gap: 12 },
   helpButton: { minHeight: 44, flexDirection: 'row-reverse', gap: 8, alignItems: 'center', justifyContent: 'center' },
   sk: { height: 16, borderRadius: 8, alignSelf: 'flex-end' },
   msg: { borderWidth: 1, borderRadius: 14, padding: 12, fontSize: 14, lineHeight: 24, overflow: 'hidden', ...rtl },
