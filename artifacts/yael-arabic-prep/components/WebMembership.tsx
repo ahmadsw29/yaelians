@@ -5,6 +5,7 @@ import { ChunkyButton, usePlay } from '@/components/Playful';
 import { Creature, type CreatureKind } from '@/components/PetTeacher';
 import { Enter } from '@/components/EntranceMotion';
 import { PublicPolicyLinks } from '@/components/PublicPolicyLinks';
+import { BrandMark } from '@/components/BrandMark';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 type State = 'checking' | 'inactive' | 'pending' | 'active' | 'error';
@@ -45,7 +46,7 @@ export default function WebMembership(props: Props) {
       <View style={s.wrap}>
         <Enter><View style={[s.nav, { backgroundColor: p.card, borderColor: p.border }]}>
           <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, flex: 1 }}>
-            <View style={[s.mark, { backgroundColor: p.brand }]}><Text style={[s.bold, { color: p.onBrand, fontSize: 17 }]}>Y</Text></View>
+            <BrandMark size={34} />
             <Text style={[s.logo, { color: p.foreground, letterSpacing: 0.4, fontSize: 20 }]}>Yaelians</Text>
           </View>
           <Pressable testID="web-account" accessibilityRole="button" onPress={props.onAccount} style={s.ghost}>

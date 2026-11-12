@@ -10,7 +10,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { BrandMark } from '@/components/BrandMark';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { Creature } from '@/components/PetTeacher';
@@ -68,9 +69,7 @@ export default function HomeScreen() {
       <HomeMotionProvider scrollY={scrollY} viewport={viewport} contentHeight={contentHeight || undefined} reduce={reduce}>
       <StudySyncStatus />
       <View style={styles.topLine}>
-        <View style={styles.brandMark}>
-          <MaterialCommunityIcons name="book-open-page-variant" size={19} color={p.onBrand} />
-        </View>
+        <BrandMark size={34} />
         <Text style={styles.brand}>Yaelians</Text>
         <View style={styles.streakPill}>
           <Ionicons name="flame" size={17} color={p.coral} />

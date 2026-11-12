@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ueqCsKK1NIRsilx3vtXiy"
+uri = "file://artifacts/yael-arabic-prep/assets/images/yaelians-mark.png"
+type = "image"
+title = "Yaelians logo"
+description = "Original folded-book Y with a gold spark. Transparent PNG used throughout the app."
+logical_id = "6d6b2b7e-cc6b-4374-89b6-9541c7a1c29f"
+content_hash = "sha256:f676bc5cea0baec1461213aac55a35a450b8f1af4b84fd4fadd307b7023500b2"
+size = 103778
+mtime_ms = 1794499511774
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:926e15bb-43a5-4bf6-91e4-1f1e76818a5f/6d6b2b7e-cc6b-4374-89b6-9541c7a1c29f/b127f121-f6df-4cea-80be-0ec8971f5a04"
+storage_version_token = "1794499657015544"
+content_type = "image/png"

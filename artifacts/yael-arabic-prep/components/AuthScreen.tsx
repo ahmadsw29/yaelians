@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
-import { CartoonAvatar } from '@/components/CartoonAvatar';
+import { BrandMark } from '@/components/BrandMark';
 import { useColors } from '@/hooks/useColors';
 import { GlassPressable } from '@/components/Glass';
 
@@ -190,7 +190,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
         onPress={() => router.replace('/')} style={styles.close}>
         <Feather name="x" size={24} color={colors.foreground} />
       </Pressable>
-      <View style={styles.hero}><CartoonAvatar size={88} />
+      <View style={styles.hero}><BrandMark size={88} />
         <Text style={[styles.brand, { color: colors.primary }]}>Yaelians · رحلتك تبدأ هنا</Text>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{codeStep ? (step === 'totp' ? 'أدخل الرمز من تطبيق المصادقة.' : 'أدخل الرمز المرسل إلى بريدك الإلكتروني.') : 'حسابك الخاص، تقدّمك، وشخصيتك الكرتونية.'}</Text>

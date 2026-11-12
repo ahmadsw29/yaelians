@@ -6,6 +6,7 @@ import { Creature, CREATURE_NAMES, type CreatureKind } from '@/components/PetTea
 import { Enter } from '@/components/EntranceMotion';
 import { useReduceMotion } from '@/components/HomeMotion';
 import { PublicPolicyLinks } from '@/components/PublicPolicyLinks';
+import { BrandMark } from '@/components/BrandMark';
 import { PUBLIC_PRICING } from '@/lib/public-policies';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
@@ -53,7 +54,7 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
         <Enter from="up">
           <View style={[s.nav, { backgroundColor: p.card, borderColor: p.border }]}>
             <View style={s.brandRow}>
-              <View style={[s.logoMark, { backgroundColor: p.brand }]}><Text style={[s.logoMarkText, { color: p.onBrand }]}>Y</Text></View>
+              <BrandMark size={34} />
               <Text style={[s.logo, { color: p.foreground, letterSpacing: 0.4, fontSize: 20 }]}>Yaelians</Text>
             </View>
             {mid && <View style={s.navLinks}>

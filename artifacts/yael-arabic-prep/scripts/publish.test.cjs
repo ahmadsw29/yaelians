@@ -35,6 +35,29 @@ test('Yaelians branding covers installation, browser metadata and main screens w
   }
 });
 
+test('Yaelians logo assets exist at the configured install and browser sizes', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(appRoot, 'app.json'), 'utf8')).expo;
+  assert.equal(config.icon, './assets/images/yaelians-icon.png');
+  assert.equal(config.web.favicon, config.icon);
+  assert.equal(config.plugins[0][1].image, './assets/images/yaelians-mark.png');
+  const manifest = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/manifest.webmanifest'), 'utf8'));
+  const images = [
+    ['assets/images/yaelians-icon.png', 1024],
+    ['assets/images/yaelians-mark.png', 512],
+    ['public/yaelians-apple-touch.png', 180],
+    ...manifest.icons.map(icon => [`public${icon.src}`, Number(icon.sizes.split('x')[0])]),
+  ];
+  for (const [file, size] of images) {
+    const buffer = fs.readFileSync(path.join(appRoot, file));
+    assert.equal(buffer.subarray(1, 4).toString(), 'PNG', file);
+    assert.equal(buffer.readUInt32BE(16), size, file);
+    assert.equal(buffer.readUInt32BE(20), size, file);
+  }
+  const html = fs.readFileSync(path.join(appRoot, 'public/index.html'), 'utf8');
+  assert.match(html, /rel="apple-touch-icon" href="\/yaelians-apple-touch.png"/);
+  assert.match(html, /rel="icon" type="image\/png" href="\/yaelians-icon-192.png"/);
+});
+
 test('Arabic number and date displays always use Western digits', () => {
   const ts = require('typescript');
   const module = { exports: {} };

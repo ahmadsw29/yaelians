@@ -4,7 +4,7 @@
     "slug": "yael-arabic-prep",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/yaelians-icon.png",
     "scheme": "yael-arabic-prep",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -12,11 +12,11 @@
     },
     "android": {},
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/yaelians-icon.png"
     },
     "plugins": [
       ["expo-splash-screen", {
-        "image": "./assets/images/icon.png",
+        "image": "./assets/images/yaelians-mark.png",
         "imageWidth": 180,
         "resizeMode": "contain",
         "backgroundColor": "#f7f4ed"

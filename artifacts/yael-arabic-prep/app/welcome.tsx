@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CartoonAvatar } from '@/components/CartoonAvatar';
+import { BrandMark } from '@/components/BrandMark';
 import { useColors } from '@/hooks/useColors';
 
 const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
@@ -13,7 +14,7 @@ export default function WelcomeScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   return <ScrollView style={{ flex: 1, backgroundColor: c.background }} contentContainerStyle={[styles.page, { paddingTop: Math.max(insets.top, 24) + 28, paddingBottom: insets.bottom + 30 }]}>
-    <View style={styles.brand}><View style={[styles.brandIcon, { backgroundColor: c.secondary }]}><Ionicons name="sparkles" size={20} color={c.primary} /></View><Text style={[styles.brandName, { color: c.foreground }]}>Yaelians</Text></View>
+    <View style={styles.brand}><BrandMark size={36} /><Text style={[styles.brandName, { color: c.foreground }]}>Yaelians</Text></View>
     <View style={[styles.hero, { backgroundColor: c.secondary }]}>
       <View style={styles.avatar}><CartoonAvatar size={126} /></View>
       <Text style={[styles.kicker, { color: c.primary }]}>استعدّ لامتحانك بثقة</Text>

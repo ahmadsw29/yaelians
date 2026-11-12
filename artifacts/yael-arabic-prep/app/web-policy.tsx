@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlay } from '@/components/Playful';
 import { Enter } from '@/components/EntranceMotion';
+import { BrandMark } from '@/components/BrandMark';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { POLICY_PAGES, policyPage, policyDocument, SELLER_DETAILS, PUBLIC_PRICING } from '@/lib/public-policies';
 
@@ -27,7 +28,7 @@ export default function WebPolicy() {
       <View style={s.wrap}>
         <View style={[s.top, { backgroundColor: p.card, borderColor: p.border }]}>
           <View style={s.brandRow}>
-            <View style={[s.logoMark, { backgroundColor: p.brand }]}><Text style={[s.logoMarkText, { color: p.onBrand }]}>Y</Text></View>
+            <BrandMark size={32} />
             <Text style={[s.logo, { color: p.foreground }]}>Yaelians</Text>
           </View>
           <Pressable testID="policy-home" accessibilityRole="link" onPress={() => router.replace('/website')}
