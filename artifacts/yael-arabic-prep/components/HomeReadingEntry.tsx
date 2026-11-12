@@ -11,7 +11,7 @@ export default function HomeReadingEntry() {
   const router = useRouter();
   const p = usePlay();
   return (
-    <View style={[s.card, { backgroundColor: p.card, borderColor: p.skyShade }]}>
+    <View style={[s.card, { backgroundColor: p.card, borderColor: p.border }]}>
       <View style={[s.sky, { backgroundColor: p.skySoft }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Svg width="100%" height="100%" viewBox="0 0 320 96" preserveAspectRatio="xMidYMid slice" style={StyleSheet.absoluteFill}>
           <Circle cx="48" cy="26" r="14" fill={p.sun} opacity={0.85} />
@@ -31,14 +31,14 @@ export default function HomeReadingEntry() {
         <View style={[s.chip, { backgroundColor: p.skySoft }]}><Text style={[s.chipText, { color: p.skyInk }]}>قصص قصيرة</Text></View>
         <Text style={[s.title, { color: p.foreground }]}>فهم المقروء</Text>
         <Text style={[s.text, { color: p.mutedForeground }]}>نصوص عبرية قصيرة مع أسئلة موجّهة بالعربية</Text>
-        <ChunkyButton label="افتح القصة" icon="book" tone="brand" testID="start-reading" onPress={() => router.push('/reading' as never)} />
+        <ChunkyButton label="افتح القصة" icon="book" tone="ghost" testID="start-reading" onPress={() => router.push('/reading' as never)} />
       </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  card: { borderWidth: 2, borderBottomWidth: 6, borderRadius: 24, overflow: 'hidden' },
+  card: { borderWidth: 1, borderRadius: 24, overflow: 'hidden' },
   sky: { height: 96, justifyContent: 'flex-end' },
   creature: { position: 'absolute', right: 14, bottom: -6 },
   body: { padding: 16, gap: 8 },

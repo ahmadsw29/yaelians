@@ -10,7 +10,7 @@ export default function ExamShortcuts() {
   return <View style={styles.group}>
     <Pressable testID="home-training" accessibilityRole="button"
       onPress={() => router.push('/source-session')}
-      style={({ pressed }) => [styles.card, { backgroundColor: c.secondary, borderColor: c.primary, opacity: pressed ? 0.8 : 1 }]}>
+      style={({ pressed }) => [styles.card, { backgroundColor: c.card, borderColor: c.border, opacity: pressed ? 0.8 : 1 }]}>
       <Ionicons name="timer-outline" size={29} color={c.primary} />
       <View style={styles.copy}>
         <Text style={[styles.title, { color: c.foreground }]}>تدريب 20 دقيقة</Text>

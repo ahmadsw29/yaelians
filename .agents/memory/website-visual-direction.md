@@ -13,3 +13,7 @@ The user wants “the apple arabic phont, like in iphones and macbooks” and re
 The user rejected lavender and mixed pastel surfaces, selected “Deep navy and blue,” then asked for more colors that are “متناسقات وحلوات” (coordinated and attractive).
 **Why:** Explicit selections and corrections, not permission to keep changing palettes arbitrarily.
 **How to apply:** Keep navy/blue as the foundation with coordinated companion accents and readable text/surface pairs. Do not return to lavender or a collection of unrelated saturated card colors.
+
+The user rejected both competing colorful cards (“fighting for attention”) and the fully neutral revision (“now its boring”).
+**Why:** The app needs visible personality without every section demanding equal attention.
+**How to apply:** Use a clear primary feature with restrained supporting accents and retain the animated characters, rather than flattening all cards or saturating every surface.

@@ -105,15 +105,15 @@ export default function HomeScreen() {
       <Reveal testID="home-reveal-vocabulary" style={styles.cell}><View style={styles.hero}>
         <View style={styles.heroCopy}>
           <View style={styles.lessonTag}><Text style={styles.lessonTagText}>جولة اليوم · 20 كلمة</Text></View>
-          <Text style={styles.heroTitle}>كلمات تفتح{"\n"}لك المعنى</Text>
-          <Text style={styles.heroSub}>تدرّب على 20 مفردة من نماذج YAEL</Text>
+          <Text style={[styles.heroTitle, styles.featureTitle]}>كلمات تفتح{"\n"}لك المعنى</Text>
+          <Text style={[styles.heroSub, styles.featureSub]}>تدرّب على 20 مفردة من نماذج YAEL</Text>
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={styles.heroHalo} />
+          <View style={[styles.heroHalo, styles.featureHalo]} />
           <ScrollSway testID="home-sway-vocabulary"><Creature kind="zizo" mood="hype" size={128} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>מילה</Text></View>
         </View>
-        <ChunkyButton tone="ghost" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice?section=vocabulary')} style={styles.heroCta} />
+        <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice?section=vocabulary')} style={styles.heroCta} />
       </View></Reveal>
 
       <Reveal testID="home-reveal-restatement" style={styles.cell}><View style={styles.rHero}>
@@ -122,7 +122,7 @@ export default function HomeScreen() {
           <Text style={styles.heroSub}>تدرّب على إعادة الصياغة فقط، قسمًا بقسم</Text>
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={styles.heroHalo} />
+          <View style={[styles.heroHalo, { backgroundColor: p.skySoft }]} />
           <ScrollSway><Creature kind="rami" mood="hype" size={124} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>במילים אחרות</Text></View>
         </View>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
           <Text style={styles.studyTitle}>ركن الدراسة</Text>
           <Text style={styles.studyBody}>دروس من كتابك يشرحها لك معلّمون من عالم الخيال</Text>
         </View>
-        <Ionicons name="chevron-back" size={20} color={p.skyInk} />
+        <Ionicons name="chevron-back" size={20} color={p.mutedForeground} />
       </Pressable></Reveal>
 
       <Reveal testID="home-reveal-flashcards" style={styles.cell}><HomeFlashcardsEntry /></Reveal>
@@ -188,8 +188,8 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset
     topLine: { flexDirection: 'row-reverse', alignItems: 'center', gap: 9, marginBottom: 22 },
     brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: p.brand, borderBottomWidth: 3, borderColor: p.brandShade, alignItems: 'center', justifyContent: 'center' },
     brand: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 19, flex: 1, textAlign: 'right' },
-    streakPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: p.coralSoft, borderRadius: 14, borderWidth: 2, borderColor: p.coral, paddingHorizontal: 10, paddingVertical: 5 },
-    streakText: { color: p.coralInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13 },
+    streakPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: p.card, borderRadius: 14, borderWidth: 1, borderColor: p.border, paddingHorizontal: 10, paddingVertical: 5 },
+    streakText: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 13 },
     menuBtn: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.border },
     greeting: { alignItems: 'flex-end', marginBottom: 16 },
     eyebrow: { color: p.brandInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13, marginBottom: 6 },
@@ -205,15 +205,18 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset
     cell: wide ? { flexBasis: '45%', flexGrow: 1, flexShrink: 1, minWidth: 0 } : {},
     full: wide ? { flexBasis: '100%' } : {},
     heroCta: { flexBasis: '100%', width: '100%', marginTop: 10 },
-    hero: { flexGrow: 1, backgroundColor: p.brand, borderRadius: 26, borderBottomWidth: 7, borderColor: p.brandShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
-    rHero: { flexGrow: 1, backgroundColor: p.skyShade, borderRadius: 26, borderBottomWidth: 7, borderColor: p.isDark ? p.skySoft : p.skyInk, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    hero: { flexGrow: 1, backgroundColor: p.card, borderRadius: 24, borderWidth: 1, borderTopWidth: 4, borderColor: p.border, borderTopColor: p.brand, padding: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    rHero: { flexGrow: 1, backgroundColor: p.card, borderRadius: 24, borderWidth: 1, borderRightWidth: 3, borderColor: p.border, borderRightColor: p.sky, padding: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    featureTitle: { color: c.foreground, fontSize: 28, lineHeight: 38 },
+    featureSub: { color: c.mutedForeground },
+    featureHalo: { backgroundColor: p.sunSoft, width: 146, height: 146, borderRadius: 73 },
     heroCopy: { flex: 1, minWidth: 150, alignItems: 'flex-end' },
-    lessonTag: { backgroundColor: 'rgba(255,253,247,0.22)', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, marginBottom: 9 },
-    lessonTagText: { color: p.onBrand, fontSize: 11, fontFamily: BOLD, fontWeight: '800' },
-    heroTitle: { color: p.onBrand, fontSize: 26, lineHeight: 33, textAlign: 'right', fontFamily: BOLD, fontWeight: '800' },
-    heroSub: { color: p.onBrand, opacity: 0.85, fontSize: 13, lineHeight: 20, textAlign: 'right', marginTop: 5, fontFamily: FONT },
+    lessonTag: { backgroundColor: p.brandSoft, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, marginBottom: 9 },
+    lessonTagText: { color: p.brandInk, fontSize: 11, fontFamily: BOLD, fontWeight: '800' },
+    heroTitle: { color: c.foreground, fontSize: 26, lineHeight: 33, textAlign: 'right', fontFamily: BOLD, fontWeight: '800' },
+    heroSub: { color: c.mutedForeground, fontSize: 13, lineHeight: 20, textAlign: 'right', marginTop: 5, fontFamily: FONT },
     heroArt: { width: 132, height: 138, alignItems: 'center', justifyContent: 'center' },
-    heroHalo: { position: 'absolute', width: 118, height: 118, borderRadius: 59, backgroundColor: 'rgba(255,253,247,0.18)' },
+    heroHalo: { position: 'absolute', width: 118, height: 118, borderRadius: 59, backgroundColor: p.muted },
     wordChip: { position: 'absolute', bottom: 6, left: -2, backgroundColor: p.card, borderRadius: 12, borderBottomWidth: 3, borderColor: p.border, paddingHorizontal: 9, paddingVertical: 3, transform: [{ rotate: '-8deg' }] },
     wordChipText: { color: c.foreground, fontSize: 16, fontWeight: '800' },
     sectionHeading: { flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12, marginTop: 4 },
@@ -222,21 +225,21 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset
     seeAll: { color: p.brandInk, fontSize: 13, fontFamily: BOLD, fontWeight: '800' },
     path: { marginBottom: 20, paddingHorizontal: 4 },
     statsRow: { flexDirection: 'row', gap: 9, marginBottom: 17 },
-    studyCard: { flexGrow: 1, backgroundColor: p.skySoft, borderRadius: 22, borderWidth: 2, borderBottomWidth: 6, borderColor: p.sky, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    studyCard: { flexGrow: 1, backgroundColor: p.card, borderRadius: 22, borderWidth: 1, borderColor: p.border, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     studyArt: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
-    studyTitle: { color: p.skyInk, fontFamily: BOLD, fontWeight: '800', fontSize: 16 },
-    studyBody: { color: p.skyInk, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
-    tipCard: { backgroundColor: p.sunSoft, borderRadius: 20, borderWidth: 2, borderBottomWidth: 5, borderColor: p.sun, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    studyTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 16 },
+    studyBody: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
+    tipCard: { backgroundColor: p.card, borderRadius: 20, borderWidth: 1, borderColor: p.border, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     tipIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center' },
     tipCopy: { flex: 1, alignItems: 'flex-end' },
-    tipTitle: { color: p.sunInk, fontFamily: BOLD, fontWeight: '800', fontSize: 14, marginBottom: 3 },
-    tipBody: { color: p.sunInk, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
+    tipTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 14, marginBottom: 3 },
+    tipBody: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
     footer: { textAlign: 'center', color: c.mutedForeground, fontSize: 11, marginTop: 18, fontFamily: FONT },
   });
 }
 
 const statStyles = StyleSheet.create({
-  card: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 2, borderBottomWidth: 5, gap: 4, paddingHorizontal: 4 },
+  card: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 1, gap: 4, paddingHorizontal: 4 },
   value: { fontSize: 19, fontFamily: BOLD, fontWeight: '800' },
   label: { fontSize: 11, fontFamily: FONT, textAlign: 'center' },
 });

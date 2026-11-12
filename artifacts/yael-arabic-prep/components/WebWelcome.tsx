@@ -45,7 +45,7 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
 
   return (
     <ScrollView ref={scroll} style={{ backgroundColor: p.background }} contentContainerStyle={s.page}>
-      <View style={[s.glowA, { backgroundColor: p.brandSoft }]} pointerEvents="none" />
+      <View style={[s.glowA, { backgroundColor: p.muted }]} pointerEvents="none" />
       <View style={[s.glowB, { backgroundColor: p.sunSoft }]} pointerEvents="none" />
       <View style={s.wrap}>
         <Enter from="up">
@@ -71,8 +71,8 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
           </View>
         </Enter>
 
-        <View onLayout={event => { sections.current.teachers = event.nativeEvent.layout.y; }} style={[s.hero, wide && s.heroWide, { backgroundColor: p.brandSoft, borderColor: p.border }]}>
-          <View style={[s.heroOrb, { backgroundColor: p.brand, opacity: p.isDark ? 0.18 : 0.12 }]} pointerEvents="none" />
+        <View onLayout={event => { sections.current.teachers = event.nativeEvent.layout.y; }} style={[s.hero, wide && s.heroWide, { backgroundColor: p.card, borderColor: p.border }]}>
+          <View style={[s.heroOrb, { backgroundColor: p.sunSoft, opacity: 0.8 }]} pointerEvents="none" />
           <View style={[s.heroText, wide && { flex: 1.05 }]}>
             <Enter delay={60}>
               <View style={[s.chip, { backgroundColor: p.card, borderColor: p.border }]}>
