@@ -6,6 +6,10 @@ The user wants Whop removed from new purchases and explicitly chose Paddle for c
 **Why:** The user repeatedly rejected external Whop checkout and Stripe as an alternative.
 **How to apply:** Do not reopen provider selection or re-enable Whop purchases without a new request. Preserve existing subscribers' verification, cancellation, and paid access during any replacement; explain any implementation blocker without claiming Paddle is unavailable as a connector.
 
+Public review information must remain available while new checkout is disabled. Do not equate a displayed proposed price with an activated checkout or a final tax-inclusive total.
+**Why:** Paddle's domain review requires discoverable pricing, product details, and policies even before payment activation; hiding them behind checkout readiness left the review checklist incomplete.
+**How to apply:** Keep review pages public and linked. Do not invent seller identity, a contact address, refund promises, or legal jurisdiction to make an incomplete policy appear approved.
+
 Whop SDK calls and raw REST helper calls can select different API versions even against the same v1 URL. Treat SDK upgrades and API-version migrations as one coordinated change.
 
 **Why:** A raw plan query returned ownership under `company`, while the SDK's default version returned it under `account`; TypeScript passed but runtime price validation failed. Payment filters and membership ownership checks also depend on this contract.

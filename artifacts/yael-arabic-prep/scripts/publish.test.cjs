@@ -147,7 +147,9 @@ test('packaged production server serves browsers without Expo Go', async t => {
   t.after(() => new Promise(resolve => server.close(resolve)));
   if (!server.listening) await once(server, 'listening');
   const url = `http://127.0.0.1:${server.address().port}`;
-  for (const route of ['/', '/website', '/subscribe', '/billing-return']) {
+  for (const route of ['/', '/website', '/subscribe', '/billing-return',
+    '/web-policy?section=pricing', '/web-policy?section=privacy',
+    '/web-policy?section=terms', '/web-policy?section=refunds']) {
     const response = await fetch(url + route, { headers: { Accept: 'text/html' } });
     assert.equal(response.status, 200, route);
     assert.equal(await response.text(), html, route);

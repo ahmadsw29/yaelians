@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ChunkyButton, usePlay } from '@/components/Playful';
 import { Creature, type CreatureKind } from '@/components/PetTeacher';
 import { Enter } from '@/components/EntranceMotion';
+import { PublicPolicyLinks } from '@/components/PublicPolicyLinks';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 type State = 'checking' | 'inactive' | 'pending' | 'active' | 'error';
@@ -153,8 +154,7 @@ export default function WebMembership(props: Props) {
         </Enter>}
 
         <View style={[s.footer, { borderColor: p.border }]}>
-          <Pressable accessibilityRole="link" onPress={props.onPrivacy}><Text style={[s.link, { color: p.mutedForeground }]}>سياسة الخصوصية</Text></Pressable>
-          <Pressable accessibilityRole="link" onPress={props.onTerms}><Text style={[s.link, { color: p.mutedForeground }]}>شروط الاستخدام</Text></Pressable>
+          <PublicPolicyLinks onPrivacy={props.onPrivacy} onTerms={props.onTerms} />
         </View>
       </View>
     </ScrollView>

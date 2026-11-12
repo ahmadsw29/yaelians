@@ -5,6 +5,8 @@ import { ChunkyButton, ChunkyProgress, usePlay } from '@/components/Playful';
 import { Creature, CREATURE_NAMES, type CreatureKind } from '@/components/PetTeacher';
 import { Enter } from '@/components/EntranceMotion';
 import { useReduceMotion } from '@/components/HomeMotion';
+import { PublicPolicyLinks } from '@/components/PublicPolicyLinks';
+import { PUBLIC_PRICING } from '@/lib/public-policies';
 import { ARABIC_BOLD_FONT } from '@/constants/typography';
 
 type Props = {
@@ -204,6 +206,10 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
                 </View>
               </View>
               {showPrice && <Text style={[s.priceText, { color: p.foreground }]}>{`${priceLabel} شهريًا`}</Text>}
+              {!showPrice && <View testID="public-proposed-price" style={{ gap: 4 }}>
+                <Text style={[s.priceText, { color: p.foreground, writingDirection: 'ltr' }]}>{PUBLIC_PRICING.label}</Text>
+                <Text style={[s.small, { color: p.mutedForeground }]}>شهريًا — سعر مخطّط للمراجعة، وليس دفعًا مفعّلًا. الضرائب والإجمالي النهائي لم يُعتمدا بعد. راجع صفحة الأسعار للتفاصيل.</Text>
+              </View>}
               {!loading && (error
                 ? <View style={[s.err, { backgroundColor: p.coralSoft }]} accessibilityRole="alert">
                     <Text style={[s.body, { color: p.coralInk, flex: 1 }]}>{statusText}</Text>
@@ -224,10 +230,7 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
 
         <View style={[s.footer, { borderColor: p.border }]}>
           <Text style={[s.logo, { color: p.mutedForeground, fontSize: 16 }]}>YAEL</Text>
-          <View style={{ flexDirection: 'row-reverse', gap: 22 }}>
-            <Pressable accessibilityRole="link" onPress={onPrivacy}><Text style={[s.link, { color: p.mutedForeground }]}>سياسة الخصوصية</Text></Pressable>
-            <Pressable accessibilityRole="link" onPress={onTerms}><Text style={[s.link, { color: p.mutedForeground }]}>شروط الاستخدام</Text></Pressable>
-          </View>
+          <PublicPolicyLinks onPrivacy={onPrivacy} onTerms={onTerms} />
         </View>
       </View>
     </ScrollView>
