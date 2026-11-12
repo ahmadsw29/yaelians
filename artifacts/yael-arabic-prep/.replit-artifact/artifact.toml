@@ -1,6 +1,6 @@
 kind = "mobile"
 previewPath = "/"
-title = "YAEL Hebrew Prep"
+title = "Yaelians"
 description = "A playful Arabic-guided mobile study app for Arabic-speaking learners preparing for the Hebrew YAEL exam, with short vocabulary and reading practice, quiz feedback, and locally saved progress."
 version = "1.0.0"
 id = "artifacts/yael-arabic-prep"

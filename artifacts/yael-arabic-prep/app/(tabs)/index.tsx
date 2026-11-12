@@ -71,7 +71,7 @@ export default function HomeScreen() {
         <View style={styles.brandMark}>
           <MaterialCommunityIcons name="book-open-page-variant" size={19} color={p.onBrand} />
         </View>
-        <Text style={styles.brand}>كَلِمَة</Text>
+        <Text style={styles.brand}>Yaelians</Text>
         <View style={styles.streakPill}>
           <Ionicons name="flame" size={17} color={p.coral} />
           <Text style={styles.streakText}>{stats.streak} أيام</Text>

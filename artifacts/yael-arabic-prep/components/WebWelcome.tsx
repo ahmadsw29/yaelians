@@ -54,7 +54,7 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
           <View style={[s.nav, { backgroundColor: p.card, borderColor: p.border }]}>
             <View style={s.brandRow}>
               <View style={[s.logoMark, { backgroundColor: p.brand }]}><Text style={[s.logoMarkText, { color: p.onBrand }]}>Y</Text></View>
-              <Text style={[s.logo, { color: p.foreground }]}>YAEL</Text>
+              <Text style={[s.logo, { color: p.foreground, letterSpacing: 0.4, fontSize: 20 }]}>Yaelians</Text>
             </View>
             {mid && <View style={s.navLinks}>
               {([
@@ -229,7 +229,7 @@ export default function WebWelcome({ priceLabel, loading, error, checkoutEnabled
         </View>
 
         <View style={[s.footer, { borderColor: p.border }]}>
-          <Text style={[s.logo, { color: p.mutedForeground, fontSize: 16 }]}>YAEL</Text>
+          <Text style={[s.logo, { color: p.mutedForeground, fontSize: 16, letterSpacing: 0.4 }]}>Yaelians</Text>
           <PublicPolicyLinks onPrivacy={onPrivacy} onTerms={onTerms} />
         </View>
       </View>

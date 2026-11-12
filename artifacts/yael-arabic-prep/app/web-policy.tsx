@@ -28,7 +28,7 @@ export default function WebPolicy() {
         <View style={[s.top, { backgroundColor: p.card, borderColor: p.border }]}>
           <View style={s.brandRow}>
             <View style={[s.logoMark, { backgroundColor: p.brand }]}><Text style={[s.logoMarkText, { color: p.onBrand }]}>Y</Text></View>
-            <Text style={[s.logo, { color: p.foreground }]}>YAEL</Text>
+            <Text style={[s.logo, { color: p.foreground }]}>Yaelians</Text>
           </View>
           <Pressable testID="policy-home" accessibilityRole="link" onPress={() => router.replace('/website')}
             style={({ pressed }) => [s.homeBtn, { backgroundColor: p.foreground, opacity: pressed ? 0.85 : 1 }]}>
@@ -116,7 +116,7 @@ const s = StyleSheet.create({
   brandRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
   logoMark: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] },
   logoMarkText: { ...bold, fontSize: 17 },
-  logo: { ...bold, fontSize: 19, letterSpacing: 3 },
+  logo: { ...bold, fontSize: 18, letterSpacing: 0.4 },
   homeBtn: { minHeight: 44, borderRadius: 999, paddingHorizontal: 16, flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
   btnText: { ...bold, fontSize: 14, ...rtl },
   tabs: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },

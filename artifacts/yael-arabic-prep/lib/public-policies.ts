@@ -15,7 +15,7 @@ export const SELLER_DETAILS: {
   country: string | null;
   refundTerms: string | null;
 } = {
-  brand: 'YAEL Hebrew Prep',
+  brand: 'Yaelians',
   legalName: 'Yaelians',
   supportEmail: 'ahmadsawalha2007@gmail.com',
   country: 'Israel',
@@ -104,7 +104,7 @@ export function policyDocument(page: PolicyPage): PolicyDocument {
       {
         title: 'الخدمة وحدودها',
         paragraphs: [
-          'YAEL Hebrew Prep تطبيق تعليمي لمتحدّثي العربية يستعدّون لامتحان العبرية YAEL. يقدّم مواد تعلّم وتدريبات ومراجعة أخطاء ونماذج تدريبية.',
+          'Yaelians تطبيق تعليمي لمتحدّثي العربية يستعدّون لامتحان العبرية YAEL. يقدّم مواد تعلّم وتدريبات ومراجعة أخطاء ونماذج تدريبية.',
           'الخدمة مستقلة عن جهة الامتحان الرسمية، ولا تضمن علامة أو قبولًا جامعيًا. بعض الحلول والتوضيحات أعدّها التطبيق وليست مفاتيح إجابة رسمية؛ درجات التدريب ليست علامة YAEL رسمية.',
         ],
       },

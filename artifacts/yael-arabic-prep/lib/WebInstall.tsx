@@ -13,6 +13,7 @@ export function WebInstallProvider({ children }: { children: React.ReactNode }) 
   const [help, setHelp] = useState('');
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+    document.title = 'Yaelians';
     const ensureMeta = (name: string, content: string) => {
       let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
       if (!meta) {
@@ -23,6 +24,8 @@ export function WebInstallProvider({ children }: { children: React.ReactNode }) 
       meta.content = content;
     };
     ensureMeta('theme-color', colors.background);
+    ensureMeta('application-name', 'Yaelians');
+    ensureMeta('apple-mobile-web-app-title', 'Yaelians');
     ensureMeta('apple-mobile-web-app-capable', 'yes');
     ensureMeta('apple-mobile-web-app-status-bar-style', colors.isDark ? 'black-translucent' : 'default');
     document.documentElement.style.backgroundColor = colors.background;

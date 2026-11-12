@@ -13,6 +13,28 @@ const appRoot = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(appRoot, '../..');
 const source = fs.readFileSync(path.join(appRoot, 'server/serve.js'), 'utf8');
 
+test('Yaelians branding covers installation, browser metadata and main screens without changing app identity', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(appRoot, 'app.json'), 'utf8')).expo;
+  const manifest = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/manifest.webmanifest'), 'utf8'));
+  assert.equal(config.name, 'Yaelians');
+  assert.equal(config.slug, 'yael-arabic-prep');
+  assert.equal(config.scheme, 'yael-arabic-prep');
+  assert.equal(manifest.name, 'Yaelians');
+  assert.equal(manifest.short_name, 'Yaelians');
+  assert.equal(manifest.id, '/');
+  assert.equal(manifest.start_url, '/');
+  const html = fs.readFileSync(path.join(appRoot, 'public/index.html'), 'utf8');
+  assert.match(html, /<title>Yaelians<\/title>/);
+  assert.match(html, /name="apple-mobile-web-app-title" content="Yaelians"/);
+  for (const file of ['app/(tabs)/index.tsx', 'app/welcome.tsx', 'app/web-policy.tsx',
+    'components/WebWelcome.tsx', 'components/WebMembership.tsx', 'components/AuthScreen.tsx',
+    'components/StartupStatus.tsx', 'public/service-worker.js', 'lib/WebInstall.tsx']) {
+    const text = fs.readFileSync(path.join(appRoot, file), 'utf8');
+    assert.ok(text.includes('Yaelians'), `${file} must use the new brand`);
+    assert.doesNotMatch(text, /YAEL Hebrew Prep|كَلِمَة|جارٍ فتح كلمة|ثبّت YAEL /);
+  }
+});
+
 test('Arabic number and date displays always use Western digits', () => {
   const ts = require('typescript');
   const module = { exports: {} };

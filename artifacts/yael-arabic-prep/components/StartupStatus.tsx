@@ -13,7 +13,7 @@ export function StartupStatus({ compact = false }: { compact?: boolean }) {
   return <View testID="startup-status" style={{ flex: 1, width: '100%', alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', padding: 28, gap: 16, backgroundColor: p.background }}>
     <ActivityIndicator size={compact ? 'small' : 'large'} color={p.primary} />
     <Text accessibilityLiveRegion="polite" style={{ color: p.foreground, fontSize: 18, textAlign: 'center' }}>
-      {slow ? 'الاتصال يستغرق وقتًا أطول من المعتاد' : 'جارٍ فتح كلمة…'}
+      {slow ? 'الاتصال يستغرق وقتًا أطول من المعتاد' : 'جارٍ فتح Yaelians…'}
     </Text>
     {slow && <>
       <Text style={{ color: p.mutedForeground, textAlign: 'center', lineHeight: 24 }}>تحقّق من اتصالك. تقدّمك محفوظ ولن تحتاج لبدء حساب جديد.</Text>

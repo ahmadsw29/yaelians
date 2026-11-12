@@ -46,7 +46,7 @@ export default function WebMembership(props: Props) {
         <Enter><View style={[s.nav, { backgroundColor: p.card, borderColor: p.border }]}>
           <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, flex: 1 }}>
             <View style={[s.mark, { backgroundColor: p.brand }]}><Text style={[s.bold, { color: p.onBrand, fontSize: 17 }]}>Y</Text></View>
-            <Text style={[s.logo, { color: p.foreground }]}>YAEL</Text>
+            <Text style={[s.logo, { color: p.foreground, letterSpacing: 0.4, fontSize: 20 }]}>Yaelians</Text>
           </View>
           <Pressable testID="web-account" accessibilityRole="button" onPress={props.onAccount} style={s.ghost}>
             <Text style={[s.bold, { color: p.foreground }]}>حسابي</Text>
@@ -139,7 +139,7 @@ export default function WebMembership(props: Props) {
 
         {state === 'active' && <Enter delay={170} style={{ gap: 16 }}>
           <View style={[s.card, { backgroundColor: p.card, borderColor: p.border }]}>
-            <Text style={[s.h2, { color: p.foreground }]}>ثبّت YAEL على جهازك</Text>
+            <Text style={[s.h2, { color: p.foreground }]}>ثبّت Yaelians على جهازك</Text>
             <Text style={[s.body, { color: p.mutedForeground }]}>تطبيق ويب يُضاف إلى شاشتك الرئيسية من المتصفح، وليس تنزيلًا من متجر التطبيقات.</Text>
             {canInstall
               ? <ChunkyButton testID="web-install" label="تثبيت على الجهاز" icon="download" tone="ghost" onPress={props.onInstall} />

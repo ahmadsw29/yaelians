@@ -191,7 +191,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
         <Feather name="x" size={24} color={colors.foreground} />
       </Pressable>
       <View style={styles.hero}><CartoonAvatar size={88} />
-        <Text style={[styles.brand, { color: colors.primary }]}>يَاعيل · رحلتك تبدأ هنا</Text>
+        <Text style={[styles.brand, { color: colors.primary }]}>Yaelians · رحلتك تبدأ هنا</Text>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{codeStep ? (step === 'totp' ? 'أدخل الرمز من تطبيق المصادقة.' : 'أدخل الرمز المرسل إلى بريدك الإلكتروني.') : 'حسابك الخاص، تقدّمك، وشخصيتك الكرتونية.'}</Text>
       </View>
