@@ -6,10 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlay } from '@/components/Playful';
 import { Creature } from '@/components/PetTeacher';
 import { useReduceMotion } from '@/components/HomeMotion';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
+import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { MENU_GROUPS, WEB_TAB_BAR_HEIGHT, type MenuDestination } from '@/constants/navigation';
 
-const FONT = ARABIC_FONT;
+const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const ND = Platform.OS !== 'web';
 const ITEM_COUNT = MENU_GROUPS.reduce((n, g) => n + g.items.length, 0);
 

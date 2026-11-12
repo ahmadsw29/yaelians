@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
 import { timedDailyGoalEvents, type DailyGoalEvent } from '@/lib/daily-goal-events';
 import { trackDailyActivity } from '@/lib/daily-goals';
 import { ActivityIndicator, AppState, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -34,8 +33,8 @@ async function loadGuestBackup() {
 const SECTION_MS = 20 * 60 * 1000;
 const ESSAY_MS = 15 * 60 * 1000;
 const SOURCE = 'https://www.nite.org.il/other-tests/yael/format?lang=en';
-const FONT = ARABIC_FONT;
-const BOLD = ARABIC_BOLD_FONT;
+const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
 type Session = {
   version: 1;

@@ -11,8 +11,6 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { CartoonAvatar } from '@/components/CartoonAvatar';
 import { useColors } from '@/hooks/useColors';
 import { GlassPressable } from '@/components/Glass';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
-import { play } from '@/constants/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -27,9 +25,9 @@ export function authError(error: unknown): string {
 export function AuthField({ label, ...props }: TextInputProps & { label: string }) {
   const colors = useColors();
   return <View style={styles.field}>
-    <Text style={[styles.label, { color: colors.isDark ? play.dark.sunInk : colors.primary }]}>{label}</Text>
+    <Text style={[styles.label, { color: colors.foreground }]}>{label}</Text>
     <TextInput accessibilityLabel={label} placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false}
-      {...props} style={[styles.input, { backgroundColor: colors.isDark ? colors.muted : colors.card, borderColor: colors.input, color: colors.foreground }, props.style]} />
+      {...props} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }, props.style]} />
   </View>;
 }
 
@@ -37,7 +35,7 @@ export function AuthButton({ title, onPress, disabled, secondary, testID }: {
   title: string; onPress: () => void; disabled?: boolean; secondary?: boolean; testID?: string;
 }) {
   const colors = useColors();
-  const tint = secondary ? undefined : [colors.primary, colors.primaryDeep] as const;
+  const tint = secondary ? undefined : [colors.primary, colors.isDark ? '#5fa999' : '#0f4d45'] as const;
   return <GlassPressable dark={colors.isDark} accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} testID={testID} onPress={onPress} disabled={disabled}
     fill={tint} solid={secondary ? colors.secondary : colors.primary} radius={18}
     style={[styles.button, disabled && { opacity: 0.5 }]} contentStyle={styles.buttonInner}>
@@ -193,7 +191,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
         <Feather name="x" size={24} color={colors.foreground} />
       </Pressable>
       <View style={styles.hero}><CartoonAvatar size={88} />
-        <Text style={[styles.brand, { color: colors.isDark ? play.dark.sun : play.light.coralShade, backgroundColor: colors.isDark ? play.dark.sunSoft : play.light.coralSoft }]}>يَاعيل · رحلتك تبدأ هنا</Text>
+        <Text style={[styles.brand, { color: colors.primary }]}>يَاعيل · رحلتك تبدأ هنا</Text>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{codeStep ? (step === 'totp' ? 'أدخل الرمز من تطبيق المصادقة.' : 'أدخل الرمز المرسل إلى بريدك الإلكتروني.') : 'حسابك الخاص، تقدّمك، وشخصيتك الكرتونية.'}</Text>
       </View>
@@ -239,15 +237,15 @@ const styles = StyleSheet.create({
   page: { flexGrow: 1, paddingHorizontal: 24, gap: 14, width: '100%', maxWidth: 520, alignSelf: 'center' },
   close: { alignSelf: 'flex-start', padding: 10 },
   hero: { alignItems: 'center', gap: 12, marginBottom: 10 },
-  brand: { fontFamily: ARABIC_BOLD_FONT, fontSize: 13, fontWeight: '700', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, overflow: 'hidden' },
-  title: { fontFamily: ARABIC_BOLD_FONT, fontSize: 32, lineHeight: 46, fontWeight: '800', textAlign: 'center' },
-  subtitle: { fontFamily: ARABIC_FONT, fontSize: 15, lineHeight: 25, textAlign: 'center' },
-  field: { gap: 8 }, label: { fontFamily: ARABIC_BOLD_FONT, fontSize: 14, fontWeight: '700', textAlign: 'right' },
-  input: { fontFamily: ARABIC_FONT, borderWidth: 2, borderRadius: 18, minHeight: 56, paddingHorizontal: 16, fontSize: 17 },
+  brand: { fontSize: 14, fontWeight: '600' },
+  title: { fontSize: 26, fontWeight: '700', textAlign: 'center' },
+  subtitle: { fontSize: 14, lineHeight: 23, textAlign: 'center' },
+  field: { gap: 8 }, label: { fontSize: 14, fontWeight: '600', textAlign: 'right' },
+  input: { borderWidth: 1, borderRadius: 16, minHeight: 54, paddingHorizontal: 16, fontSize: 16 },
   button: { minHeight: 52, justifyContent: 'center' },
   buttonInner: { minHeight: 52, padding: 14 },
-  buttonText: { fontFamily: ARABIC_BOLD_FONT, fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  message: { fontFamily: ARABIC_FONT, textAlign: 'right', lineHeight: 23, fontSize: 14 },
-  link: { fontFamily: ARABIC_BOLD_FONT, textAlign: 'center', padding: 14, fontSize: 15, fontWeight: '600' },
-  or: { fontFamily: ARABIC_FONT, textAlign: 'center' }, legal: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+  buttonText: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  message: { textAlign: 'right', lineHeight: 23, fontSize: 14 },
+  link: { textAlign: 'center', padding: 14, fontSize: 15, fontWeight: '600' },
+  or: { textAlign: 'center' }, legal: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
 });

@@ -1,5 +1,4 @@
 import React from 'react';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -7,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CartoonAvatar } from '@/components/CartoonAvatar';
 import { useColors } from '@/hooks/useColors';
 
-const FONT = ARABIC_FONT;
-const BOLD = ARABIC_BOLD_FONT;
+const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
+const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
 
 export default function WelcomeScreen() {
   const c = useColors();

@@ -1,5 +1,4 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -35,6 +34,6 @@ const styles = StyleSheet.create({
   group: { gap: 14 },
   card: { flexDirection: 'row-reverse', alignItems: 'center', padding: 16, gap: 12, borderWidth: 1, borderRadius: 22, minHeight: 88 },
   copy: { flex: 1, gap: 5 },
-  title: { fontFamily: ARABIC_BOLD_FONT, fontSize: 18, textAlign: 'right', writingDirection: 'rtl' },
-  detail: { fontFamily: ARABIC_FONT, fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
+  title: { fontFamily: Platform.OS === 'web' ? 'Inter_700Bold' : undefined, fontSize: 18, textAlign: 'right', writingDirection: 'rtl' },
+  detail: { fontFamily: Platform.OS === 'web' ? 'Inter_400Regular' : undefined, fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
 });

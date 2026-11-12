@@ -20,12 +20,12 @@ import {
 import { loadAdaptiveMemory, resetAdaptiveMemory, saveAdaptiveMemory } from '@/lib/adaptive-restatement-storage';
 import { completionFeedback } from '@/lib/completion-feedback';
 import { useStudy } from '@/lib/StudyProvider';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
+import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { trainingEntry } from '@/lib/training-entry';
 import { useQuestionTransition } from '@/hooks/useQuestionTransition';
 import { Enter } from '@/components/EntranceMotion';
 
-const FONT = ARABIC_FONT;
+const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
 type P = ReturnType<typeof usePlay>;
 type Phase = 'loading' | 'corrupt' | 'unavailable' | 'intro' | 'claiming' | 'claimError' | 'round' | 'results';

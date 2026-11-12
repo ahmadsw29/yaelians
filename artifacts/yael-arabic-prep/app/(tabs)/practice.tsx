@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
+import { ARABIC_BOLD_FONT } from '@/constants/typography';
 import { getPracticeScreenSpacing, usesExpandedQuestionLayout } from '@/lib/practice-layout';
 import { useColors } from '@/hooks/useColors';
 import { usePracticeCompletionAnnouncement } from '@/hooks/usePracticeCompletionAnnouncement';
@@ -49,7 +49,7 @@ import {
   selectPracticeAnswer,
 } from '@/lib/progress-marker';
 
-const FONT = ARABIC_FONT;
+const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
 const BOLD = ARABIC_BOLD_FONT;
 
 export default function PracticeScreen() {
