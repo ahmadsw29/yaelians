@@ -12,7 +12,6 @@ import { CartoonAvatar } from '@/components/CartoonAvatar';
 import { useColors } from '@/hooks/useColors';
 import { GlassPressable } from '@/components/Glass';
 import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
-import { play } from '@/constants/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -27,7 +26,7 @@ export function authError(error: unknown): string {
 export function AuthField({ label, ...props }: TextInputProps & { label: string }) {
   const colors = useColors();
   return <View style={styles.field}>
-    <Text style={[styles.label, { color: colors.isDark ? play.dark.sunInk : colors.primary }]}>{label}</Text>
+    <Text style={[styles.label, { color: colors.foreground }]}>{label}</Text>
     <TextInput accessibilityLabel={label} placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false}
       {...props} style={[styles.input, { backgroundColor: colors.isDark ? colors.muted : colors.card, borderColor: colors.input, color: colors.foreground }, props.style]} />
   </View>;
@@ -193,7 +192,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
         <Feather name="x" size={24} color={colors.foreground} />
       </Pressable>
       <View style={styles.hero}><CartoonAvatar size={88} />
-        <Text style={[styles.brand, { color: colors.isDark ? play.dark.sun : play.light.coralShade, backgroundColor: colors.isDark ? play.dark.sunSoft : play.light.coralSoft }]}>يَاعيل · رحلتك تبدأ هنا</Text>
+        <Text style={[styles.brand, { color: colors.accentForeground, backgroundColor: colors.accent }]}>يَاعيل · رحلتك تبدأ هنا</Text>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{codeStep ? (step === 'totp' ? 'أدخل الرمز من تطبيق المصادقة.' : 'أدخل الرمز المرسل إلى بريدك الإلكتروني.') : 'حسابك الخاص، تقدّمك، وشخصيتك الكرتونية.'}</Text>
       </View>
