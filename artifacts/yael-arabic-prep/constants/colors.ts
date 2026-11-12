@@ -13,35 +13,51 @@
  */
 
 const colors = {
-  darkBackground: '#141416',
+  darkBackground: '#14112b',
   light: {
     // Legacy aliases (kept for backward compatibility)
-    text: '#1d1d1f',
-    tint: '#2a66d4',
-    background: '#f6f5f2',
-    foreground: '#1d1d1f',
-    card: '#fdfcfa',
-    cardForeground: '#1d1d1f',
-    primary: '#2a66d4',
-    primaryForeground: '#f7f9fd',
-    secondary: '#eeece8',
-    secondaryForeground: '#2c2b29',
-    muted: '#efede9',
-    mutedForeground: '#66635e',
-    accent: '#dcf3f0',
-    accentForeground: '#0b5a53',
-    destructive: '#d63a3a',
-    destructiveForeground: '#fdfcfa',
-    border: '#e4e1db',
-    input: '#d4d0c8',
+    text: '#1d1840',
+    tint: '#6b3cf0',
+
+    // Core surfaces
+    background: '#f6f1ff',
+    foreground: '#1d1840',
+
+    // Cards / elevated surfaces
+    card: '#fffcf6',
+    cardForeground: '#1d1840',
+
+    // Primary action color (buttons, links, active states)
+    primary: '#6b3cf0',
+    primaryForeground: '#ffffff',
+
+    // Secondary / less-emphasis interactive surfaces
+    secondary: '#e6f8f1',
+    secondaryForeground: '#0b6b52',
+
+    // Muted / subdued elements (dividers, timestamps, placeholders)
+    muted: '#ece6fb',
+    mutedForeground: '#6a6390',
+
+    // Accent highlights (badges, selected items, focus rings)
+    accent: '#ffe3d6',
+    accentForeground: '#c2410c',
+
+    // Destructive actions (delete, error states)
+    destructive: '#d7263d',
+    destructiveForeground: '#ffffff',
+
+    // Borders and input outlines
+    border: '#e1d7fb',
+    input: '#cdbff5',
   },
 
   // Border radius (in px). Sync from the sibling web artifact's --radius
   // CSS variable. This value applies to cards, buttons, inputs, and modals.
   radius: 20,
   // Deep end of the primary gradient used by buttons.
-  primaryDeepLight: '#1d55c4',
-  primaryDeepDark: '#2a6ad8',
+  primaryDeepLight: '#4a1fc7',
+  primaryDeepDark: '#9b6bff',
 };
 
 export default colors;
@@ -51,22 +67,20 @@ export default colors;
  * Consumed through `usePlay()` in components/Playful.tsx.
  */
 export const play = {
-  // brand = blue, sky = companion teal, sun = warm amber (sparing), coral = streak/errors only.
-  // *Ink = text on the matching *Soft surface. onBrand = text on brand/brandShade/skyShade fills.
   light: {
-    brand: '#2a66d4', brandShade: '#1d55c4', brandSoft: '#e4edfc', brandInk: '#1a4aa8', onBrand: '#f7f9fd',
-    sun: '#e9a23b', sunShade: '#b97814', sunSoft: '#fbf1e0', sunInk: '#6e4508', sunFill: '#f6c56f', onSun: '#4a2f00',
-    coral: '#e0654a', coralShade: '#b84a33', coralSoft: '#fbe9e4', coralInk: '#8f3420', onCoral: '#2b1410',
-    sky: '#14a397', skyShade: '#0d7a70', skySoft: '#dcf3f0', skyInk: '#0b5a53',
-    success: '#2f9e63', successShade: '#22784a', successSoft: '#e2f4ea', successInk: '#1b6340',
-    track: '#e8e5df', shade: '#d8d4cc',
+    brand: '#12b886', brandShade: '#0b8a63', brandSoft: '#d6f7ea', onBrand: '#fffdf7',
+    sun: '#ffbf3c', sunShade: '#d9921a', sunSoft: '#fff1d1', sunInk: '#7a4b00',
+    coral: '#ff7a59', coralShade: '#d9573a', coralSoft: '#ffebe3', coralInk: '#a63e26',
+    sky: '#3a9be0', skyShade: '#2678b5', skySoft: '#e2f1fb', skyInk: '#1d5e8e',
+    success: '#2fae66', successShade: '#22884f', successSoft: '#e3f7e9', successInk: '#1d6e41',
+    track: '#e6defa', shade: '#d6cbf3',
   },
   dark: {
-    brand: '#2a66d4', brandShade: '#1f56c2', brandSoft: '#1a2538', brandInk: '#9fc2ff', onBrand: '#f7f9fd',
-    sun: '#f0b44f', sunShade: '#a87a1c', sunSoft: '#2b261b', sunInk: '#f5d396', sunFill: '#f0b44f', onSun: '#2b1c00',
-    coral: '#f08a70', coralShade: '#b4553e', coralSoft: '#2e1d1c', coralInk: '#f6b9a7', onCoral: '#2b1410',
-    sky: '#2cc1b2', skyShade: '#0f7f75', skySoft: '#172b2a', skyInk: '#8fe3d9',
-    success: '#4cc483', successShade: '#2e9560', successSoft: '#14302a', successInk: '#9fe3bd',
-    track: '#2e2e32', shade: '#0b0b0c',
+    brand: '#3cc79c', brandShade: '#22926f', brandSoft: '#163a3a', onBrand: '#0f241e',
+    sun: '#ffc94f', sunShade: '#b9801a', sunSoft: '#3a3020', sunInk: '#ffd88a',
+    coral: '#ff8f72', coralShade: '#b9543b', coralSoft: '#3d2723', coralInk: '#ffb7a3',
+    sky: '#5cb2ef', skyShade: '#2f78ad', skySoft: '#1d3142', skyInk: '#a8d6f7',
+    success: '#4cc97f', successShade: '#2f9a5c', successSoft: '#1c3a2a', successInk: '#9be6b7',
+    track: '#2f2958', shade: '#0b0920',
   },
 };

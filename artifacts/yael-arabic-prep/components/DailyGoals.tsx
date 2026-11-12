@@ -114,20 +114,20 @@ export function DailyGoalsSection() {
             accessibilityRole="button"
             accessibilityLabel={off ? `${m.label}: ليس اليوم${count > 0 ? `، أنجزت ${count}` : ''}` : `${m.label}: ${count} من ${target}${met ? '، الهدف منجز' : ''}. افتح التدريب`}
             accessibilityValue={off ? undefined : { min: 0, max: target, now: Math.min(count, target) }}
-            style={({ pressed }) => [st.metric, { backgroundColor: off ? p.muted : p.background, borderColor: met ? main : p.border }, pressed && { transform: [{ translateY: 2 }] }]}>
-            <View style={[st.icon, { backgroundColor: off ? p.track : soft }]}>
-              <Ionicons name={met ? 'checkmark' : m.icon} size={18} color={off ? p.mutedForeground : ink} />
+            style={({ pressed }) => [st.metric, { backgroundColor: off ? p.muted : soft }, pressed && { transform: [{ translateY: 2 }] }]}>
+            <View style={[st.icon, { backgroundColor: off ? p.track : main }]}>
+              <Ionicons name={met ? 'checkmark' : m.icon} size={18} color={off ? p.mutedForeground : p.onBrand} />
             </View>
             <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
               <View style={st.metricTop}>
-                <Text style={[st.metricLabel, { color: off ? p.mutedForeground : p.foreground }]}>{m.label}</Text>
-                <Text style={[st.count, { color: off ? p.mutedForeground : met ? ink : p.mutedForeground }]}>
+                <Text style={[st.metricLabel, { color: off ? p.mutedForeground : ink }]}>{m.label}</Text>
+                <Text style={[st.count, { color: off ? p.mutedForeground : ink }]}>
                   {off ? (count > 0 ? `ليس اليوم · ${ar(count)}` : 'ليس اليوم') : `${ar(count)} / ${ar(target)}`}
                 </Text>
               </View>
               {!off && <ChunkyProgress value={count / target} color={main} />}
             </View>
-            <Ionicons name="chevron-back" size={18} color={p.mutedForeground} />
+            <Ionicons name="chevron-back" size={18} color={off ? p.mutedForeground : ink} />
           </Pressable>
         );
       }) : (
@@ -271,7 +271,7 @@ function Stepper({ meta, value, onChange }: { meta: Meta; value: number; onChang
   return (
     <View style={[st.stepRow, { backgroundColor: off ? p.card : soft, borderColor: off ? p.border : main }]}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={[st.metricLabel, { color: off ? p.mutedForeground : p.foreground }]}>{meta.label}</Text>
+        <Text style={[st.metricLabel, { color: off ? p.mutedForeground : ink }]}>{meta.label}</Text>
         <Text style={[st.tiny, { color: p.mutedForeground }]}>{off ? 'ليس اليوم' : meta.hint}</Text>
       </View>
       <View style={st.stepCtl}>
@@ -288,7 +288,7 @@ function Stepper({ meta, value, onChange }: { meta: Meta; value: number; onChang
 }
 
 const st = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 22, padding: 16, gap: 10 },
+  card: { borderWidth: 2, borderBottomWidth: 5, borderRadius: 22, padding: 16, gap: 10 },
   headRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
   title: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 20, lineHeight: 32, textAlign: 'right', writingDirection: 'rtl' },
   sub: { fontSize: 13, lineHeight: 22, textAlign: 'right', writingDirection: 'rtl' },
@@ -301,7 +301,7 @@ const st = StyleSheet.create({
   skeleton: { height: 52, borderRadius: 14, opacity: 0.6 },
   errorBox: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, borderRadius: 12, padding: 10 },
   retry: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 6 },
-  metric: { borderWidth: 1, minHeight: 60, flexDirection: 'row-reverse', alignItems: 'center', gap: 10, borderRadius: 16, padding: 10 },
+  metric: { minHeight: 60, flexDirection: 'row-reverse', alignItems: 'center', gap: 10, borderRadius: 16, padding: 10 },
   icon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   metricTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   metricLabel: { fontFamily: ARABIC_BOLD_FONT, fontWeight: '800', fontSize: 15, lineHeight: 24, textAlign: 'right', writingDirection: 'rtl' },

@@ -39,11 +39,11 @@ export function useColors() {
   const dark = (preference === 'system' ? system : preference) === 'dark';
   const palette = dark ? {
     ...colors.light,
-    text: '#f2f1ee', foreground: '#f2f1ee', background: colors.darkBackground,
-    card: '#1f1f22', cardForeground: '#f2f1ee', primary: '#3984ff', tint: '#3984ff',
-    primaryForeground: '#111113', secondary: '#2a2a2e', secondaryForeground: '#dedcd7',
-    muted: '#26262a', mutedForeground: '#a6a49f', accent: '#172b2a', accentForeground: '#8fe3d9',
-    destructive: '#ff6b6b', border: '#343438', input: '#424247',
+    text: '#f3efff', foreground: '#f3efff', background: colors.darkBackground,
+    card: '#221d45', cardForeground: '#f3efff', primary: '#a88bff', tint: '#a88bff',
+    primaryForeground: '#170d3d', secondary: '#173d3b', secondaryForeground: '#8ff0cf',
+    muted: '#2a2452', mutedForeground: '#b4acd8', accent: '#4a2a26', accentForeground: '#ffb38f',
+    destructive: '#ff6b7f', border: '#3b3370', input: '#4b4290',
   } : colors.light;
   return { ...palette, primaryDeep: dark ? colors.primaryDeepDark : colors.primaryDeepLight, radius: colors.radius, isDark: dark };
 }

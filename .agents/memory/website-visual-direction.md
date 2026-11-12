@@ -9,11 +9,3 @@ The user asked for the YAEL website to look more advanced, using Contratest's we
 The user wants “the apple arabic phont, like in iphones and macbooks” and rejected the previous colors as boring.
 **Why:** Explicit correction of the app's appearance.
 **How to apply:** Prefer the Apple system Arabic face on Apple devices, retain OS fallbacks elsewhere, and do not reintroduce Inter as an Arabic display override. Keep colors lively and legible in both themes; do not bundle proprietary Apple fonts.
-
-The user rejected lavender and mixed pastel surfaces, selected “Deep navy and blue,” then asked for more colors that are “متناسقات وحلوات” (coordinated and attractive).
-**Why:** Explicit selections and corrections, not permission to keep changing palettes arbitrarily.
-**How to apply:** Keep navy/blue as the foundation with coordinated companion accents and readable text/surface pairs. Do not return to lavender or a collection of unrelated saturated card colors.
-
-The user rejected both competing colorful cards (“fighting for attention”) and the fully neutral revision (“now its boring”).
-**Why:** The app needs visible personality without every section demanding equal attention.
-**How to apply:** Use a clear primary feature with restrained supporting accents and retain the animated characters, rather than flattening all cards or saturating every surface.

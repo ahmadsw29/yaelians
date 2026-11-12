@@ -45,13 +45,12 @@ export default function HomeScreen() {
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const onScroll = useRef(Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: NATIVE_DRIVER })).current;
-  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const wide = Platform.OS === 'web' && windowWidth >= 960;
+  const { height: windowHeight } = useWindowDimensions();
   const [measuredHeight, setMeasuredHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const viewport = measuredHeight || windowHeight;
   const reduce = useReduceMotion();
-  const styles = makeStyles(p, insets.top, insets.bottom, wide);
+  const styles = makeStyles(p, insets.top, insets.bottom);
   const accuracy = stats.answeredQuestions
     ? Math.round((stats.correctAnswers / stats.answeredQuestions) * 100)
     : 0;
@@ -80,7 +79,7 @@ export default function HomeScreen() {
         <Pressable testID="home-menu-open" accessibilityRole="button" accessibilityLabel="فتح القائمة" hitSlop={6}
           onPress={() => router.push('/menu')}
           style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="grid-outline" size={19} color={p.brandInk} />
+          <Ionicons name="grid-outline" size={19} color={p.brandShade} />
         </Pressable>
       </View>
 
@@ -91,7 +90,7 @@ export default function HomeScreen() {
         {recommendation && <View testID={`home-rank-recommendation-${recommendation.kind}`} style={[styles.rankSuggestion, { backgroundColor: p.card, borderColor: p.border }]}>
           <View style={styles.timingChips}>{recommendation.timing.map(label =>
             <View key={label} style={[styles.timingChip, { backgroundColor: p.brandSoft }]}>
-              <Text style={[styles.timingText, { color: p.brandInk }]}>{label}</Text>
+              <Text style={[styles.timingText, { color: p.isDark ? p.brand : p.brandShade }]}>{label}</Text>
             </View>)}</View>
           <Text style={[styles.recommendationDetail, { color: p.foreground }]}>{recommendation.detail}</Text>
           <ChunkyButton label={recommendation.buttonLabel} icon="timer-outline"
@@ -100,48 +99,48 @@ export default function HomeScreen() {
         </View>}
       </Enter>
       <RevealGroup style={styles.sections}>
-      <Reveal testID="home-reveal-goals" style={styles.full}><DailyGoalsSection /></Reveal>
+      <Reveal testID="home-reveal-goals"><DailyGoalsSection /></Reveal>
 
-      <Reveal testID="home-reveal-vocabulary" style={styles.cell}><View style={styles.hero}>
+      <Reveal testID="home-reveal-vocabulary"><View style={styles.hero}>
         <View style={styles.heroCopy}>
           <View style={styles.lessonTag}><Text style={styles.lessonTagText}>جولة اليوم · 20 كلمة</Text></View>
-          <Text style={[styles.heroTitle, styles.featureTitle]}>كلمات تفتح{"\n"}لك المعنى</Text>
-          <Text style={[styles.heroSub, styles.featureSub]}>تدرّب على 20 مفردة من نماذج YAEL</Text>
+          <Text style={styles.heroTitle}>كلمات تفتح{"\n"}لك المعنى</Text>
+          <Text style={styles.heroSub}>تدرّب على 20 مفردة من نماذج YAEL</Text>
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={[styles.heroHalo, styles.featureHalo]} />
+          <View style={styles.heroHalo} />
           <ScrollSway testID="home-sway-vocabulary"><Creature kind="zizo" mood="hype" size={128} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>מילה</Text></View>
         </View>
-        <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice?section=vocabulary')} style={styles.heroCta} />
+        <ChunkyButton tone="sun" icon="arrow-back" label="يلا نبدأ" testID="start-practice" onPress={() => router.push('/practice?section=vocabulary')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
       </View></Reveal>
 
-      <Reveal testID="home-reveal-restatement" style={styles.cell}><View style={styles.rHero}>
+      <Reveal testID="home-reveal-restatement"><View style={styles.rHero}>
         <View style={styles.heroCopy}>
           <Text style={styles.heroTitle}>قلها{"\n"}بطريقة أخرى</Text>
           <Text style={styles.heroSub}>تدرّب على إعادة الصياغة فقط، قسمًا بقسم</Text>
         </View>
         <View style={styles.heroArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={[styles.heroHalo, { backgroundColor: p.skySoft }]} />
+          <View style={styles.heroHalo} />
           <ScrollSway><Creature kind="rami" mood="hype" size={124} /></ScrollSway>
           <View style={styles.wordChip}><Text style={styles.wordChipText}>במילים אחרות</Text></View>
         </View>
-        <ChunkyButton tone="ghost" icon="arrow-back" label="إعادة صياغة" testID="start-restatement" onPress={() => router.push('/restatement')} style={styles.heroCta} />
+        <ChunkyButton tone="sun" icon="arrow-back" label="إعادة صياغة" testID="start-restatement" onPress={() => router.push('/restatement')} style={{ alignSelf: 'stretch', marginTop: 4 }} />
       </View></Reveal>
-      <Reveal testID="home-reveal-reading" style={styles.cell}><HomeReadingEntry /></Reveal>
+      <Reveal testID="home-reveal-reading"><HomeReadingEntry /></Reveal>
 
-      <Reveal testID="home-reveal-study" style={styles.cell}><Pressable testID="home-study" accessibilityRole="button" accessibilityLabel="ركن الدراسة، دروس مع معلّمين من عالم الخيال" onPress={() => router.push('/study')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
+      <Reveal testID="home-reveal-study"><Pressable testID="home-study" accessibilityRole="button" accessibilityLabel="ركن الدراسة، دروس مع معلّمين من عالم الخيال" onPress={() => router.push('/study')} style={({ pressed }) => [styles.studyCard, pressed && { transform: [{ translateY: 3 }] }]}>
         <View style={styles.studyArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><ScrollSway amount={8} tilt={10}><Creature kind="ghaima" mood="happy" size={64} /></ScrollSway></View>
         <View style={styles.tipCopy}>
           <Text style={styles.studyTitle}>ركن الدراسة</Text>
           <Text style={styles.studyBody}>دروس من كتابك يشرحها لك معلّمون من عالم الخيال</Text>
         </View>
-        <Ionicons name="chevron-back" size={20} color={p.mutedForeground} />
+        <Ionicons name="chevron-back" size={20} color={p.skyInk} />
       </Pressable></Reveal>
 
-      <Reveal testID="home-reveal-flashcards" style={styles.cell}><HomeFlashcardsEntry /></Reveal>
+      <Reveal testID="home-reveal-flashcards"><HomeFlashcardsEntry /></Reveal>
 
-      <Reveal testID="home-reveal-models" style={styles.cell}><ExamShortcuts /></Reveal>
+      <Reveal testID="home-reveal-models"><ExamShortcuts /></Reveal>
       </RevealGroup>
 
       <Reveal testID="home-reveal-stats"><View style={styles.sectionHeading}>
@@ -180,19 +179,19 @@ function StatCard({ icon, value, label, color }: { icon: keyof typeof Ionicons.g
   );
 }
 
-function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset: number, wide: boolean) {
+function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset: number) {
   const c = p;
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.background },
-    content: { paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 12, paddingBottom: 28 + (Platform.OS === 'web' ? WEB_TAB_BAR_HEIGHT : 56 + bottomInset), maxWidth: wide ? 1160 : 600, paddingHorizontal: wide ? 40 : 20, width: '100%', alignSelf: 'center' },
+    content: { paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? Math.max(67, topInset) : 12, paddingBottom: 28 + (Platform.OS === 'web' ? WEB_TAB_BAR_HEIGHT : 56 + bottomInset), maxWidth: 600, width: '100%', alignSelf: 'center' },
     topLine: { flexDirection: 'row-reverse', alignItems: 'center', gap: 9, marginBottom: 22 },
     brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: p.brand, borderBottomWidth: 3, borderColor: p.brandShade, alignItems: 'center', justifyContent: 'center' },
     brand: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 19, flex: 1, textAlign: 'right' },
-    streakPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: p.card, borderRadius: 14, borderWidth: 1, borderColor: p.border, paddingHorizontal: 10, paddingVertical: 5 },
-    streakText: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 13 },
+    streakPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: p.coralSoft, borderRadius: 14, borderWidth: 2, borderColor: p.coral, paddingHorizontal: 10, paddingVertical: 5 },
+    streakText: { color: p.coralInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13 },
     menuBtn: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: p.card, borderWidth: StyleSheet.hairlineWidth, borderColor: p.border },
     greeting: { alignItems: 'flex-end', marginBottom: 16 },
-    eyebrow: { color: p.brandInk, fontFamily: BOLD, fontWeight: '800', fontSize: 13, marginBottom: 6 },
+    eyebrow: { color: p.brandShade, fontFamily: BOLD, fontWeight: '800', fontSize: 13, marginBottom: 6 },
     title: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', textAlign: 'right', fontSize: 28, lineHeight: 38 },
     subtitle: { color: c.mutedForeground, fontFamily: FONT, fontSize: 14, lineHeight: 24, textAlign: 'right', writingDirection: 'rtl', marginTop: 6 },
     rankSuggestion: { alignSelf: 'stretch', marginTop: 14, borderWidth: 1, borderRadius: 22, padding: 16, gap: 12 },
@@ -201,45 +200,39 @@ function makeStyles(p: ReturnType<typeof usePlay>, topInset: number, bottomInset
     timingText: { fontFamily: BOLD, fontWeight: '800', fontSize: 13, lineHeight: 22, textAlign: 'center', writingDirection: 'rtl' },
     recommendationDetail: { fontSize: 14, lineHeight: 25, textAlign: 'right', writingDirection: 'rtl' },
     recommendationFootnote: { fontSize: 12, lineHeight: 21, textAlign: 'right', writingDirection: 'rtl' },
-    sections: wide ? { flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'stretch', columnGap: 24, rowGap: 24, marginBottom: 24 } : { gap: 24, marginBottom: 24 },
-    cell: wide ? { flexBasis: '45%', flexGrow: 1, flexShrink: 1, minWidth: 0 } : {},
-    full: wide ? { flexBasis: '100%' } : {},
-    heroCta: { flexBasis: '100%', width: '100%', marginTop: 10 },
-    hero: { flexGrow: 1, backgroundColor: p.card, borderRadius: 24, borderWidth: 1, borderTopWidth: 4, borderColor: p.border, borderTopColor: p.brand, padding: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
-    rHero: { flexGrow: 1, backgroundColor: p.card, borderRadius: 24, borderWidth: 1, borderRightWidth: 3, borderColor: p.border, borderRightColor: p.sky, padding: 22, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
-    featureTitle: { color: c.foreground, fontSize: 28, lineHeight: 38 },
-    featureSub: { color: c.mutedForeground },
-    featureHalo: { backgroundColor: p.sunSoft, width: 146, height: 146, borderRadius: 73 },
+    sections: { gap: 24, marginBottom: 24 },
+    hero: { backgroundColor: p.brand, borderRadius: 26, borderBottomWidth: 7, borderColor: p.brandShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
+    rHero: { backgroundColor: p.coral, borderRadius: 26, borderBottomWidth: 7, borderColor: p.coralShade, padding: 18, overflow: 'hidden', flexDirection: 'row-reverse', flexWrap: 'wrap', alignItems: 'center' },
     heroCopy: { flex: 1, minWidth: 150, alignItems: 'flex-end' },
-    lessonTag: { backgroundColor: p.brandSoft, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, marginBottom: 9 },
-    lessonTagText: { color: p.brandInk, fontSize: 11, fontFamily: BOLD, fontWeight: '800' },
-    heroTitle: { color: c.foreground, fontSize: 26, lineHeight: 33, textAlign: 'right', fontFamily: BOLD, fontWeight: '800' },
-    heroSub: { color: c.mutedForeground, fontSize: 13, lineHeight: 20, textAlign: 'right', marginTop: 5, fontFamily: FONT },
+    lessonTag: { backgroundColor: 'rgba(255,253,247,0.22)', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 12, marginBottom: 9 },
+    lessonTagText: { color: p.onBrand, fontSize: 11, fontFamily: BOLD, fontWeight: '800' },
+    heroTitle: { color: p.onBrand, fontSize: 26, lineHeight: 33, textAlign: 'right', fontFamily: BOLD, fontWeight: '800' },
+    heroSub: { color: p.onBrand, opacity: 0.85, fontSize: 13, lineHeight: 20, textAlign: 'right', marginTop: 5, fontFamily: FONT },
     heroArt: { width: 132, height: 138, alignItems: 'center', justifyContent: 'center' },
-    heroHalo: { position: 'absolute', width: 118, height: 118, borderRadius: 59, backgroundColor: p.muted },
+    heroHalo: { position: 'absolute', width: 118, height: 118, borderRadius: 59, backgroundColor: 'rgba(255,253,247,0.18)' },
     wordChip: { position: 'absolute', bottom: 6, left: -2, backgroundColor: p.card, borderRadius: 12, borderBottomWidth: 3, borderColor: p.border, paddingHorizontal: 9, paddingVertical: 3, transform: [{ rotate: '-8deg' }] },
     wordChipText: { color: c.foreground, fontSize: 16, fontWeight: '800' },
     sectionHeading: { flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12, marginTop: 4 },
     sectionTitle: { color: c.foreground, fontSize: 19, fontFamily: BOLD, fontWeight: '800' },
     sectionCaption: { color: c.mutedForeground, fontSize: 11, fontFamily: FONT },
-    seeAll: { color: p.brandInk, fontSize: 13, fontFamily: BOLD, fontWeight: '800' },
+    seeAll: { color: p.skyShade, fontSize: 13, fontFamily: BOLD, fontWeight: '800' },
     path: { marginBottom: 20, paddingHorizontal: 4 },
     statsRow: { flexDirection: 'row', gap: 9, marginBottom: 17 },
-    studyCard: { flexGrow: 1, backgroundColor: p.card, borderRadius: 22, borderWidth: 1, borderColor: p.border, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    studyCard: { backgroundColor: p.skySoft, borderRadius: 22, borderWidth: 2, borderBottomWidth: 6, borderColor: p.sky, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     studyArt: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
-    studyTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 16 },
-    studyBody: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
-    tipCard: { backgroundColor: p.card, borderRadius: 20, borderWidth: 1, borderColor: p.border, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+    studyTitle: { color: p.skyInk, fontFamily: BOLD, fontWeight: '800', fontSize: 16 },
+    studyBody: { color: p.skyInk, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
+    tipCard: { backgroundColor: p.sunSoft, borderRadius: 20, borderWidth: 2, borderBottomWidth: 5, borderColor: p.sun, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
     tipIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center' },
     tipCopy: { flex: 1, alignItems: 'flex-end' },
-    tipTitle: { color: c.foreground, fontFamily: BOLD, fontWeight: '800', fontSize: 14, marginBottom: 3 },
-    tipBody: { color: c.mutedForeground, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
+    tipTitle: { color: p.sunInk, fontFamily: BOLD, fontWeight: '800', fontSize: 14, marginBottom: 3 },
+    tipBody: { color: p.sunInk, fontFamily: FONT, textAlign: 'right', fontSize: 13, lineHeight: 20 },
     footer: { textAlign: 'center', color: c.mutedForeground, fontSize: 11, marginTop: 18, fontFamily: FONT },
   });
 }
 
 const statStyles = StyleSheet.create({
-  card: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 1, gap: 4, paddingHorizontal: 4 },
+  card: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 2, borderBottomWidth: 5, gap: 4, paddingHorizontal: 4 },
   value: { fontSize: 19, fontFamily: BOLD, fontWeight: '800' },
   label: { fontSize: 11, fontFamily: FONT, textAlign: 'center' },
 });
