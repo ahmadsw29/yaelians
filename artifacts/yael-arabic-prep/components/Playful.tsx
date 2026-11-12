@@ -28,7 +28,7 @@ export function ChunkyButton({ label, onPress, tone = 'brand', icon, disabled, t
 }) {
   const p = usePlay();
   const fills: Record<Tone, [string, string, string]> = {
-    brand: [p.primary, p.isDark ? '#5fa999' : '#0f4d45', p.primaryForeground],
+    brand: [p.primary, p.primaryDeep, p.primaryForeground],
     sun: [p.isDark ? p.sun : '#ffdc84', p.sun, '#624000'],
     coral: [p.coral, p.isDark ? '#ed7d60' : '#f17153', '#301b15'],
     success: [p.isDark ? p.success : '#237848', p.isDark ? '#39ad6c' : '#185638', p.isDark ? p.onBrand : '#ffffff'],

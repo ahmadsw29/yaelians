@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
 import { useUser } from '@clerk/expo';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -9,8 +10,8 @@ import { useStudy } from '@/lib/StudyProvider';
 import { getStudyStatsDisplay } from '@/lib/study-stats-display';
 import { StudySyncStatus } from '@/components/StudySyncStatus';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 export default function ProgressScreen() {
   const { user } = useUser();

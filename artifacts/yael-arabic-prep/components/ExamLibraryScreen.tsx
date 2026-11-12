@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -11,8 +12,8 @@ import { usePlanAccess } from '@/lib/PlanAccess';
 import { loadExamLibraryProgress, type ExamLibraryProgress } from '@/lib/exam-library-progress';
 import { Enter } from '@/components/EntranceMotion';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 
 export default function ExamLibraryScreen() {
   const c = useColors();

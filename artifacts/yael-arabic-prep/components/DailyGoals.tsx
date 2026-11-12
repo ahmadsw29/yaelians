@@ -217,7 +217,7 @@ function GoalsSheet({ onClose, first }: { onClose: () => void; first: boolean })
                 const on = same(draft, t);
                 return (
                   <GlassPressable key={pr.id} dark={p.isDark} onPress={() => { setSaveError(null); setDraft(t); }} accessibilityRole="radio" accessibilityState={{ checked: on }} aria-checked={on}
-                    fill={on ? [p.primary, p.isDark ? '#5fa999' : '#0f4d45'] : undefined} radius={14} style={st.preset} contentStyle={st.presetInner}>
+                    fill={on ? [p.primary, p.primaryDeep] : undefined} radius={14} style={st.preset} contentStyle={st.presetInner}>
                     <Text style={[st.editText, { color: on ? p.primaryForeground : p.foreground }]}>{pr.label}</Text>
                   </GlassPressable>
                 );

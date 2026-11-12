@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ARABIC_BOLD_FONT, ARABIC_FONT } from '@/constants/typography';
 import SectionLearningNotes from '@/components/SectionLearningNotes';
 import { timedDailyGoalEvents, type DailyGoalEvent } from '@/lib/daily-goal-events';
 import { trackDailyActivity } from '@/lib/daily-goals';
@@ -27,8 +28,8 @@ import {
   newSourceSession, parseSourceSession, saveSourceSession, stageCount, storageKey,
 } from '@/lib/source-session';
 
-const FONT = Platform.OS === 'web' ? 'Inter_400Regular' : undefined;
-const BOLD = Platform.OS === 'web' ? 'Inter_700Bold' : undefined;
+const FONT = ARABIC_FONT;
+const BOLD = ARABIC_BOLD_FONT;
 type Confirmation = { kind: 'submit'; stage: number } | { kind: 'reset' };
 
 function one(v: string | string[] | undefined) { return Array.isArray(v) ? v[0] : v; }
