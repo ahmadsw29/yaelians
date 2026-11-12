@@ -10,6 +10,10 @@ Public review information must remain available while new checkout is disabled. 
 **Why:** Paddle's domain review requires discoverable pricing, product details, and policies even before payment activation; hiding them behind checkout readiness left the review checklist incomplete.
 **How to apply:** Keep review pages public and linked. Do not invent seller identity, a contact address, refund promises, or legal jurisdiction to make an incomplete policy appear approved.
 
+The owner's refund instruction is: “u can refund the whole price if u didn't like even in 3 days of use”.
+**Why:** The owner supplied this when asked to confirm the app's refund terms.
+**How to apply:** Preserve the full-price dissatisfaction guarantee, including customers who used the app. Do not introduce an unused-only condition or describe a policy page as an automatic refund mechanism.
+
 Whop SDK calls and raw REST helper calls can select different API versions even against the same v1 URL. Treat SDK upgrades and API-version migrations as one coordinated change.
 
 **Why:** A raw plan query returned ownership under `company`, while the SDK's default version returned it under `account`; TypeScript passed but runtime price validation failed. Payment filters and membership ownership checks also depend on this contract.

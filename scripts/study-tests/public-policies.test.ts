@@ -11,16 +11,18 @@ describe('public Paddle-review document drafts', () => {
     expect(policyPage('unknown')).toBe('privacy');
     expect(new Set(POLICY_PAGES.map(page => policyDocument(page.id).title)).size).toBe(4);
   });
-  it('does not invent a seller identity, contact address, jurisdiction or refund promise', () => {
-    expect(SELLER_DETAILS.legalName).toBeNull();
-    expect(SELLER_DETAILS.supportEmail).toBeNull();
-    expect(SELLER_DETAILS.country).toBeNull();
-    expect(SELLER_DETAILS.refundTerms).toBeNull();
+  it('uses the owner-confirmed seller details but does not claim legal approval', () => {
+    expect(SELLER_DETAILS.legalName).toBe('Yaelians');
+    expect(SELLER_DETAILS.supportEmail).toBe('ahmadsawalha2007@gmail.com');
+    expect(SELLER_DETAILS.country).toBe('Israel');
     for (const page of POLICY_PAGES) {
       const document = policyDocument(page.id);
       expect(document.draft).toBe(true);
       expect(document.sections.length).toBeGreaterThan(2);
       expect(JSON.stringify(document)).not.toMatch(/[٠-٩۰-۹]/);
+      expect(JSON.stringify(document)).toContain('Yaelians');
+      expect(JSON.stringify(document)).toContain(SELLER_DETAILS.supportEmail);
+      expect(JSON.stringify(document)).not.toContain('بانتظار التأكيد');
     }
   });
   it('shows the proposed monthly price without claiming it is an activated checkout total', () => {
@@ -35,8 +37,16 @@ describe('public Paddle-review document drafts', () => {
     const refunds = JSON.stringify(policyDocument('refunds'));
     expect(refunds).toContain('دفعات Whop السابقة');
     expect(refunds).toContain('ليس استردادًا تلقائيًا');
-    expect(refunds).toContain('لم يؤكّد البائع بعد');
+    expect(refunds).toContain('كامل مبلغ الشراء');
+    expect(refunds).toContain('خلال 3 أيام');
+    expect(refunds).toContain('لا يُشترط عدم استخدام التطبيق');
+    expect(refunds).not.toContain('لا نضمن الموافقة على كل طلب');
     expect(JSON.stringify(policyDocument('terms'))).toContain('غير مفعّل حاليًا');
     expect(JSON.stringify(policyDocument('privacy'))).toContain('Paddle مزوّد مخطّط غير مفعّل بعد');
+  });
+  it('keeps the three-day full-refund promise consistent across pricing, terms and refunds', () => {
+    for (const page of ['pricing', 'terms', 'refunds'] as const) {
+      expect(JSON.stringify(policyDocument(page))).toContain(SELLER_DETAILS.refundTerms);
+    }
   });
 });
