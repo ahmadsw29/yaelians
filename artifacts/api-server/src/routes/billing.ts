@@ -1,12 +1,10 @@
 import { Router } from "express";
-import { clerkClient, getAuth } from "@clerk/express";
-import { db, accountDeletions, accountPlanAccess, webBillingAccounts } from "@workspace/db";
+import { getAuth } from "@clerk/express";
+import { db, accountDeletions, accountPlanAccess } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { GetBillingCatalogResponse, GetBillingStatusResponse } from "@workspace/api-zod";
-import { billingCatalog, billingConfiguration, cancelWebSubscription, invalidateWebBilling, webBillingStatus } from "../lib/web-billing";
-import { replacementCheckoutAllowed, trustedReturnOrigin } from "../lib/web-billing-policy";
-import { getWhopClient } from "../lib/whopClient";
-import { lockAccount } from "./account";
+import { billingCatalog, cancelWebSubscription, webBillingStatus } from "../lib/web-billing";
+import { trustedReturnOrigin } from "../lib/web-billing-policy";
 
 const router = Router();
 const limits = new Map<string, { until: number; requests: number }>();
@@ -47,56 +45,8 @@ router.get("/billing/status", async (req, res) => {
   }
   catch { res.status(503).json({ error: "Subscription verification unavailable. Access was not changed." }); }
 });
-router.post("/billing/checkout", async (req, res) => {
-  const userId = getAuth(req).userId!;
-  try {
-    const catalog = await billingCatalog();
-    if (!catalog.checkoutEnabled) return void res.status(503).json({ error: "Checkout is not enabled yet" });
-    const development = process.env.NODE_ENV === "development" ? [
-      process.env.REPLIT_EXPO_DEV_DOMAIN, process.env.REPLIT_DEV_DOMAIN,
-    ].filter(Boolean).map(host => `https://${host}`) : [];
-    const origin = trustedReturnOrigin(req.get("origin"), process.env.APP_PUBLIC_URL!, development);
-    const config = billingConfiguration();
-    const client = await getWhopClient();
-    const result = await db.transaction(async tx => {
-      await lockAccount(tx, userId);
-      const [deleting] = await tx.select().from(accountDeletions).where(eq(accountDeletions.userId, userId));
-      if (deleting) throw new Error("Account deletion is pending");
-      await clerkClient.users.getUser(userId);
-      const [grant] = await tx.select().from(accountPlanAccess).where(eq(accountPlanAccess.userId, userId));
-      if (grant?.plan === "premium") return null;
-      const current = await webBillingStatus(userId, true);
-      if (current.state === "active") return null;
-      if (current.state === "pending") throw new Error("A payment is still processing");
-      const [old] = await tx.select().from(webBillingAccounts).where(eq(webBillingAccounts.userId, userId));
-      if (old?.membershipId) {
-        const previous = await client.memberships.retrieve(old.membershipId);
-        if (!replacementCheckoutAllowed(previous, config)) throw new Error("Resolve the existing subscription before purchasing again");
-      } else if (old?.checkoutId) {
-        try {
-          const checkout = await client.checkoutConfigurations.retrieve(old.checkoutId);
-          if (checkout.purchase_url) return checkout.purchase_url;
-        } catch (error) {
-          if (!(error && typeof error === "object" && "status" in error && error.status === 404)) throw error;
-        }
-      }
-      const checkout = await client.checkoutConfigurations.create({
-        plan_id: config.planId, redirect_url: `${origin}/billing-return`,
-        metadata: { learner_id: userId },
-      });
-      if (!checkout.purchase_url) throw new Error("Checkout URL is unavailable");
-      await tx.insert(webBillingAccounts).values({
-        userId, checkoutId: checkout.id, checkoutCreatedAt: new Date(),
-      }).onConflictDoUpdate({
-        target: webBillingAccounts.userId,
-        set: { checkoutId: checkout.id, checkoutCreatedAt: new Date(), membershipId: null },
-      });
-      return checkout.purchase_url;
-    });
-    if (!result) return void res.status(409).json({ error: "You already have active access" });
-    invalidateWebBilling(userId);
-    res.json({ purchaseUrl: result });
-  } catch { res.status(503).json({ error: "Checkout could not be opened. No access was granted." }); }
+router.post("/billing/checkout", (_req, res) => {
+  res.status(503).json({ error: "New purchases are currently unavailable" });
 });
 router.post("/billing/cancel", async (req, res) => {
   try { res.json(GetBillingStatusResponse.parse({ ...await cancelWebSubscription(getAuth(req).userId!), complimentary: false })); }

@@ -2,13 +2,11 @@ import { db, webBillingAccounts } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getWhopClient } from "./whopClient";
 import { membershipGrantsAccess } from "./web-billing-policy";
-import { z } from "zod";
 
 export type WebBillingStatus = { state: "active" | "inactive" | "pending"; cancelAtPeriodEnd: boolean; periodEnd: string | null };
 const inactive: WebBillingStatus = { state: "inactive", cancelAtPeriodEnd: false, periodEnd: null };
 const cache = new Map<string, { until: number; status: WebBillingStatus }>();
 const checking = new Map<string, Promise<WebBillingStatus>>();
-let catalogCache: { until: number; priceLabel: string; checkoutEnabled: boolean } | undefined;
 
 export function billingConfiguration() {
   const companyId = process.env.WHOP_COMPANY_ID;
@@ -19,27 +17,9 @@ export function billingConfiguration() {
 }
 
 export async function billingCatalog() {
-  if (catalogCache && catalogCache.until > Date.now()) return catalogCache;
-  const config = billingConfiguration();
-  // Validate fields returned by the API that the pinned SDK marks as unknown.
-  const plan = z.object({
-    company: z.object({ id: z.string() }), product: z.object({ id: z.string() }),
-    currency: z.string(), billing_period: z.number(), plan_type: z.string(),
-    initial_price: z.number(), renewal_price: z.number(),
-    adaptive_pricing_enabled: z.boolean(), trial_period_days: z.number().nullish(),
-  }).parse(await (await getWhopClient()).plans.retrieve(config.planId));
-  if (plan.company.id !== config.companyId || plan.product.id !== config.productId
-    || plan.currency !== "ils" || plan.billing_period !== 30 || plan.plan_type !== "renewal"
-    || plan.initial_price !== 0 || plan.renewal_price !== 48.9
-    || plan.adaptive_pricing_enabled || (plan.trial_period_days ?? 0) > 0) {
-    throw new Error("The subscription price requires review");
-  }
-  catalogCache = {
-    until: Date.now() + 30_000,
-    priceLabel: new Intl.NumberFormat("en-IL", { style: "currency", currency: plan.currency.toUpperCase() }).format(plan.renewal_price),
-    checkoutEnabled: !!process.env.APP_PUBLIC_URL && process.env.WHOP_CHECKOUT_ENABLED === "true",
-  };
-  return catalogCache;
+  // Whop is retired for new purchases. Keep its membership verification and
+  // cancellation paths for existing customers, independently of checkout.
+  return { priceLabel: "", checkoutEnabled: false };
 }
 
 export function invalidateWebBilling(userId: string) { cache.delete(userId); }

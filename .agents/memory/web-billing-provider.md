@@ -2,6 +2,10 @@
 name: Web billing provider constraints
 description: Non-obvious Whop API and configuration pitfalls for the paid website.
 ---
+The user wants Whop removed from new purchases and explicitly chose Paddle for checkout inside the app's website, not Stripe.
+**Why:** The user repeatedly rejected external Whop checkout and Stripe as an alternative.
+**How to apply:** Do not reopen provider selection or re-enable Whop purchases without a new request. Preserve existing subscribers' verification, cancellation, and paid access during any replacement; explain any implementation blocker without claiming Paddle is unavailable as a connector.
+
 Whop SDK calls and raw REST helper calls can select different API versions even against the same v1 URL. Treat SDK upgrades and API-version migrations as one coordinated change.
 
 **Why:** A raw plan query returned ownership under `company`, while the SDK's default version returned it under `account`; TypeScript passed but runtime price validation failed. Payment filters and membership ownership checks also depend on this contract.

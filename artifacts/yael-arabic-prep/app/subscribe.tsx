@@ -120,12 +120,12 @@ export function MembershipPage({ returning = false }: { returning?: boolean }) {
   const state = billingScreenState(status.data?.state, status.isPending, status.isError, waitingForReturn);
   return <>
     <WebMembership
-      state={state} priceLabel={catalog.data?.priceLabel ?? null}
+      state={state} priceLabel={catalog.data?.priceLabel || null}
       checkoutEnabled={catalog.data?.checkoutEnabled ?? false}
       busy={busy} opening={opening} verifyBusy={status.isFetching} cancelBusy={cancelBusy}
       email={email}
       message={message ?? (status.data?.complimentary ? 'لديك وصول كامل مجاني من الإدارة. لا توجد دفعات أو تجديد تلقائي لهذا الوصول.'
-        : catalog.data && !catalog.data.checkoutEnabled ? 'إعداد الدفع قيد الإكمال. لن نطلب منك الدفع قبل تفعيل صفحة الدفع الآمنة.'
+        : catalog.data && !catalog.data.checkoutEnabled ? 'الاشتراكات الجديدة غير متاحة حاليًا. الاشتراكات الحالية ووصولك المدفوع لا يتغيّران، ويمكنك إدارة اشتراكك من هنا.'
         : returning && !active ? waitingForReturn || status.data?.state === 'pending'
           ? 'نتحقّق من الدفع تلقائيًا. سيُفتح تدريبك فور تأكيد اشتراكك.'
           : 'لم نتلقَّ تأكيدًا للدفع بعد. إن لم تُكمل الدفع، يمكنك العودة إلى صفحة الدفع نفسها. إذا خُصم المبلغ، تحقّق بدل الدفع مجددًا.'

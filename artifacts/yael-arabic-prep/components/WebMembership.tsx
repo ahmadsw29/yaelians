@@ -31,7 +31,10 @@ export default function WebMembership(props: Props) {
   const [useAccountEmail, setUseAccountEmail] = useState(true);
   const { state, priceLabel, busy, verifyBusy, cancelBusy, message, cancelAtPeriodEnd, periodEnd, canInstall, installHelp } = props;
   const p = usePlay();
-  const h = props.complimentary ? { ...HEAD.active, title: 'وصولك الكامل مفعّل' } : HEAD[state];
+  const h = props.complimentary ? { ...HEAD.active, title: 'وصولك الكامل مفعّل' }
+    : state === 'inactive' && !props.checkoutEnabled
+      ? { ...HEAD.inactive, title: 'الاشتراكات الجديدة متوقفة', text: 'لا نقبل دفعات جديدة حاليًا. يمكنك التحقّق من اشتراك سابق أدناه.' }
+      : HEAD[state];
   const tint = state === 'active' ? p.successSoft : state === 'error' ? p.coralSoft : state === 'pending' ? p.sunSoft : p.skySoft;
   const edge = state === 'active' ? p.successShade : state === 'error' ? p.coralShade : state === 'pending' ? p.sunShade : p.skyShade;
 
@@ -70,6 +73,7 @@ export default function WebMembership(props: Props) {
           {!!message && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.msg, { backgroundColor: p.card, color: p.foreground, borderColor: p.border }]}>{message}</Text>}
 
           {state === 'inactive' && <View style={{ gap: 12 }}>
+            {props.checkoutEnabled && <>
             <View style={[s.priceBox, { backgroundColor: p.card, borderColor: p.border }]}>
               <Text style={[s.small, { color: p.mutedForeground }]}>اشتراك شهري</Text>
               <Text style={[s.price, { color: priceLabel ? p.foreground : p.mutedForeground }]}>{priceLabel ? `${priceLabel} شهريًا` : 'السعر غير متاح حاليًا'}</Text>
@@ -82,7 +86,7 @@ export default function WebMembership(props: Props) {
               <Ionicons name="wallet-outline" size={24} color={p.foreground} />
               <Text style={[s.small, { flex: 1, color: p.foreground }]}>للدفع بأقل كتابة، اختَر Apple Pay أو Google Pay إن ظهر في صفحة Whop. إذا لم يتوفّر لجهازك أو بطاقتك، يمكنك الدفع بالبطاقة.</Text>
             </View>}
-            <Text style={[s.small, { color: p.mutedForeground }]}>ستكمل الدفع الآمن لدى Whop، ثم نعيدك إلى تدريبك تلقائيًا. بيانات البطاقة لا تُحفظ في التطبيق.</Text>
+            <Text style={[s.small, { color: p.mutedForeground }]}>ستكمل الدفع الآمن، ثم نعيدك إلى تدريبك تلقائيًا. بيانات البطاقة لا تُحفظ في التطبيق.</Text>
             {!!props.email && <Pressable testID="web-use-account-email" accessibilityRole="checkbox"
               accessibilityLabel="عبّئ بريد حسابي تلقائيًا في صفحة الدفع"
               aria-checked={useAccountEmail}
@@ -96,6 +100,7 @@ export default function WebMembership(props: Props) {
                 <Text style={[s.small, { color: p.mutedForeground }]}>للدفع ببريد مختلف، أزِل علامة الاختيار قبل المتابعة.</Text>
               </View>
             </Pressable>}
+            </>}
             <Pressable testID="web-already-paid" accessibilityRole="button" disabled={verifyBusy || busy} onPress={props.onVerify} style={s.helpButton}>
               <Text style={[s.bold, { color: p.brandShade }]}>{verifyBusy ? 'جارٍ التحقّق…' : 'دفعت بالفعل؟ تحقّق من اشتراكك'}</Text>
             </Pressable>

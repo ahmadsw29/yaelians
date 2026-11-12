@@ -24,7 +24,7 @@ vi.mock('@workspace/db', () => ({
 vi.mock('../../artifacts/api-server/src/lib/whopClient', () => ({
   getWhopClient: mocks.sdk,
 }));
-import { cancelWebSubscription, effectiveStudyPlan, invalidateWebBilling, webBillingStatus } from '../../artifacts/api-server/src/lib/web-billing';
+import { billingCatalog, cancelWebSubscription, effectiveStudyPlan, invalidateWebBilling, webBillingStatus } from '../../artifacts/api-server/src/lib/web-billing';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -45,6 +45,11 @@ beforeEach(() => {
 const paid = (): Payment => ({ checkout_configuration_id: 'ch_ours', company: { id: 'biz_ours' }, status: 'paid', membership: { id: 'mem_ours' } });
 
 describe('payment-backed account access', () => {
+  it('retires new checkout even if the old activation setting remains enabled', async () => {
+    vi.stubEnv('WHOP_CHECKOUT_ENABLED', 'true');
+    expect(await billingCatalog()).toEqual({ priceLabel: '', checkoutEnabled: false });
+    expect(mocks.sdk).not.toHaveBeenCalled();
+  });
   it('does not contact the provider without a server-side link', async () => {
     mocks.link = null;
     expect((await webBillingStatus('learner', true)).state).toBe('inactive');
